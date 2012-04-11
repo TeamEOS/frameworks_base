@@ -1797,6 +1797,8 @@
    =============================================================== -->
   <eat-comment />
 
+  <java-symbol type="string" name="config_deviceKeyHandlerLib" />
+  <java-symbol type="string" name="config_deviceKeyHandlerClass" />
 
   <!-- Telephony -->
   <java-symbol type="bool" name="config_smsSamsungCdmaAlternateMessageIDEncoding" />
