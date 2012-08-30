@@ -173,4 +173,7 @@
          0 means no timeout; battery sounds will always play
          >0 is milliseconds of screen-off time after which battery sounds will not play -->
     <integer name="def_low_battery_sound_timeout">0</integer>
+
+    <!-- Defaults for Settings.System.DEV_FORCE_SHOW_NAVBAR. -->
+    <integer name="def_force_disable_navkeys">0</integer>
 </resources>
