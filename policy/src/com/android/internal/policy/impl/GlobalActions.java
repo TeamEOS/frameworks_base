@@ -26,10 +26,12 @@ import android.app.ActivityManagerNative;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.UserInfo;
 import android.database.ContentObserver;
 import android.graphics.drawable.Drawable;
@@ -37,7 +39,9 @@ import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
+import android.os.Messenger;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
@@ -69,6 +73,8 @@ import android.widget.ImageView.ScaleType;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.android.internal.app.ThemeUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -85,6 +91,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
     private final Context mContext;
     private final WindowManagerFuncs mWindowManagerFuncs;
+
+    private Context mUiContext;
     private final AudioManager mAudioManager;
     private final IDreamManager mDreamManager;
 
@@ -121,6 +129,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         filter.addAction(TelephonyIntents.ACTION_EMERGENCY_CALLBACK_MODE_CHANGED);
         context.registerReceiver(mBroadcastReceiver, filter);
 
+        ThemeUtils.registerThemeChangeReceiver(context, mThemeChangeReceiver);
+
         // get notified of phone state changes
         TelephonyManager telephonyManager =
                 (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
@@ -145,7 +155,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     public void showDialog(boolean keyguardShowing, boolean isDeviceProvisioned) {
         mKeyguardShowing = keyguardShowing;
         mDeviceProvisioned = isDeviceProvisioned;
-        if (mDialog != null) {
+        if (mDialog != null && mUiContext == null) {
             mDialog.dismiss();
             mDialog = null;
             // Show delayed, so that the dismiss of the previous dialog completes
@@ -177,6 +187,13 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         mDialog.getWindow().setAttributes(attrs);
         mDialog.show();
         mDialog.getWindow().getDecorView().setSystemUiVisibility(View.STATUS_BAR_DISABLE_EXPAND);
+    }
+
+    private Context getUiContext() {
+        if (mUiContext == null) {
+            mUiContext = ThemeUtils.createUiContext(mContext);
+        }
+        return mUiContext != null ? mUiContext : mContext;
     }
 
     /**
@@ -324,12 +341,12 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
         mAdapter = new MyAdapter();
 
-        AlertParams params = new AlertParams(mContext);
+        AlertParams params = new AlertParams(getUiContext());
         params.mAdapter = mAdapter;
         params.mOnClickListener = this;
         params.mForceInverseBackground = true;
 
-        GlobalActionsDialog dialog = new GlobalActionsDialog(mContext, params);
+        GlobalActionsDialog dialog = new GlobalActionsDialog(getUiContext(), params);
         dialog.setCanceledOnTouchOutside(false); // Handled by the custom class.
 
         dialog.getListView().setItemsCanFocus(true);
@@ -393,6 +410,88 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                     }
                 };
                 items.add(switchToUser);
+            }
+        }
+    }
+
+    /**
+     * functions needed for taking screenhots.  
+     * This leverages the built in ICS screenshot functionality 
+     */
+    final Object mScreenshotLock = new Object();
+    ServiceConnection mScreenshotConnection = null;
+
+    final Runnable mScreenshotTimeout = new Runnable() {
+        @Override public void run() {
+            synchronized (mScreenshotLock) {
+                if (mScreenshotConnection != null) {
+                    mContext.unbindService(mScreenshotConnection);
+                    mScreenshotConnection = null;
+                }
+            }
+        }
+    };
+
+    private void takeScreenshot() {
+        synchronized (mScreenshotLock) {
+            if (mScreenshotConnection != null) {
+                return;
+            }
+            ComponentName cn = new ComponentName("com.android.systemui",
+                    "com.android.systemui.screenshot.TakeScreenshotService");
+            Intent intent = new Intent();
+            intent.setComponent(cn);
+            ServiceConnection conn = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                    synchronized (mScreenshotLock) {
+                        if (mScreenshotConnection != this) {
+                            return;
+                        }
+                        Messenger messenger = new Messenger(service);
+                        Message msg = Message.obtain(null, 1);
+                        final ServiceConnection myConn = this;
+                        Handler h = new Handler(mHandler.getLooper()) {
+                            @Override
+                            public void handleMessage(Message msg) {
+                                synchronized (mScreenshotLock) {
+                                    if (mScreenshotConnection == myConn) {
+                                        mContext.unbindService(mScreenshotConnection);
+                                        mScreenshotConnection = null;
+                                        mHandler.removeCallbacks(mScreenshotTimeout);
+                                    }
+                                }
+                            }
+                        };
+                        msg.replyTo = new Messenger(h);
+                        msg.arg1 = msg.arg2 = 0;
+
+                        /*  remove for the time being
+                        if (mStatusBar != null && mStatusBar.isVisibleLw())
+                            msg.arg1 = 1;
+                        if (mNavigationBar != null && mNavigationBar.isVisibleLw())
+                            msg.arg2 = 1;
+                         */                        
+
+                        /* wait for the dialog box to close */
+                        try {
+                            Thread.sleep(1000); 
+                        } catch (InterruptedException ie) {
+                        }
+                        
+                        /* take the screenshot */
+                        try {
+                            messenger.send(msg);
+                        } catch (RemoteException e) {
+                        }
+                    }
+                }
+                @Override
+                public void onServiceDisconnected(ComponentName name) {}
+            };
+            if (mContext.bindService(intent, conn, Context.BIND_AUTO_CREATE)) {
+                mScreenshotConnection = conn;
+                mHandler.postDelayed(mScreenshotTimeout, 10000);
             }
         }
     }
@@ -503,7 +602,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
         public View getView(int position, View convertView, ViewGroup parent) {
             Action action = getItem(position);
-            return action.create(mContext, convertView, parent, LayoutInflater.from(mContext));
+            final Context context = getUiContext();
+            return action.create(context, convertView, parent, LayoutInflater.from(context));
         }
     }
 
@@ -846,6 +946,12 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                     changeAirplaneModeSystemSetting(true);
                 }
             }
+        }
+    };
+
+    private BroadcastReceiver mThemeChangeReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            mUiContext = null;
         }
     };
 
