@@ -142,6 +142,7 @@ final class LocalDisplayAdapter extends DisplayAdapter {
     private final class LocalDisplayDevice extends DisplayDevice {
         private final int mBuiltInDisplayId;
         private final Light mBacklight;
+        private final Light mButtonLight;
         private final SparseArray<DisplayModeRecord> mSupportedModes = new SparseArray<>();
 
         private DisplayDeviceInfo mInfo;
@@ -156,13 +157,14 @@ final class LocalDisplayAdapter extends DisplayAdapter {
                 SurfaceControl.PhysicalDisplayInfo[] physicalDisplayInfos, int activeDisplayInfo) {
             super(LocalDisplayAdapter.this, displayToken, UNIQUE_ID_PREFIX + builtInDisplayId);
             mBuiltInDisplayId = builtInDisplayId;
+            LightsManager lights = LocalServices.getService(LightsManager.class);
             updatePhysicalDisplayInfoLocked(physicalDisplayInfos, activeDisplayInfo);
             if (mBuiltInDisplayId == SurfaceControl.BUILT_IN_DISPLAY_ID_MAIN) {
-                LightsManager lights = LocalServices.getService(LightsManager.class);
                 mBacklight = lights.getLight(LightsManager.LIGHT_ID_BACKLIGHT);
             } else {
                 mBacklight = null;
             }
+            mButtonLight = lights.getLight(LightsManager.LIGHT_ID_BUTTONS);
         }
 
         public boolean updatePhysicalDisplayInfoLocked(
@@ -392,6 +394,7 @@ final class LocalDisplayAdapter extends DisplayAdapter {
                                 + "id=" + displayId + ", brightness=" + brightness + ")");
                         try {
                             mBacklight.setBrightness(brightness);
+                            mButtonLight.setBrightness(brightness);
                         } finally {
                             Trace.traceEnd(Trace.TRACE_TAG_POWER);
                         }
@@ -428,6 +431,7 @@ final class LocalDisplayAdapter extends DisplayAdapter {
             pw.println("mState=" + Display.stateToString(mState));
             pw.println("mBrightness=" + mBrightness);
             pw.println("mBacklight=" + mBacklight);
+            pw.println("mButtonLight=" + mButtonLight);
         }
 
         private void updateDeviceInfoLocked() {
