@@ -417,9 +417,6 @@ public class WifiStateMachine extends StateMachine {
     public static final int CMD_DISABLE_P2P_RSP           = BASE + 133;
 
     public static final int CMD_BOOT_COMPLETED            = BASE + 134;
-    /* Is IBSS mode supported by the driver? */
-    public static final int CMD_GET_IBSS_SUPPORTED        = BASE + 135;
-
 
     /* change the batch scan settings.
      * arg1 = responsible UID
