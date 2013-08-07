@@ -241,6 +241,7 @@ private:
         bool asSkin;
     };
 
+    void addAssetPathForOverlayRes(const asset_path& ap, const String8& overlayPath);
     void updateResTableFromAssetPath(ResTable* rt, const asset_path& ap, void* cookie) const;
     Asset* openInPathLocked(const char* fileName, AccessMode mode,
         const asset_path& path);
