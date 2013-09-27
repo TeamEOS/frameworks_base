@@ -1004,6 +1004,7 @@
   <java-symbol type="array" name="config_operatorConsideredNonRoaming" />
   <java-symbol type="array" name="config_sameNamedOperatorConsideredRoaming" />
   <java-symbol type="array" name="config_callBarringMMI" />
+  <java-symbol type="array" name="notification_light_package_mapping" />
 
   <java-symbol type="drawable" name="default_wallpaper" />
   <java-symbol type="drawable" name="indicator_input_error" />
@@ -1478,6 +1479,7 @@
   <java-symbol type="bool" name="config_wifi_background_scan_support" />
   <java-symbol type="bool" name="config_wifi_dual_band_support" />
   <java-symbol type="bool" name="config_wimaxEnabled" />
+  <java-symbol type="bool" name="config_multiColorBatteryLed" />
   <java-symbol type="bool" name="show_ongoing_ime_switcher" />
   <!-- Whether to enable auto provisioning the app for new SIM card on boot.-->
   <java-symbol type="bool" name="config_auto_provision_enable" />
@@ -1713,6 +1715,7 @@
   <!-- From Settings -->
   <java-symbol type="array" name="config_mobile_hotspot_provision_app" />
   <java-symbol type="bool" name="config_intrusiveNotificationLed" />
+  <java-symbol type="bool" name="config_intrusiveBatteryLed" />
   <java-symbol type="dimen" name="preference_fragment_padding_bottom" />
   <java-symbol type="dimen" name="preference_fragment_padding_side" />
   <java-symbol type="drawable" name="expander_ic_maximized" />

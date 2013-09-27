@@ -97,6 +97,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -173,7 +174,7 @@ public class NotificationManagerService extends INotificationManager.Stub
     private boolean mWasScreenOn = true;
     private boolean mInCall = false;
     private boolean mNotificationPulseEnabled;
-    private ArrayMap<String, NotificationLedValues> mNotificationPulseCustomLedValues;
+    private HashMap<String, NotificationLedValues> mNotificationPulseCustomLedValues;
     private Map<String, String> mPackageNameMappings;
 
     // used as a mutex for access to all active notifications & listeners
@@ -1306,21 +1307,26 @@ public class NotificationManagerService extends INotificationManager.Stub
 
         public void update(Uri uri) {
             ContentResolver resolver = mContext.getContentResolver();
+
             // LED enabled
             mNotificationPulseEnabled = Settings.System.getIntForUser(resolver,
                     Settings.System.NOTIFICATION_LIGHT_PULSE, 0, UserHandle.USER_CURRENT) != 0;
+
             // LED default color
             mDefaultNotificationColor = Settings.System.getIntForUser(resolver,
                     Settings.System.NOTIFICATION_LIGHT_PULSE_DEFAULT_COLOR, mDefaultNotificationColor,
                     UserHandle.USER_CURRENT);
+
             // LED default on MS
             mDefaultNotificationLedOn = Settings.System.getIntForUser(resolver,
                     Settings.System.NOTIFICATION_LIGHT_PULSE_DEFAULT_LED_ON, mDefaultNotificationLedOn,
                     UserHandle.USER_CURRENT);
+
             // LED default off MS
             mDefaultNotificationLedOff = Settings.System.getIntForUser(resolver,
                     Settings.System.NOTIFICATION_LIGHT_PULSE_DEFAULT_LED_OFF, mDefaultNotificationLedOff,
                     UserHandle.USER_CURRENT);
+
             // LED custom notification colors
             mNotificationPulseCustomLedValues.clear();
             if (Settings.System.getIntForUser(resolver,
@@ -1329,6 +1335,7 @@ public class NotificationManagerService extends INotificationManager.Stub
                 parseNotificationPulseCustomValuesString(Settings.System.getStringForUser(resolver,
                         Settings.System.NOTIFICATION_LIGHT_PULSE_CUSTOM_VALUES, UserHandle.USER_CURRENT));
             }
+
             if (uri == null || ENABLED_NOTIFICATION_LISTENERS_URI.equals(uri)) {
                 rebindListenerServices();
             }
@@ -1389,9 +1396,9 @@ public class NotificationManagerService extends INotificationManager.Stub
                 VIBRATE_PATTERN_MAXLEN,
                 DEFAULT_VIBRATE_PATTERN);
 
-        mNotificationPulseCustomLedValues = new ArrayMap<String, NotificationLedValues>();
+        mNotificationPulseCustomLedValues = new HashMap<String, NotificationLedValues>();
 
-        mPackageNameMappings = new ArrayMap<String, String>();
+        mPackageNameMappings = new HashMap<String, String>();
         for (String mapping : resources.getStringArray(
                  com.android.internal.R.array.notification_light_package_mapping)) {
             String[] map = mapping.split("\\|");
@@ -2327,11 +2334,10 @@ public class NotificationManagerService extends INotificationManager.Stub
                 ledOnMS = mDefaultNotificationLedOn;
                 ledOffMS = mDefaultNotificationLedOff;
             }
-            if (mNotificationPulseEnabled) {
-                // pulse repeatedly
-                mNotificationLight.setFlashing(ledARGB, LightsService.LIGHT_FLASH_TIMED,
-                        ledOnMS, ledOffMS);
-            }
+
+            // pulse repeatedly
+            mNotificationLight.setFlashing(ledARGB, LightsService.LIGHT_FLASH_TIMED,
+                    ledOnMS, ledOffMS);
         }
     }
 
