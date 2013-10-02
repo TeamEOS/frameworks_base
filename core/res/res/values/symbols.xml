@@ -1857,4 +1857,7 @@
 
   <!-- WiFi turn off notification -->
   <java-symbol type="string" name="notify_turn_wifi_off_title" />
+
+  <java-symbol type="bool" name="use_motion_accel" />
+
 </resources>

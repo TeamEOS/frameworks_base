@@ -1477,4 +1477,8 @@
     <integer name="config_overrideHasPermanentMenuKey">0</integer>
 
     <bool name="flip_controller_fallback_keys">false</bool>
+
+    <!-- bool value to for enabling motion accelerometer -->
+    <bool name="use_motion_accel">false</bool>
+
 </resources>
