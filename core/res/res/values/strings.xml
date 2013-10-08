@@ -4547,4 +4547,6 @@
     <string name="global_action_reboot">Reboot</string>
     <!-- label for item that screenshots in phone options dialog -->
     <string name="global_action_screenshot">Screenshot</string>
+    <!-- Stylus gestures support -->
+    <string name="stylus_app_not_installed">%s is not installed</string>
 </resources>
