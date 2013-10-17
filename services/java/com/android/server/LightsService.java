@@ -111,7 +111,7 @@ public class LightsService {
 
         private void stopFlashing() {
             synchronized (this) {
-                setLightLocked(mColor, LIGHT_FLASH_NONE, 0, 0, BRIGHTNESS_MODE_USER);
+                setLightLocked(0, LIGHT_FLASH_NONE, 0, 0, BRIGHTNESS_MODE_USER);
             }
         }
 
