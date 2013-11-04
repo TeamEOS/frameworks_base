@@ -28,4 +28,12 @@
   <java-symbol type="dimen" name="edge_gesture_trigger_distance" />
   <java-symbol type="dimen" name="edge_gesture_perpendicular_distance" />
   <java-symbol type="dimen" name="edge_gesture_trigger_thickness" />
+
+  <!-- Global actions / reboot -->
+  <java-symbol type="string" name="reboot_confirm" />
+  <java-symbol type="string" name="reboot_title" />
+  <java-symbol type="drawable" name="ic_lock_power_reboot" />
+  <java-symbol type="array" name="shutdown_reboot_options" />
+  <java-symbol type="array" name="shutdown_reboot_actions" />
+  <java-symbol type="string" name="global_action_reboot" />
 </resources>
