@@ -1773,4 +1773,7 @@
   <java-symbol type="array" name="shutdown_reboot_actions" />
   <java-symbol type="drawable" name="ic_lock_screenshot" />
   <java-symbol type="drawable" name="ic_lock_reboot" />
+
+  <!-- Wifi -->
+  <java-symbol type="bool" name="config_wifiApStartInterface" />
 </resources>
