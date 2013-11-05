@@ -33,5 +33,5 @@
     <java-symbol type="string" name="lock_to_app_hardkey_toast" />
 
     <!-- Screen Record -->
-    <!-- <java-symbol type="bool" name="config_enableScreenrecordChord" /> -->
+    <java-symbol type="bool" name="config_enableScreenrecordChord" />
 </resources>

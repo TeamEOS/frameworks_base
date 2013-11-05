@@ -124,7 +124,7 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    <!-- blur surface -->
+    <!-- blur surface and Screen recording -->
     <uses-permission android:name="android.permission.ACCESS_SURFACE_FLINGER" />
 
     <!-- Action target -->
@@ -161,6 +161,12 @@
 
         <receiver android:name=".screenshot.DeleteScreenshot"
                 android:exported="true" />
+
+        <!-- started from PhoneWindowManager
+             TODO: Should have an android:permission attribute -->
+        <service android:name=".omni.screenrecord.TakeScreenrecordService"
+            android:process=":screenrecord"
+            android:exported="false" />
 
         <service android:name=".LoadAverageService"
                 android:exported="true" />

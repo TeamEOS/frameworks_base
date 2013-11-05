@@ -85,7 +85,7 @@ public abstract class ActionHandler {
     public static final String SYSTEMUI_TASK_SETTINGS_PANEL = "task_settings_panel";
     public static final String SYSTEMUI_TASK_NOTIFICATION_PANEL = "task_notification_panel";
     public static final String SYSTEMUI_TASK_SCREENSHOT = "task_screenshot";
-    //public static final String SYSTEMUI_TASK_SCREENRECORD = "task_screenrecord";
+    public static final String SYSTEMUI_TASK_SCREENRECORD = "task_screenrecord";
     // public static final String SYSTEMUI_TASK_AUDIORECORD =
     // "task_audiorecord";
     public static final String SYSTEMUI_TASK_EXPANDED_DESKTOP = "task_expanded_desktop";
@@ -117,7 +117,7 @@ public abstract class ActionHandler {
         SettingsPanel(SYSTEMUI_TASK_SETTINGS_PANEL, "Settings Panel", SYSTEMUI, "ic_notify_quicksettings_normal"),
         NotificationPanel(SYSTEMUI_TASK_NOTIFICATION_PANEL, "Notification Panel", SYSTEMUI, "ic_sysbar_notifications"),
         Screenshot(SYSTEMUI_TASK_SCREENSHOT, "Take screenshot", SYSTEMUI, "ic_sysbar_screenshot"),
-        //Screenrecord(SYSTEMUI_TASK_SCREENRECORD, "Toggle screenrecord", SYSTEMUI, "ic_camera_alt_24dp"),
+        Screenrecord(SYSTEMUI_TASK_SCREENRECORD, "Toggle screenrecord", SYSTEMUI, "ic_camera_alt_24dp"),
         ExpandedDesktop(SYSTEMUI_TASK_EXPANDED_DESKTOP, "Expanded desktop", SYSTEMUI, "ic_qc_expanded_desktop"),
         ScreenOff(SYSTEMUI_TASK_SCREENOFF, "Screen off", SYSTEMUI, "ic_qs_sleep"),
         KillApp(SYSTEMUI_TASK_KILL_PROCESS, "Close app", SYSTEMUI, "ic_sysbar_killtask"),
@@ -182,7 +182,8 @@ public abstract class ActionHandler {
             SystemAction.Menu, SystemAction.Back,
             SystemAction.VoiceSearch, SystemAction.Home,
             SystemAction.Silent, SystemAction.Vibrator,
-            SystemAction.SilentVib, SystemAction.ExpandedDesktop
+            SystemAction.SilentVib, SystemAction.ExpandedDesktop,
+            SystemAction.Screenrecord
     };
 
     public static ArrayList<ActionBundle> getSystemActions(Context context) {
@@ -208,6 +209,10 @@ public abstract class ActionHandler {
             } else if (TextUtils.equals(action, SYSTEMUI_TASK_CAMERA)
                     && context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
                 continue;
+            } else if (TextUtils.equals(action, SYSTEMUI_TASK_SCREENRECORD)) {
+                if (!context.getResources().getBoolean(com.android.internal.R.bool.config_enableScreenrecordChord)) {
+                    continue;
+                }
             }
             bundle.add(b);
         }
@@ -518,8 +523,8 @@ public abstract class ActionHandler {
             killProcess();
         } else if (action.equals(SYSTEMUI_TASK_SCREENSHOT)) {
             takeScreenshot();
-        //} else if (action.equals(SYSTEMUI_TASK_SCREENRECORD)) {
-        //    takeScreenrecord();
+        } else if (action.equals(SYSTEMUI_TASK_SCREENRECORD)) {
+            takeScreenrecord();
             // } else if (action.equals(SYSTEMUI_TASK_AUDIORECORD)) {
             // takeAudiorecord();
         } else if (action.equals(SYSTEMUI_TASK_EXPANDED_DESKTOP)) {
