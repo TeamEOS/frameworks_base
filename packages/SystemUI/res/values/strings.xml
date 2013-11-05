@@ -582,4 +582,19 @@
     <string name="glowColor_uri_menu">systemui_softkey_glowColor_menu</string>
     <string name="glowColor_uri_extra1">systemui_softkey_glowColor_extra1</string>
     <string name="glowColor_uri_extra2">systemui_softkey_glowColor_extra2</string>
+
+    <!-- Screenrecord Notification Ticker -->
+    <string name="screenrecord_notif_ticker">Screen is being recorded</string>
+
+    <!-- Screenrecord notification title -->
+    <string name="screenrecord_notif_title">Recording screen</string>
+
+    <!-- Screenrecord notification action: Stop -->
+    <string name="screenrecord_notif_stop">Stop</string>
+
+    <!-- Screenrecord notification action: Toggle pointer -->
+    <string name="screenrecord_notif_pointer">Toggle pointer</string>
+
+    <!-- Screen record notification error title -->
+    <string name="screenrecord_notif_error">Unable to record screen</string>
 </resources>
