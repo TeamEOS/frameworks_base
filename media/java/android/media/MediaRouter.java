@@ -1345,6 +1345,10 @@ public class MediaRouter {
                 }
             }
         }
+
+        // Remember the current active wifi display address so that we can infer disconnections.
+        // TODO: This hack will go away once all of this is moved into the media router service.
+        sStatic.mPreviousActiveWifiDisplayAddress = activeDisplayAddress;
     }
 
     private static boolean shouldShowWifiDisplay(WifiDisplay d, WifiDisplay activeDisplay) {
