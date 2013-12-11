@@ -2277,6 +2277,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             loadIntegerSetting(stmt, Settings.Global.LOW_BATTERY_SOUND_TIMEOUT,
                     R.integer.def_low_battery_sound_timeout);
 
+			// Set DUN_required to "0" for hammerhead
+			boolean isHH = "hammerhead".equalsIgnoreCase(SystemProperties.get(
+					"ro.product.device", "none"))
+					|| "hammerhead".equalsIgnoreCase((SystemProperties.get(
+							"ro.build.product", "none")));
+			if (isHH) loadSetting(stmt, Settings.Global.TETHER_DUN_REQUIRED, 0);
+
+            loadIntegerSetting(stmt, Settings.Global.WIFI_SCAN_ALWAYS_AVAILABLE,
+                    R.integer.def_wifi_scan_always_available);
+
             // --- New global settings start here
         } finally {
             if (stmt != null) stmt.close();
