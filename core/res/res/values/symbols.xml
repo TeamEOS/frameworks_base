@@ -1837,4 +1837,7 @@
   <java-symbol type="bool" name="config_offscreenGestureSupport" />
 
   <java-symbol type="array" name="config_telephony_set_audioparameters" />
+
+  <java-symbol type="bool" name="config_setup_mms_data" />
+
 </resources>
