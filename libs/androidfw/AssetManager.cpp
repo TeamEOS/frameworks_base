@@ -211,6 +211,7 @@ bool AssetManager::addAssetPath(const String8& path, void** cookie, bool asSkin)
     }
 
     // add overlay packages for /system/framework and /system/app
+    // as well as /system/priv-app, which is newly added from kitkat
     if (strncmp(path.string(), "/system/framework/", 18) == 0) {
         // When there is an environment variable for /vendor, this
         // should be changed to something similar to how ANDROID_ROOT
@@ -218,7 +219,8 @@ bool AssetManager::addAssetPath(const String8& path, void** cookie, bool asSkin)
         String8 overlayPath("/vendor/overlay/framework/");
         overlayPath.append(path.getPathLeaf());
         addAssetPathForOverlayRes(ap, overlayPath);
-    } else if (strncmp(path.string(), "/system/app/", 12) == 0) {
+    } else if (strncmp(path.string(), "/system/app/", 12) == 0
+        || strncmp(path.string(), "/system/priv-app/", 17) == 0) {
         // When there is an environment variable for /vendor, this
         // should be changed to something similar to how ANDROID_ROOT
         // and ANDROID_DATA are used in this file.
