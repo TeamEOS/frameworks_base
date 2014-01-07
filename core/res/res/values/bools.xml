@@ -28,4 +28,5 @@
     <bool name="target_honeycomb_needs_options_menu">true</bool>
     <!-- Whether to popup usb computer connection-->
     <bool name="always_popup_usb_computer_connection">false</bool>
+    <bool name="wifi_autocon">true</bool>
 </resources>
