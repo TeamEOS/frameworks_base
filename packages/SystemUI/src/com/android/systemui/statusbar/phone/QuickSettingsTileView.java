@@ -27,7 +27,7 @@ import android.widget.FrameLayout;
 /**
  *
  */
-class QuickSettingsTileView extends FrameLayout {
+public class QuickSettingsTileView extends FrameLayout {
     private static final String TAG = "QuickSettingsTileView";
 
     private int mContentLayoutId;
@@ -50,7 +50,7 @@ class QuickSettingsTileView extends FrameLayout {
         return mColSpan;
     }
 
-    void setContent(int layoutId, LayoutInflater inflater) {
+    public void setContent(int layoutId, LayoutInflater inflater) {
         mContentLayoutId = layoutId;
         inflater.inflate(layoutId, this);
     }

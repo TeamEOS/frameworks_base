@@ -174,6 +174,10 @@ public class NetworkController extends BroadcastReceiver implements DemoMode {
         void onAirplaneModeChanged(boolean enabled);
     }
 
+    public interface SignalStrengthChangedCallback {
+        void onPhoneSignalStrengthChanged(int dbm);
+    }
+
     /**
      * Construct this controller object and register for updates.
      */
@@ -280,6 +284,10 @@ public class NetworkController extends BroadcastReceiver implements DemoMode {
     public void addNetworkSignalChangedCallback(NetworkSignalChangedCallback cb) {
         mSignalsChangedCallbacks.add(cb);
         notifySignalsChangedCallbacks(cb);
+    }
+
+    public void removeNetworkSignalChangedCallback(NetworkSignalChangedCallback cb) {
+        mSignalsChangedCallbacks.remove(cb);
     }
 
     public void refreshSignalCluster(SignalCluster cluster) {
