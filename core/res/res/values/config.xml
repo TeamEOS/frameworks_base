@@ -1370,4 +1370,8 @@
          For example, a device with Home, Back and Menu keys would set this
          config to 7. -->
     <integer name="config_deviceHardwareKeys">15</integer>
+
+    <!-- enable support for off-screen gesture support -->
+    <bool name="config_offscreenGestureSupport">false</bool>
+
 </resources>

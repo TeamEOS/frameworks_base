@@ -1793,4 +1793,7 @@
 
   <!-- LED flashlight -->
   <java-symbol type="bool" name="config_enableTorch" />
+
+  <!-- Off-screen gesture -->
+  <java-symbol type="bool" name="config_offscreenGestureSupport" />
 </resources>
