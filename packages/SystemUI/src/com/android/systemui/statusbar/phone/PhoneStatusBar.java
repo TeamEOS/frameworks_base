@@ -443,6 +443,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         try {
             boolean showNav = mWindowManagerService.hasNavigationBar();
             if (DEBUG) Log.v(TAG, "hasNavigationBar=" + showNav);
+
             if (showNav && !mRecreating) {
                 mNavigationBarView =
                     (NavigationBarView) View.inflate(context, R.layout.navigation_bar, null);
@@ -2635,6 +2636,13 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         mStatusBarContainer.addView(mStatusBarWindow);
 
+<<<<<<< HEAD
+=======
+		if (!mNavigationBarView.isAttachedToWindow()) {
+			addNavigationBar();
+		}
+
+>>>>>>> 3b08232... Revert "Legacy CodefireX SystemUi features squashed"
         updateExpandedViewPos(EXPANDED_LEAVE_ALONE);
         mRecreating = false;
     }
