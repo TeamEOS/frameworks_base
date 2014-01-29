@@ -114,7 +114,8 @@ public class RecentsActivity extends Activity {
     }
 
     public static boolean forceOpaqueBackground(Context context) {
-        return WallpaperManager.getInstance(context).getWallpaperInfo() != null;
+        // return WallpaperManager.getInstance(context).getWallpaperInfo() != null;
+    	return false;
     }
 
     @Override
