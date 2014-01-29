@@ -696,7 +696,19 @@ public class ViewConfiguration {
      * @return true if a permanent menu key is present, false otherwise.
      */
     public boolean hasPermanentMenuKey() {
-        return sHasPermanentMenuKey;
+
+        // Report no menu key if only soft buttons are available
+        if (!sHasPermanentMenuKey) {
+            return false;
+        }
+
+        // Report menu key presence based on hardware key rebinding
+        IWindowManager wm = WindowManagerGlobal.getWindowManagerService();
+        try {
+            return wm.hasMenuKeyEnabled();
+        } catch (RemoteException ex) {
+            return sHasPermanentMenuKey;
+        }
     }
 
     /**

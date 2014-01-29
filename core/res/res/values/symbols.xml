@@ -1762,7 +1762,12 @@
   <java-symbol type="dimen" name="subtitle_outline_width" />
 
   <java-symbol type="bool" name="config_samsung_stk" />
+
+  <!-- Hardware Key ReMapping -->
+  <java-symbol type="integer" name="config_deviceHardwareKeys" />
+
   <!-- Power menu -->
+  <java-symbol type="string" name="global_action_screenshot" />
   <java-symbol type="string" name="global_action_reboot" />
   <java-symbol type="string" name="global_action_screenshot" />
   <java-symbol type="string" name="global_actions" />
@@ -1796,4 +1801,5 @@
 
   <!-- Off-screen gesture -->
   <java-symbol type="bool" name="config_offscreenGestureSupport" />
+
 </resources>
