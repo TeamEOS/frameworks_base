@@ -17,6 +17,8 @@
 
 package com.android.server.power;
 
+import java.io.IOException;
+
 import android.app.ActivityManagerNative;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -51,6 +53,8 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.view.KeyEvent;
 
+import org.codefirex.utils.CFXConstants;
+
 public final class ShutdownThread extends Thread {
     // constants
     private static final String TAG = "ShutdownThread";
@@ -70,6 +74,7 @@ public final class ShutdownThread extends Thread {
     private static boolean mReboot;
     private static boolean mRebootSafeMode;
     private static String mRebootReason;
+    private static boolean mRebootHot = false;
 
     // Provides shutdown assurance in case the system_server is killed
     public static final String SHUTDOWN_ACTION_PROPERTY = "sys.shutdown.requested";
@@ -176,6 +181,9 @@ public final class ShutdownThread extends Thread {
                             .setPositiveButton(com.android.internal.R.string.yes, new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int which) {
                                     mReboot = true;
+                                    if (mRebootReason != null && mRebootReason.equals("hot")) {
+                                        mRebootHot = true;
+                                    }
                                     beginShutdownSequence(context);
                                 }
                             })
@@ -289,8 +297,13 @@ public final class ShutdownThread extends Thread {
         // shutting down.
         ProgressDialog pd = new ProgressDialog(context);
         if (mReboot) {
-            pd.setTitle(context.getText(com.android.internal.R.string.reboot_system));
-            pd.setMessage(context.getText(com.android.internal.R.string.reboot_progress));
+            if (mRebootHot) {
+                pd.setTitle(context.getText(com.android.internal.R.string.hot_reboot_title));
+                pd.setMessage(context.getText(com.android.internal.R.string.hot_reboot_progress));
+            } else {
+                pd.setTitle(context.getText(com.android.internal.R.string.reboot_system));
+                pd.setMessage(context.getText(com.android.internal.R.string.reboot_progress));
+            }
         } else {
             pd.setTitle(context.getText(com.android.internal.R.string.power_off));
             pd.setMessage(context.getText(com.android.internal.R.string.shutdown_progress));
@@ -355,44 +368,46 @@ public final class ShutdownThread extends Thread {
             }
         };
 
-        /*
-         * Write a system property in case the system_server reboots before we
-         * get to the actual hardware restart. If that happens, we'll retry at
-         * the beginning of the SystemServer startup.
-         */
-        {
-            String reason = (mReboot ? "1" : "0") + (mRebootReason != null ? mRebootReason : "");
-            SystemProperties.set(SHUTDOWN_ACTION_PROPERTY, reason);
-        }
+        if (!mRebootHot) {
+            /*
+             * Write a system property in case the system_server reboots before we
+             * get to the actual hardware restart. If that happens, we'll retry at
+             * the beginning of the SystemServer startup.
+             */
+            {
+                String reason = (mReboot ? "1" : "0") + (mRebootReason != null ? mRebootReason : "");
+                SystemProperties.set(SHUTDOWN_ACTION_PROPERTY, reason);
+            }
 
-        /*
-         * If we are rebooting into safe mode, write a system property
-         * indicating so.
-         */
-        if (mRebootSafeMode) {
-            SystemProperties.set(REBOOT_SAFEMODE_PROPERTY, "1");
-        }
+            /*
+             * If we are rebooting into safe mode, write a system property
+             * indicating so.
+             */
+            if (mRebootSafeMode) {
+                SystemProperties.set(REBOOT_SAFEMODE_PROPERTY, "1");
+            }
 
-        Log.i(TAG, "Sending shutdown broadcast...");
+            Log.i(TAG, "Sending shutdown broadcast...");
 
-        // First send the high-level shut down broadcast.
-        mActionDone = false;
-        Intent intent = new Intent(Intent.ACTION_SHUTDOWN);
-        intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
-        mContext.sendOrderedBroadcastAsUser(intent,
-                UserHandle.ALL, null, br, mHandler, 0, null, null);
-        
-        final long endTime = SystemClock.elapsedRealtime() + MAX_BROADCAST_TIME;
-        synchronized (mActionDoneSync) {
-            while (!mActionDone) {
-                long delay = endTime - SystemClock.elapsedRealtime();
-                if (delay <= 0) {
-                    Log.w(TAG, "Shutdown broadcast timed out");
-                    break;
-                }
-                try {
-                    mActionDoneSync.wait(delay);
-                } catch (InterruptedException e) {
+            // First send the high-level shut down broadcast.
+            mActionDone = false;
+            Intent intent = new Intent(Intent.ACTION_SHUTDOWN);
+            intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+            mContext.sendOrderedBroadcastAsUser(intent,
+                    UserHandle.ALL, null, br, mHandler, 0, null, null);
+
+            final long endTime = SystemClock.elapsedRealtime() + MAX_BROADCAST_TIME;
+            synchronized (mActionDoneSync) {
+                while (!mActionDone) {
+                    long delay = endTime - SystemClock.elapsedRealtime();
+                    if (delay <= 0) {
+                        Log.w(TAG, "Shutdown broadcast timed out");
+                        break;
+                    }
+                    try {
+                        mActionDoneSync.wait(delay);
+                    } catch (InterruptedException e) {
+                    }
                 }
             }
         }
@@ -571,6 +586,14 @@ public final class ShutdownThread extends Thread {
      */
     public static void rebootOrShutdown(boolean reboot, String reason) {
         if (reboot) {
+            if (mRebootHot) {
+				try {
+					Runtime.getRuntime().exec("pkill -9 system_server");
+				} catch (IOException e) {
+					// it's likely if we throw an exception, system_server is going down anyways
+					Log.w(TAG,"Failed to properly hot reboot");
+				}
+            }
             Log.i(TAG, "Rebooting, reason: " + reason);
             PowerManagerService.lowLevelReboot(reason);
             Log.e(TAG, "Reboot failed, will attempt shutdown instead");
