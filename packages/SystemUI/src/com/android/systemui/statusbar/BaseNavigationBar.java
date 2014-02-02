@@ -33,6 +33,7 @@ import com.android.systemui.statusbar.policy.KeyButtonView;
 
 import android.app.StatusBarManager;
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Handler;
@@ -120,6 +121,7 @@ public abstract class BaseNavigationBar extends LinearLayout {
     public void onHandlePackageChanged(){}
     public void setKeyguardShowing(boolean showing){}
     public void setLeftInLandscape(boolean leftInLandscape) {}
+    public void updateResources(Resources res) {}
 
     /*
      * compatibility shim for handleLongPressBackRecents accessibility method
