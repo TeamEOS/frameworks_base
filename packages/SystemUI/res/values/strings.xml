@@ -552,4 +552,7 @@
 
     <!-- Camera tile toasts -->
     <string name="quick_settings_camera_error_connect">Can\'t connect to camera</string>
+
+    <!-- Hide notification icon -->
+    <string name="status_bar_notification_hide_icon_packages">Hide app\'s icons</string>
 </resources>
