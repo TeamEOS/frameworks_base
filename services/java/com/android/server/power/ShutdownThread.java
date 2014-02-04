@@ -108,6 +108,7 @@ public final class ShutdownThread extends Thread {
      */
     public static void shutdown(final Context context, boolean confirm) {
         mReboot = false;
+        mRebootHot = false;
         mRebootSafeMode = false;
         shutdownInner(context, confirm);
     }
@@ -163,7 +164,7 @@ public final class ShutdownThread extends Thread {
                 KeyguardManager km = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
                 boolean locked = km.inKeyguardRestrictedInputMode() && km.isKeyguardSecure();
 
-                if (advancedReboot && !locked) {
+                if (advancedReboot && !locked && !mRebootHot) {
                     // Include options in power menu for rebooting into recovery or bootloader
                     sConfirmDialog = new AlertDialog.Builder(context)
                             .setTitle(titleResourceId)
@@ -190,6 +191,7 @@ public final class ShutdownThread extends Thread {
                             .setNegativeButton(com.android.internal.R.string.no, new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int which) {
                                     mReboot = false;
+                                    mRebootHot = false;
                                     dialog.cancel();
                                 }
                             })
@@ -198,6 +200,7 @@ public final class ShutdownThread extends Thread {
                                 public boolean onKey (DialogInterface dialog, int keyCode, KeyEvent event) {
                                     if (keyCode == KeyEvent.KEYCODE_BACK) {
                                         mReboot = false;
+                                        mRebootHot = false;
                                         dialog.cancel();
                                     }
                                     return true;
@@ -265,8 +268,12 @@ public final class ShutdownThread extends Thread {
      */
     public static void reboot(final Context context, String reason, boolean confirm) {
         mReboot = true;
+        mRebootHot = false;
         mRebootSafeMode = false;
         mRebootReason = reason;
+        if (mRebootReason != null && "hot".equals(mRebootReason)) {
+        	mRebootHot = true;
+        }
         shutdownInner(context, confirm);
     }
 
@@ -586,14 +593,14 @@ public final class ShutdownThread extends Thread {
      */
     public static void rebootOrShutdown(boolean reboot, String reason) {
         if (reboot) {
-            if (mRebootHot) {
-				try {
-					Runtime.getRuntime().exec("pkill -9 system_server");
-				} catch (IOException e) {
-					// it's likely if we throw an exception, system_server is going down anyways
-					Log.w(TAG,"Failed to properly hot reboot");
-				}
-            }
+			if (mRebootHot && sInstance.mContext != null) {
+				Log.i(TAG, "Hot Rebooting");
+				Intent intent = new Intent()
+						.setAction(CFXConstants.ACTION_CFX_HOT_REBOOT);
+				sInstance.mContext.sendBroadcastAsUser(intent, new UserHandle(
+						UserHandle.USER_ALL));
+				return;
+			}
             Log.i(TAG, "Rebooting, reason: " + reason);
             PowerManagerService.lowLevelReboot(reason);
             Log.e(TAG, "Reboot failed, will attempt shutdown instead");

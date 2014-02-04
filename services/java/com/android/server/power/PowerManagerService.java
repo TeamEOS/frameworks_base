@@ -1997,6 +1997,10 @@ public final class PowerManagerService extends IPowerManager.Stub
     public void reboot(boolean confirm, String reason, boolean wait) {
         mContext.enforceCallingOrSelfPermission(android.Manifest.permission.REBOOT, null);
 
+        if (reason != null && "hot".equals(reason)) {
+        	confirm = true;
+        	wait = true;
+        }
         final long ident = Binder.clearCallingIdentity();
         try {
             shutdownOrRebootInternal(false, confirm, reason, wait);
