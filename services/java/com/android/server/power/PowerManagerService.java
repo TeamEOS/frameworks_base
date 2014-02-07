@@ -1998,7 +1998,7 @@ public final class PowerManagerService extends IPowerManager.Stub
         mContext.enforceCallingOrSelfPermission(android.Manifest.permission.REBOOT, null);
 
         if (reason != null && "hot".equals(reason)) {
-        	confirm = true;
+        	confirm = false;
         	wait = true;
         }
         final long ident = Binder.clearCallingIdentity();
