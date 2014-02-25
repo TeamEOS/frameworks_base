@@ -23,6 +23,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
 import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
@@ -45,12 +46,15 @@ import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
+import org.codefirex.utils.CFXConstants;
+
 public class PowerUI extends SystemUI {
     static final String TAG = "PowerUI";
 
     static final boolean DEBUG = false;
 
     Handler mHandler = new Handler();
+	IntentFilter mFilter = new IntentFilter();
 
     int mBatteryLevel = 100;
     int mBatteryStatus = BatteryManager.BATTERY_STATUS_UNKNOWN;
@@ -78,12 +82,13 @@ public class PowerUI extends SystemUI {
         final PowerManager pm = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
         mScreenOffTime = pm.isScreenOn() ? -1 : SystemClock.elapsedRealtime();
 
-        // Register for Intent broadcasts for...
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_BATTERY_CHANGED);
-        filter.addAction(Intent.ACTION_SCREEN_OFF);
-        filter.addAction(Intent.ACTION_SCREEN_ON);
-        mContext.registerReceiver(mIntentReceiver, filter, null, mHandler);
+		mFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
+		mFilter.addAction(Intent.ACTION_SCREEN_OFF);
+		mFilter.addAction(Intent.ACTION_SCREEN_ON);
+
+		mContext.registerReceiver(isOverrideEnabled() ? mOverrideReceiver
+				: mIntentReceiver, mFilter, null, mHandler);
+		new OverrideObserver(mHandler);
     }
 
     /**
@@ -171,6 +176,27 @@ public class PowerUI extends SystemUI {
                 } else if (mBatteryLevelTextView != null) {
                     showLowBatteryWarning();
                 }
+            } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
+                mScreenOffTime = SystemClock.elapsedRealtime();
+            } else if (Intent.ACTION_SCREEN_ON.equals(action)) {
+                mScreenOffTime = -1;
+            } else {
+                Slog.w(TAG, "unknown intent: " + intent);
+            }
+        }
+    };
+
+    // when override is enabled, we still want to receive values, just not act on them
+    private BroadcastReceiver mOverrideReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action.equals(Intent.ACTION_BATTERY_CHANGED)) {
+                mBatteryLevel = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 100);
+                mBatteryStatus = intent.getIntExtra(BatteryManager.EXTRA_STATUS,
+                        BatteryManager.BATTERY_STATUS_UNKNOWN);
+                mPlugType = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 1);
+                mInvalidCharger = intent.getIntExtra(BatteryManager.EXTRA_INVALID_CHARGER, 0);
             } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
                 mScreenOffTime = SystemClock.elapsedRealtime();
             } else if (Intent.ACTION_SCREEN_ON.equals(action)) {
@@ -339,5 +365,29 @@ public class PowerUI extends SystemUI {
         pw.print("bucket: ");
         pw.println(Integer.toString(findBatteryLevelBucket(mBatteryLevel)));
     }
+
+	private class OverrideObserver extends ContentObserver {
+
+		public OverrideObserver(Handler handler) {
+			super(handler);
+			mContext.getContentResolver()
+					.registerContentObserver(
+							Settings.System
+									.getUriFor(CFXConstants.SYSTEMUI_DISABLE_BATTERY_WARNING),
+							false, this, UserHandle.USER_ALL);
+		}
+
+		@Override
+		public void onChange(boolean selfChange) {
+			boolean override = isOverrideEnabled();
+			mContext.unregisterReceiver(override ? mIntentReceiver : mOverrideReceiver);
+			mContext.registerReceiver(override ? mOverrideReceiver : mIntentReceiver, mFilter, null, mHandler);
+		}
+	}
+
+	private boolean isOverrideEnabled() {
+		return Settings.System.getBoolean(mContext.getContentResolver(),
+				CFXConstants.SYSTEMUI_DISABLE_BATTERY_WARNING, false);
+	}
 }
 
