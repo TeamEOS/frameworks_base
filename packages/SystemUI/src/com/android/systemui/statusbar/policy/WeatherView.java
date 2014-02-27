@@ -1,37 +1,29 @@
 package com.android.systemui.statusbar.policy;
 
 import org.codefirex.utils.CFXConstants;
+import org.codefirex.utils.WeatherAdapter;
+import org.codefirex.utils.WeatherAdapter.WeatherListener;
+import org.codefirex.utils.WeatherInfo;
 
-import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.database.ContentObserver;
 import android.os.Handler;
-import android.os.Bundle;
 import android.provider.Settings;
 import android.util.AttributeSet;
 import android.widget.TextView;
-import com.android.systemui.R;
 
-public class WeatherView extends TextView {
+public class WeatherView extends TextView implements WeatherListener {
 	private static final String TAG = "WeatherView";
 
-	private static final String WEATHER_ACTION = "cfx_weather_update";
-	private static final String WEATHER_EXTRA = "weather";
-	private static final String WEATHER_SERVICE_STATE = "cfx_weather_service_state";
-
-	private static final String QUERY_ACTION = "cfx_query_weather_service";
-	private static final String QUERY_ENABLED = "cfx_query_weather_service_enabled";
-
-	String mWeatherString = "";
 	boolean mServiceEnabled = false;
 	boolean mViewEnabled = false;
 
 	Context mContext;
 	Handler mHandler;
 	SettingsObserver mObserver;
+	WeatherAdapter mAdapter;
+	WeatherInfo mInfo;
 
 	public WeatherView(Context context) {
 		this(context, null);
@@ -47,11 +39,8 @@ public class WeatherView extends TextView {
 		mHandler = new Handler();
 		mObserver = new SettingsObserver(mHandler);
 		mObserver.observe();
-		IntentFilter filter = new IntentFilter();
-		filter.addAction(WEATHER_ACTION);
-		context.registerReceiver(mWeatherReceiver, filter);
-		context.sendBroadcast(new Intent().setAction(QUERY_ACTION).putExtra(
-				QUERY_ENABLED, "enabled"));
+		mAdapter = new WeatherAdapter(mContext, this);
+		mAdapter.startUpdates();
 	}
 
 	class SettingsObserver extends ContentObserver {
@@ -61,8 +50,9 @@ public class WeatherView extends TextView {
 
 		void observe() {
 			ContentResolver resolver = mContext.getContentResolver();
-			resolver.registerContentObserver(Settings.System.getUriFor(
-					CFXConstants.SYSTEMUI_WEATHER_HEADER_VIEW), false, this);
+			resolver.registerContentObserver(Settings.System
+					.getUriFor(CFXConstants.SYSTEMUI_WEATHER_HEADER_VIEW),
+					false, this);
 			onChange(true);
 		}
 
@@ -75,32 +65,42 @@ public class WeatherView extends TextView {
 		}
 	}
 
-	BroadcastReceiver mWeatherReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			String action = intent.getAction();
-			if (WEATHER_ACTION.equals(action)) {
-				if (intent.getBundleExtra(WEATHER_EXTRA) != null) {
-					handleIncomingBundle(intent.getBundleExtra(WEATHER_EXTRA));
-				} else if (intent.getStringExtra(WEATHER_SERVICE_STATE) != null) {
-					mServiceEnabled = Boolean.valueOf(intent
-							.getStringExtra(WEATHER_SERVICE_STATE));
-					mObserver.onChange(true);
-				}
-			}
-		}
-	};
-
 	private void updateVisibility() {
 		setVisibility((mServiceEnabled && mViewEnabled) ? VISIBLE : INVISIBLE);
 	}
 
-	private void handleIncomingBundle(Bundle b) {
-		String temp = b.getString("temp");
-		String weather = b.getString("weather");
+	private void updateWeather() {
+		String weather = mInfo.getCurrentText();
+		String temp = WeatherInfo.addSymbol(mInfo.getCurrentTemp());
 		StringBuilder bb = new StringBuilder().append(weather).append(" ")
 				.append(temp);
-		mWeatherString = bb.toString();
-		setText(mWeatherString);
+		setText(bb.toString());
+	}
+
+	@Override
+	public void onServiceStateChanged(int state) {
+		switch (state) {
+		case WeatherAdapter.STATE_ON:
+			mServiceEnabled = true;
+			mObserver.onChange(true);
+			break;
+		case WeatherAdapter.STATE_OFF:
+			mServiceEnabled = false;
+			mObserver.onChange(true);
+			break;
+		case WeatherAdapter.STATE_REFRESHING:
+			break;
+		case WeatherAdapter.STATE_SCALE:
+			mInfo = mAdapter.getLastKnownWeather();
+			updateWeather();
+			break;
+		case WeatherAdapter.STATE_UPDATED:
+			mInfo = mAdapter.getLatestWeather();
+			updateWeather();
+			break;
+		default:
+			break;
+		}
+
 	}
 }
