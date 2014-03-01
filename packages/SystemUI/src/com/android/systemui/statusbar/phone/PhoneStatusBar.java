@@ -91,6 +91,7 @@ import com.android.systemui.DemoMode;
 import com.android.systemui.BatteryMeterView;
 import com.android.systemui.EventLogTags;
 import com.android.systemui.R;
+import com.android.systemui.BatteryMeterView;
 import com.android.systemui.statusbar.BaseStatusBar;
 import com.android.systemui.statusbar.CommandQueue;
 import com.android.systemui.statusbar.GestureRecorder;
@@ -2607,6 +2608,10 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
             case 5:
                 mode = BatteryMeterMode.BATTERY_METER_ICON_LANDSCAPE;
+                break;
+
+            case 6:
+                mode = BatteryMeterMode.BATTERY_METER_TEXT;
                 break;
 
             default:
