@@ -53,7 +53,7 @@ public class WeatherInfo implements Parcelable {
 	public String mLocationRegion; // region may be null
 	public String mLocationCountry;
 
-	public int mDegreeScale = DEGREE_F;
+	public int mDegreeScale;
 	public String mWindChillF;
 	public String mWindChillC;
 	public String mWindDirection;
@@ -659,6 +659,7 @@ public class WeatherInfo implements Parcelable {
         info.mLocationCountry = b.getString("country", "unknown");
         info.mLastBuildDate = b.getString("date", "unknown");
         info.mCurrentText = b.getString("weather", "unknown");
+        info.setCurrentScale(b.getInt("temp_scale", DEGREE_F));
         info.mCurrentTempF = b.getString("tempF", "0");
         info.mCurrentTempC = b.getString("tempC", "0");
         info.mWindChillF = b.getString("chillF",  "0");

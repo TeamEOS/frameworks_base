@@ -32,6 +32,7 @@ public class WeatherAdapter extends BroadcastReceiver {
 	public WeatherAdapter(Context context, WeatherListener listener) {
 		mContext = context;
 		mListener = listener;
+		mWeatherInfo = WeatherInfo.getInfoFromProvider(mContext);
 	}	
 
 	@Override
@@ -70,6 +71,8 @@ public class WeatherAdapter extends BroadcastReceiver {
 		return mServiceState;
 	}
 
+	// get WeatheInfo last state as held by adapter
+	// used when temp scale type changes
 	public WeatherInfo getLastKnownWeather() {
 		return mWeatherInfo;
 	}
