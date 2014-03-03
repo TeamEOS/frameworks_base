@@ -22,6 +22,14 @@
         <attr name="keyRepeat" format="boolean" />
         <!-- drawable to use for a swelling, glowing background on press -->
         <attr name="glowBackground" format="reference" />
+        <!-- observed uri for a long press actions -->
+        <attr name="featureUrl" format="reference" />
+        <!-- observed uri for a softkey color -->
+        <attr name="keyColorUrl" format="reference" />
+        <!-- observed uri for a softkey glow color -->
+        <attr name="keyGlowColorUrl" format="reference" />
+        <!-- reference to assigning feature attributes -->
+        <attr name="position" format="integer" />
     </declare-styleable>
     <declare-styleable name="ToggleSlider">
         <attr name="text" format="string" />

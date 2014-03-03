@@ -61,6 +61,10 @@
                 android:layout_weight="0"
                 systemui:glowBackground="@drawable/ic_sysbar_highlight"
                 android:contentDescription="@string/accessibility_back"
+                systemui:featureUrl="@string/feature_uri_back"
+                systemui:keyColorUrl="@string/keyColor_uri_back"
+                systemui:keyGlowColorUrl="@string/glowColor_uri_back"
+                systemui:position="1"
                 />
             <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/home"
                 android:layout_width="128dp" android:paddingStart="25dp" android:paddingEnd="25dp"
@@ -71,6 +75,10 @@
                 android:layout_weight="0"
                 systemui:glowBackground="@drawable/ic_sysbar_highlight"
                 android:contentDescription="@string/accessibility_home"
+                systemui:featureUrl="@string/feature_uri_home"
+                systemui:keyColorUrl="@string/keyColor_uri_home"
+                systemui:keyGlowColorUrl="@string/glowColor_uri_home"
+                systemui:position="2"
                 />
             <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/recent_apps"
                 android:layout_width="128dp" android:paddingStart="25dp" android:paddingEnd="25dp"
@@ -79,6 +87,10 @@
                 android:layout_weight="0"
                 systemui:glowBackground="@drawable/ic_sysbar_highlight"
                 android:contentDescription="@string/accessibility_recent"
+                systemui:featureUrl="@string/feature_uri_recent"
+                systemui:keyColorUrl="@string/keyColor_uri_recent"
+                systemui:keyGlowColorUrl="@string/glowColor_uri_recent"
+                systemui:position="3"
                 />
             <Space 
                 android:layout_width="match_parent"
@@ -95,6 +107,51 @@
                 android:visibility="invisible"
                 android:contentDescription="@string/accessibility_menu"
                 systemui:glowBackground="@drawable/ic_sysbar_highlight"
+                systemui:featureUrl="@string/feature_uri_menu"
+                systemui:keyColorUrl="@string/keyColor_uri_menu"
+                systemui:keyGlowColorUrl="@string/glowColor_uri_menu"
+                systemui:position="4"
+                />
+            <View
+                android:id="@+id/spacer4"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:visibility="gone"
+                />
+            <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/button5"
+                android:layout_width="@dimen/navigation_key_width"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_sysbar_recent"
+                android:layout_weight="0"
+                android:visibility="gone"
+                systemui:glowBackground="@drawable/ic_sysbar_highlight"
+                android:contentDescription="@string/accessibility_recent"
+                systemui:featureUrl="@string/feature_uri_extra1"
+                systemui:keyColorUrl="@string/keyColor_uri_extra1"
+                systemui:keyGlowColorUrl="@string/glowColor_uri_extra1"
+                systemui:position="5"
+                />
+            <View
+                android:id="@+id/spacer5"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:visibility="gone"
+                />
+            <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/button6"
+                android:layout_width="@dimen/navigation_menu_key_width"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_sysbar_menu"
+                systemui:keyCode="82"
+                android:layout_weight="0"
+                android:visibility="gone"
+                android:contentDescription="@string/accessibility_menu"
+                systemui:glowBackground="@drawable/ic_sysbar_highlight"
+                systemui:featureUrl="@string/feature_uri_extra2"
+                systemui:keyColorUrl="@string/keyColor_uri_extra2"
+                systemui:keyGlowColorUrl="@string/glowColor_uri_extra2"
+                systemui:position="6"
                 />
         </LinearLayout>
 
@@ -203,6 +260,10 @@
                 android:layout_weight="0"
                 systemui:glowBackground="@drawable/ic_sysbar_highlight"
                 android:contentDescription="@string/accessibility_back"
+                systemui:featureUrl="@string/feature_uri_back"
+                systemui:keyColorUrl="@string/keyColor_uri_back"
+                systemui:keyGlowColorUrl="@string/glowColor_uri_back"
+                systemui:position="1"
                 />
             <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/home"
                 android:layout_width="162dp" android:paddingStart="42dp" android:paddingEnd="42dp"
@@ -213,6 +274,10 @@
                 android:layout_weight="0"
                 systemui:glowBackground="@drawable/ic_sysbar_highlight"
                 android:contentDescription="@string/accessibility_home"
+                systemui:featureUrl="@string/feature_uri_home"
+                systemui:keyColorUrl="@string/keyColor_uri_home"
+                systemui:keyGlowColorUrl="@string/glowColor_uri_home"
+                systemui:position="2"
                 />
             <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/recent_apps"
                 android:layout_width="162dp" android:paddingStart="42dp" android:paddingEnd="42dp"
@@ -221,6 +286,10 @@
                 android:layout_weight="0"
                 systemui:glowBackground="@drawable/ic_sysbar_highlight"
                 android:contentDescription="@string/accessibility_recent"
+                systemui:featureUrl="@string/feature_uri_recent"
+                systemui:keyColorUrl="@string/keyColor_uri_recent"
+                systemui:keyGlowColorUrl="@string/glowColor_uri_recent"
+                systemui:position="3"
                 />
             <Space 
                 android:layout_width="match_parent"
@@ -237,6 +306,51 @@
                 android:visibility="invisible"
                 android:contentDescription="@string/accessibility_menu"
                 systemui:glowBackground="@drawable/ic_sysbar_highlight"
+                systemui:featureUrl="@string/feature_uri_menu"
+                systemui:keyColorUrl="@string/keyColor_uri_menu"
+                systemui:keyGlowColorUrl="@string/glowColor_uri_menu"
+                systemui:position="4"
+                />
+            <View
+                android:id="@+id/spacer4"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:visibility="gone"
+                />
+            <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/button5"
+                android:layout_width="@dimen/navigation_key_width"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_sysbar_recent"
+                android:layout_weight="0"
+                android:visibility="gone"
+                systemui:glowBackground="@drawable/ic_sysbar_highlight"
+                android:contentDescription="@string/accessibility_recent"
+                systemui:featureUrl="@string/feature_uri_extra1"
+                systemui:keyColorUrl="@string/keyColor_uri_extra1"
+                systemui:keyGlowColorUrl="@string/glowColor_uri_extra1"
+                systemui:position="5"
+                />
+            <View
+                android:id="@+id/spacer5"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:visibility="gone"
+                />
+            <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/button6"
+                android:layout_width="@dimen/navigation_menu_key_width"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_sysbar_menu"
+                systemui:keyCode="82"
+                android:layout_weight="0"
+                android:visibility="gone"
+                android:contentDescription="@string/accessibility_menu"
+                systemui:glowBackground="@drawable/ic_sysbar_highlight"
+                systemui:featureUrl="@string/feature_uri_extra2"
+                systemui:keyColorUrl="@string/keyColor_uri_extra2"
+                systemui:keyGlowColorUrl="@string/glowColor_uri_extra2"
+                systemui:position="6"
                 />
         </LinearLayout>
 

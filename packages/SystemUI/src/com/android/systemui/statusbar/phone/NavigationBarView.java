@@ -335,6 +335,7 @@ public class NavigationBarView extends LinearLayout {
                 : (mVertical ? mBackLandIcon : mBackIcon));
 
         ((ImageView)getRecentsButton()).setImageDrawable(mVertical ? mRecentLandIcon : mRecentIcon);
+        ((KeyButtonView) mCurrentView.findViewById(R.id.back)).applyKeyFilter();
 
         setDisabledFlags(mDisabledFlags, true);
     }

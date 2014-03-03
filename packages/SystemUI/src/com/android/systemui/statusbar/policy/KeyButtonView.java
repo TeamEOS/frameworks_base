@@ -17,15 +17,24 @@
 package com.android.systemui.statusbar.policy;
 
 import android.animation.Animator;
+import java.util.ArrayList;
+
+import org.codefirex.utils.ActionHandler;
+import org.codefirex.utils.CFXUtils;
+import android.animation.Animator.AnimatorListener;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Canvas;
-import android.graphics.RectF;
+import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.Drawable;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.RectF;
 import android.hardware.input.InputManager;
 import android.os.SystemClock;
+import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.HapticFeedbackConstants;
@@ -41,10 +50,14 @@ import android.view.accessibility.AccessibilityEvent;
 import android.widget.ImageView;
 
 import com.android.systemui.R;
+import com.android.systemui.cfx.CfxObserver.FeatureListener;
 
-public class KeyButtonView extends ImageView {
+public class KeyButtonView extends ImageView implements FeatureListener {
     private static final String TAG = "StatusBar.KeyButtonView";
     private static final boolean DEBUG = false;
+    private static final String NO_LP = "empty";
+    private static final Mode mMode = Mode.SRC_ATOP;
+    private static final int DEFAULT_COLOR = -1;
 
     final float GLOW_MAX_SCALE_FACTOR = 1.8f;
     public static final float DEFAULT_QUIESCENT_ALPHA = 0.70f;
@@ -63,17 +76,36 @@ public class KeyButtonView extends ImageView {
     RectF mRect = new RectF();
     AnimatorSet mPressedAnim;
     Animator mAnimateToQuiescent = new ObjectAnimator();
+    boolean mIsLongPressing = false;
+    boolean mAnimRunning = false;
+    int mKeyFilterColor;
+    int mGlowFilterColor;
+    boolean mSupportsLpOrig;
+    View.OnTouchListener mHomeSearchActionListener;
+    int mPos;
+    int MSG_SOFTKEY_LP_ACTION_CHANGED;
+	int MSG_KEY_COLOR_CHANGED;
+    int MSG_GLOW_COLOR_CHANGED;
+    String mLpUri;
+    String mLpAction;
+    String mKeyColorUri;
+    String mGlowColorUri;
 
     Runnable mCheckLongPress = new Runnable() {
         public void run() {
             if (isPressed()) {
-                // Log.d("KeyButtonView", "longpressed: " + this);
-                if (mCode != 0) {
+                // Slog.d("KeyButtonView", "longpressed: " + this);
+                if (mCode != 0 && (mLpAction == null || mLpAction.equals(NO_LP))) {
                     sendEvent(KeyEvent.ACTION_DOWN, KeyEvent.FLAG_LONG_PRESS);
                     sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
                 } else {
                     // Just an old-fashioned ImageView
-                    performLongClick();
+                    if (mLpAction != null
+                            && !mLpAction.equals(NO_LP)
+                            && !CFXUtils.isKeyguardRestricted(mContext)) {
+                        mIsLongPressing = true;
+                        performLongClick();
+                    }
                 }
             }
         }
@@ -90,41 +122,214 @@ public class KeyButtonView extends ImageView {
                 defStyle, 0);
 
         mCode = a.getInteger(R.styleable.KeyButtonView_keyCode, 0);
+        mKeyColorUri = a.getString(R.styleable.KeyButtonView_keyColorUrl);
+        mGlowColorUri = a.getString(R.styleable.KeyButtonView_keyGlowColorUrl);
 
         mSupportsLongpress = a.getBoolean(R.styleable.KeyButtonView_keyRepeat, true);
 
+        // this gives home button default behavior when LP is disabled
+        mSupportsLpOrig = mSupportsLongpress;
         mGlowBG = a.getDrawable(R.styleable.KeyButtonView_glowBackground);
         setDrawingAlpha(mQuiescentAlpha);
         if (mGlowBG != null) {
             mGlowWidth = mGlowBG.getIntrinsicWidth();
             mGlowHeight = mGlowBG.getIntrinsicHeight();
         }
+        mPos = a.getInteger(R.styleable.KeyButtonView_position, 1);
+        mLpUri = a.getString(R.styleable.KeyButtonView_featureUrl);
 
         a.recycle();
-
         setClickable(true);
+
+        if (TextUtils.isEmpty(mLpUri)) {
+            mLpUri = NO_LP;
+        }
+
+        if (TextUtils.isEmpty(mLpAction)) {
+            mLpAction = NO_LP;
+        }
+
+        if (TextUtils.isEmpty(mKeyColorUri)) {
+            mKeyColorUri = NO_LP;
+        }
+
+        if (TextUtils.isEmpty(mGlowColorUri)) {
+            mGlowColorUri = NO_LP;
+        }
+
+        updateLpAction();
+		updateKeyFilter();
+        updateGlowFilter();
+
+
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+    }
+
+    private class CustomLongClick extends ActionHandler implements View.OnLongClickListener {
+        String mAction;
+
+        public CustomLongClick(Context context, String action) {
+            super(context);
+            mAction = action;
+        }
+
+        @Override
+        public boolean onLongClick(View v) {
+            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            playSoundEffect(SoundEffectConstants.CLICK);
+            performTask(mAction);
+            return false;
+        }
+
+        @Override
+        public boolean handleAction(String action) {
+            // TODO Auto-generated method stub
+            return false;
+        }
+    }
+
+    public String getLpUri() {
+        return mLpUri;
+    }
+
+    // let BarUiController check if action is valid after a package was changed or removed
+    public void checkLpAction() {
+        if (!CFXUtils.isComponentResolved(getContext().getPackageManager(), mLpAction)) {
+            Settings.System.putString(getContext().getContentResolver(), mLpUri,
+                    NO_LP);
+            setOnLongClickListener(null);
+            if (this.getId() == R.id.home && mHomeSearchActionListener != null) {
+                setOnTouchListener(mHomeSearchActionListener);
+            }
+            mSupportsLongpress = mSupportsLpOrig;
+            mLpAction = NO_LP;
+        }
+    }
+
+    void updateLpAction() {
+        mLpAction = Settings.System.getString(getContext().getContentResolver(), mLpUri);
+        if (TextUtils.isEmpty(mLpAction) || mLpAction.equals(NO_LP)) {
+            setOnLongClickListener(null);
+            if (this.getId() == R.id.home && mHomeSearchActionListener != null) {
+                setOnTouchListener(mHomeSearchActionListener);
+            }
+            mSupportsLongpress = mSupportsLpOrig;
+        } else {
+            setOnLongClickListener(new CustomLongClick(getContext(), mLpAction));
+            if (this.getId() == R.id.home) {
+                setOnTouchListener(null);
+            }
+            mSupportsLongpress = true;
+        }
+    }
+
+    public void setHomeSearchActionListener(View.OnTouchListener homeListener) {
+        if (this.getId() == R.id.home) {
+            if (mHomeSearchActionListener == null) {
+                mHomeSearchActionListener = homeListener;
+            }
+            if (TextUtils.isEmpty(mLpAction) || mLpAction.equals(NO_LP)) {
+                setOnTouchListener(homeListener);
+            } else {
+                setOnTouchListener(null);
+            }
+        }
+    }
+
+    private void updateKeyFilter() {
+        int color = Settings.System.getInt(mContext.getContentResolver(),
+                mKeyColorUri, DEFAULT_COLOR);
+        if (color == DEFAULT_COLOR) {
+            mKeyFilterColor = DEFAULT_COLOR;
+            getDrawable().clearColorFilter();
+        } else {
+            mKeyFilterColor = Color.argb(0xFF, Color.red(color),
+                    Color.green(color), Color.blue(color));
+        }
+        applyKeyFilter();
+    }
+
+    public void applyKeyFilter() {
+        if (mKeyFilterColor != DEFAULT_COLOR)
+            getDrawable().setColorFilter(mKeyFilterColor, mMode);
+    }
+
+    private void updateGlowFilter() {
+        int color = mGlowFilterColor = Settings.System.getInt(mContext.getContentResolver(),
+                mGlowColorUri, DEFAULT_COLOR);
+        if (color == DEFAULT_COLOR) {
+            mGlowFilterColor = DEFAULT_COLOR;
+            if (mGlowBG != null)
+                mGlowBG.clearColorFilter();
+        } else {
+            mGlowFilterColor = Color.argb(0xFF, Color.red(color),
+                    Color.green(color), Color.blue(color));
+        }
+        applyGlowFilter();
+    }
+
+    private void applyGlowFilter() {
+        if (mGlowFilterColor != DEFAULT_COLOR) {
+            if (mGlowBG != null) {
+                mGlowBG.setColorFilter(mGlowFilterColor, mMode);
+            }
+        }
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         if (mGlowBG != null) {
-            canvas.save();
-            final int w = getWidth();
-            final int h = getHeight();
-            final float aspect = (float)mGlowWidth / mGlowHeight;
-            final int drawW = (int)(h*aspect);
-            final int drawH = h;
-            final int margin = (drawW-w)/2;
-            canvas.scale(mGlowScale, mGlowScale, w*0.5f, h*0.5f);
-            mGlowBG.setBounds(-margin, 0, drawW-margin, drawH);
-            mGlowBG.setAlpha((int)(mDrawingAlpha * mGlowAlpha * 255));
-            mGlowBG.draw(canvas);
-            canvas.restore();
-            mRect.right = w;
-            mRect.bottom = h;
+            canvas = getCanvasForFeatureState(canvas);
         }
         super.onDraw(canvas);
+    }
+
+    private Canvas getCanvasForFeatureState(Canvas canvas) {
+        if ((mGlowFilterColor == DEFAULT_COLOR) && mKeyFilterColor == DEFAULT_COLOR) {
+            return getCanvasForNoColorFeature(canvas);
+        } else {
+            return getCanvasForColorFeatures(canvas);
+        }
+    }
+
+    private Canvas getCanvasForNoColorFeature(Canvas canvas) {
+        canvas.save();
+        final int w = getWidth();
+        final int h = getHeight();
+        final float aspect = (float) mGlowWidth / mGlowHeight;
+        final int drawW = (int) (h * aspect);
+        final int drawH = h;
+        final int margin = (drawW - w) / 2;
+        canvas.scale(mGlowScale, mGlowScale, w * 0.5f, h * 0.5f);
+        mGlowBG.setBounds(-margin, 0, drawW - margin, drawH);
+        mGlowBG.setAlpha((int) (mDrawingAlpha * mGlowAlpha * 255));
+        mGlowBG.draw(canvas);
+        canvas.restore();
+        mRect.right = w;
+        mRect.bottom = h;
+        return canvas;
+    }
+
+    private Canvas getCanvasForColorFeatures(Canvas canvas) {
+        canvas.save();
+        if (mAnimRunning)
+            applyGlowFilter();
+        final int w = getWidth();
+        final int h = getHeight();
+        final float aspect = (float) mGlowWidth / mGlowHeight;
+        final int drawW = (int) (h * aspect);
+        final int drawH = h;
+        final int margin = (drawW - w) / 2;
+        canvas.scale(mGlowScale, mGlowScale, w * 0.5f, h * 0.5f);
+        mGlowBG.setBounds(-margin, 0, drawW - margin, drawH);
+        mGlowBG.setAlpha((int) (mDrawingAlpha * mGlowAlpha * 255));
+        mGlowBG.draw(canvas);
+        canvas.restore();
+        mRect.right = w;
+        mRect.bottom = h;
+        if (mAnimRunning)
+            applyKeyFilter();
+        return canvas;
     }
 
     public void setQuiescentAlpha(float alpha, boolean animate) {
@@ -208,6 +413,28 @@ public class KeyButtonView extends ImageView {
                     mPressedAnim.cancel();
                 }
                 final AnimatorSet as = mPressedAnim = new AnimatorSet();
+                mAnimRunning = true;
+                as.addListener(new AnimatorListener() {
+                    public void onAnimationEnd(Animator animation) {
+                        updateKeyFilter();
+                        updateGlowFilter();
+                        mAnimRunning = false;
+                    }
+
+                    public void onAnimationCancel(Animator animation) {
+                        mAnimRunning = false;
+                    }
+
+                    public void onAnimationRepeat(Animator animation) {
+                        ;
+                    }
+
+                    public void onAnimationStart(Animator animation) {
+                        updateKeyFilter();
+                        updateGlowFilter();
+                        ;
+                    }
+                });
                 if (pressed) {
                     if (mGlowScale < GLOW_MAX_SCALE_FACTOR)
                         mGlowScale = GLOW_MAX_SCALE_FACTOR;
@@ -265,18 +492,19 @@ public class KeyButtonView extends ImageView {
                 break;
             case MotionEvent.ACTION_CANCEL:
                 setPressed(false);
-                if (mCode != 0) {
+                if (mCode != 0 && !mIsLongPressing) {
                     sendEvent(KeyEvent.ACTION_UP, KeyEvent.FLAG_CANCELED);
                 }
                 if (mSupportsLongpress) {
                     removeCallbacks(mCheckLongPress);
+                    mIsLongPressing = false;
                 }
                 break;
             case MotionEvent.ACTION_UP:
                 final boolean doIt = isPressed();
                 setPressed(false);
                 if (mCode != 0) {
-                    if (doIt) {
+                    if (doIt & !mIsLongPressing) {
                         sendEvent(KeyEvent.ACTION_UP, 0);
                         sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
                         playSoundEffect(SoundEffectConstants.CLICK);
@@ -285,12 +513,13 @@ public class KeyButtonView extends ImageView {
                     }
                 } else {
                     // no key code, just a regular ImageView
-                    if (doIt) {
+                    if (doIt & !mIsLongPressing) {
                         performClick();
                     }
                 }
                 if (mSupportsLongpress) {
                     removeCallbacks(mCheckLongPress);
+                    mIsLongPressing = false;
                 }
                 break;
         }
@@ -310,6 +539,37 @@ public class KeyButtonView extends ImageView {
                 InputDevice.SOURCE_KEYBOARD);
         InputManager.getInstance().injectInputEvent(ev,
                 InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
+    }
+
+    @Override
+    public ArrayList<String> onRegisterClass() {
+        ArrayList<String> uris = new ArrayList<String>();
+        uris.add(mLpUri);
+        uris.add(mKeyColorUri);
+        uris.add(mGlowColorUri);
+        return uris;
+    }
+
+    @Override
+    public void onSetMessage(String uri, int msg) {
+        if (uri.equals(mLpUri)) {
+            MSG_SOFTKEY_LP_ACTION_CHANGED = msg;
+        } else if (uri.equals(mGlowColorUri)) {
+            MSG_GLOW_COLOR_CHANGED = msg;
+        } else if (uri.equals(mKeyColorUri)) {
+            MSG_KEY_COLOR_CHANGED = msg;
+        }
+    }
+
+    @Override
+    public void onFeatureStateChanged(int msg) {
+        if (msg == MSG_SOFTKEY_LP_ACTION_CHANGED) {
+            updateLpAction();
+        } else if (msg == MSG_KEY_COLOR_CHANGED) {
+            updateKeyFilter();
+        } else if (msg == MSG_GLOW_COLOR_CHANGED) {
+            updateGlowFilter();
+        }
     }
 }
 

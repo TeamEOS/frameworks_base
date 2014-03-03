@@ -91,7 +91,6 @@ import com.android.systemui.DemoMode;
 import com.android.systemui.BatteryMeterView;
 import com.android.systemui.EventLogTags;
 import com.android.systemui.R;
-import com.android.systemui.BatteryMeterView;
 import com.android.systemui.statusbar.BaseStatusBar;
 import com.android.systemui.statusbar.CommandQueue;
 import com.android.systemui.statusbar.GestureRecorder;
@@ -102,6 +101,7 @@ import com.android.systemui.statusbar.StatusBarIconView;
 import com.android.systemui.statusbar.policy.BatteryController;
 import com.android.systemui.statusbar.policy.BluetoothController;
 import com.android.systemui.statusbar.policy.DateView;
+import com.android.systemui.statusbar.policy.KeyButtonView;
 import com.android.systemui.statusbar.policy.HeadsUpNotificationView;
 import com.android.systemui.statusbar.policy.LocationController;
 import com.android.systemui.statusbar.policy.NetworkController;
@@ -266,6 +266,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     // to some other configuration change).
     CustomTheme mCurrentTheme;
     private boolean mRecreating = false;
+
+    private PhoneUiController mPhoneController;
 
     // for disabling the status bar
     int mDisabled = 0;
@@ -447,6 +449,10 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         mStatusBarView = (PhoneStatusBarView) mStatusBarWindow.findViewById(R.id.status_bar);
         mStatusBarView.setBar(this);
+        mPhoneController = new PhoneUiController(mContext);
+        mPhoneController.setBar(this);
+        mPhoneController.setBarWindow(mStatusBarWindow);
+        mPhoneController.registerBarView(mStatusBarView);
 
         PanelHolder holder = (PanelHolder) mStatusBarWindow.findViewById(R.id.panel_holder);
         mStatusBarView.setPanelHolder(holder);
@@ -488,9 +494,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
             if (DEBUG) Log.v(TAG, "hasNavigationBar=" + showNav);
 
             if (showNav && !mRecreating) {
-                mNavigationBarView =
-                    (NavigationBarView) View.inflate(context, R.layout.navigation_bar, null);
-
+                mNavigationBarView = mPhoneController.getNavigationBarView();
                 mNavigationBarView.setDisabledFlags(mDisabled);
                 mNavigationBarView.setBar(this);
                 mNavigationBarView.setOnTouchListener(new View.OnTouchListener() {
@@ -701,6 +705,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         // receive broadcasts
         IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_CONFIGURATION_CHANGED);
         filter.addAction(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_SCREEN_ON);
@@ -857,7 +862,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         mNavigationBarView.getRecentsButton().setOnClickListener(mRecentsClickListener);
         mNavigationBarView.getRecentsButton().setOnTouchListener(mRecentsPreloadOnTouchListener);
-        mNavigationBarView.getHomeButton().setOnTouchListener(mHomeSearchActionListener);
+        ((KeyButtonView)mNavigationBarView.getHomeButton()).setHomeSearchActionListener(mHomeSearchActionListener);
         mNavigationBarView.getSearchLight().setOnTouchListener(mHomeSearchActionListener);
         updateSearchPanel();
     }
@@ -1292,11 +1297,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     }
 
     public void showClock(boolean show) {
-        if (mStatusBarView == null) return;
-        View clock = mStatusBarView.findViewById(R.id.clock);
-        if (clock != null) {
-            clock.setVisibility(show ? View.VISIBLE : View.GONE);
-        }
+        if (mStatusBarView == null)
+            return;
+        mPhoneController.showClock(show);
     }
 
     /**
@@ -2116,6 +2119,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         if (DEBUG) {
             Log.d(TAG, (showMenu?"showing":"hiding") + " the MENU button");
         }
+
         if (mNavigationBarView != null) {
             mNavigationBarView.setMenuVisibility(showMenu);
         }
@@ -2170,18 +2174,26 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         public void tickerStarting() {
             mTicking = true;
             mStatusBarContents.setVisibility(View.GONE);
+            ((LinearLayout) mStatusBarView.findViewById(R.id.clock_center_layout))
+            .setVisibility(View.GONE);
             mTickerView.setVisibility(View.VISIBLE);
             mTickerView.startAnimation(loadAnim(com.android.internal.R.anim.push_up_in, null));
             mStatusBarContents.startAnimation(loadAnim(com.android.internal.R.anim.push_up_out, null));
+            ((LinearLayout) mStatusBarView.findViewById(R.id.clock_center_layout))
+            .startAnimation(loadAnim(com.android.internal.R.anim.push_up_out, null));
         }
 
         @Override
         public void tickerDone() {
             mStatusBarContents.setVisibility(View.VISIBLE);
+            ((LinearLayout) mStatusBarView.findViewById(R.id.clock_center_layout))
+            .setVisibility(View.VISIBLE);
             mTickerView.setVisibility(View.GONE);
             mStatusBarContents.startAnimation(loadAnim(com.android.internal.R.anim.push_down_in, null));
             mTickerView.startAnimation(loadAnim(com.android.internal.R.anim.push_down_out,
                         mTickingDoneListener));
+            ((LinearLayout) mStatusBarView.findViewById(R.id.clock_center_layout))
+            .startAnimation(loadAnim(com.android.internal.R.anim.push_down_in, null));
         }
 
         public void tickerHalting() {
@@ -2189,6 +2201,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
                 mStatusBarContents.setVisibility(View.VISIBLE);
                 mStatusBarContents
                         .startAnimation(loadAnim(com.android.internal.R.anim.fade_in, null));
+			((LinearLayout) mStatusBarView.findViewById(R.id.clock_center_layout))
+            .setVisibility(View.VISIBLE);		
             }
             mTickerView.setVisibility(View.GONE);
             // we do not animate the ticker away at this point, just get rid of it (b/6992707)
@@ -2722,13 +2736,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         mStatusBarContainer.addView(mStatusBarWindow);
 
-<<<<<<< HEAD
-=======
-		if (!mNavigationBarView.isAttachedToWindow()) {
-			addNavigationBar();
-		}
-
->>>>>>> 3b08232... Revert "Legacy CodefireX SystemUi features squashed"
         updateExpandedViewPos(EXPANDED_LEAVE_ALONE);
         mRecreating = false;
     }
@@ -2977,5 +2984,4 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
             ((DemoMode)v).dispatchDemoCommand(command, args);
         }
     }
-
 }

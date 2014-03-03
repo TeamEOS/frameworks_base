@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.format.DateFormat;
@@ -32,27 +33,39 @@ import android.widget.TextView;
 import com.android.systemui.DemoMode;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
 import libcore.icu.LocaleData;
 
+import org.codefirex.utils.CFXConstants;
+import com.android.systemui.cfx.CfxObserver.FeatureListener;
 /**
  * Digital clock for the status bar.
  */
-public class Clock extends TextView implements DemoMode {
+public class Clock extends TextView implements DemoMode, FeatureListener {
     private boolean mAttached;
     private Calendar mCalendar;
     private String mClockFormatString;
     private SimpleDateFormat mClockFormat;
     private Locale mLocale;
 
-    private static final int AM_PM_STYLE_NORMAL  = 0;
-    private static final int AM_PM_STYLE_SMALL   = 1;
-    private static final int AM_PM_STYLE_GONE    = 2;
+    private static final int AM_PM_STYLE_NORMAL = 0;
+    private static final int AM_PM_STYLE_SMALL = 1;
+    private static final int AM_PM_STYLE_GONE = 2;
+    // no longer static each instance different style
+    private int AM_PM_STYLE = AM_PM_STYLE_GONE;
 
-    private static final int AM_PM_STYLE = AM_PM_STYLE_GONE;
+    // CFX feature
+    // tags to recognize different views
+    private static final String TAG_SIGNAL_CLUSTER = CFXConstants.SYSTEMUI_CLOCK_SIGNAL_CLUSTER_TAG;
+    private static final String TAG_CENTER_VIEW = CFXConstants.SYSTEMUI_CLOCK_CENTER_TAG;
+    // set bools at init for easy management
+    private boolean mIsSignalView = false;
+    private boolean mIsCenterView = false;
+    private int MSG_CLOCK_AMPM_SETTINGS;
 
     public Clock(Context context) {
         this(context, null);
@@ -64,6 +77,13 @@ public class Clock extends TextView implements DemoMode {
 
     public Clock(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        if (getTag() != null) {
+            if (TAG_SIGNAL_CLUSTER.equals(getTag())) {
+                mIsSignalView = true;
+            } else if (TAG_CENTER_VIEW.equals(getTag())) {
+                mIsCenterView = true;
+            }
+        }
     }
 
     @Override
@@ -90,7 +110,11 @@ public class Clock extends TextView implements DemoMode {
         mCalendar = Calendar.getInstance(TimeZone.getDefault());
 
         // Make sure we update to the current time
-        updateClock();
+        if (mIsSignalView || mIsCenterView) {
+            updateAmPmStyle();
+        } else {
+            updateAmPm();
+        }
     }
 
     @Override
@@ -119,7 +143,7 @@ public class Clock extends TextView implements DemoMode {
                     mClockFormatString = ""; // force refresh
                 }
             }
-            updateClock();
+            updateAmPm();
         }
     };
 
@@ -222,6 +246,41 @@ public class Clock extends TextView implements DemoMode {
                 mCalendar.set(Calendar.MINUTE, mm);
             }
             setText(getSmallTime());
+        }
+    }
+
+    private void updateAmPm() {
+        if (mIsSignalView || mIsCenterView) {
+            mClockFormatString = null;
+        }
+        updateClock();
+    }
+
+    private void updateAmPmStyle() {
+        AM_PM_STYLE = Settings.System.getInt(mContext.getContentResolver(),
+                CFXConstants.SYSTEMUI_CLOCK_AMPM,
+                CFXConstants.SYSTEMUI_CLOCK_AMPM_DEF);
+        updateAmPm();
+    }
+
+    @Override
+    public ArrayList<String> onRegisterClass() {
+        ArrayList<String> uris = new ArrayList<String>();
+        uris.add(CFXConstants.SYSTEMUI_CLOCK_AMPM);
+        return uris;
+    }
+
+    @Override
+    public void onSetMessage(String uri, int msg) {
+        if (uri.equals(CFXConstants.SYSTEMUI_CLOCK_AMPM)) {
+            MSG_CLOCK_AMPM_SETTINGS = msg;
+        }
+    }
+
+    @Override
+    public void onFeatureStateChanged(int msg) {
+        if (msg == MSG_CLOCK_AMPM_SETTINGS) {
+            updateAmPmStyle();
         }
     }
 }
