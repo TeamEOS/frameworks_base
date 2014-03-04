@@ -372,4 +372,8 @@ public final class Installer {
 
         return execute(builder.toString());
     }
+
+    public boolean restoreconData() {
+        return (execute("restorecondata") == 0);
+    }
 }
