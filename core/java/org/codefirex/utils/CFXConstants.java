@@ -490,4 +490,95 @@ public final class CFXConstants {
      */
     public static final String STATUS_BAR_NETWORK_STATS_TEXT_COLOR = "status_bar_network_stats_text_color";
 
+    /**
+     * back key long press action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_BACK_LONGPRESS = "input_hardkey_back_longpress";
+
+    /**
+     * home key long press action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_HOME_LONGPRESS = "input_hardkey_home_longpress";
+
+    /**
+     * recent key long press action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_RECENT_LONGPRESS = "input_hardkey_recent_longpress";
+
+    /**
+     * menu key long press action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_MENU_LONGPRESS = "input_hardkey_menu_longpress";
+
+    /**
+     * search assistant key long press action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_ASSIST_LONGPRESS = "input_hardkey_assist_longpress";
+
+    /**
+     * back key double tap action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_BACK_DOUBLETAP = "input_hardkey_back_doubletap";
+
+    /**
+     * home key double tap action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_HOME_DOUBLETAP = "input_hardkey_home_doubletap";
+
+    /**
+     * recent key double tap action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_RECENT_DOUBLETAP = "input_hardkey_recent_doubletap";
+
+    /**
+     * menu key double tap action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_MENU_DOUBLETAP = "input_hardkey_menu_doubletap";
+
+    /**
+     * search assistant double tap action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_ASSIST_DOUBLETAP = "input_hardkey_assist_doubletap";
+
+    /**
+     * recent key double tap action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_RECENT_SINGLETAP = "input_hardkey_recent_singletap";
+
+    /**
+     * menu key double tap action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_MENU_SINGLETAP = "input_hardkey_menu_singletap";
+
+    /**
+     * search assistant double tap action
+     *
+     * @hide
+     */
+    public static final String INPUT_HARDKEY_ASSIST_SINGLETAP = "input_hardkey_assist_singletap";
+
 }
