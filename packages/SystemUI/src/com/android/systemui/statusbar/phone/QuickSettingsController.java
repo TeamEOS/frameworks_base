@@ -78,6 +78,7 @@ import com.android.systemui.quicksettings.MobileNetworkTile;
 import com.android.systemui.quicksettings.NfcTile;
 import com.android.systemui.quicksettings.PreferencesTile;
 import com.android.systemui.quicksettings.QuickSettingsTile;
+import com.android.systemui.quicksettings.RingerModeTile;
 import com.android.systemui.quicksettings.SleepScreenTile;
 import com.android.systemui.quicksettings.SyncTile;
 import com.android.systemui.quicksettings.ToggleLockscreenTile;
@@ -212,8 +213,8 @@ public class QuickSettingsController {
                 qs = new BrightnessTile(mContext, this);
             } else if (tile.equals(TILE_CAMERA) && cameraSupported) {
                 qs = new CameraTile(mContext, this, mHandler);
-//            } else if (tile.equals(TILE_RINGER)) {
-//                qs = new RingerModeTile(mContext, this);
+            } else if (tile.equals(TILE_RINGER)) {
+                qs = new RingerModeTile(mContext, this);
             } else if (tile.equals(TILE_SYNC)) {
                 qs = new SyncTile(mContext, this);
             } else if (tile.equals(TILE_WIFIAP) && mobileDataSupported) {
