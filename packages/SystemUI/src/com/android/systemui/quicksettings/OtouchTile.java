@@ -1,6 +1,8 @@
 package com.android.systemui.quicksettings;
 
 import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
 
 import com.android.systemui.R;
 import com.android.systemui.statusbar.phone.QuickSettingsController;
@@ -24,5 +26,15 @@ public class OtouchTile extends FileObserverTile {
 				,R.string.quick_settings_otouch_off_label
 				,R.drawable.ic_qs_otouch_on
 				,R.drawable.ic_qs_otouch_off);
+	}
+
+	@Override
+	protected void updateEnabled() {
+		super.updateEnabled();
+		Intent i = new Intent();
+		i.setAction("com.cfx.settings.device.N1Settings.feature_changed");
+		i.putExtra("feature_otouch", mFeatureEnabled ? "1" : "0");
+		mContext.sendBroadcast(i);
+		Log.i("TAG", OT_PATH + " changed. Notify interested parties");
 	}
 }
