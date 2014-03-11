@@ -46,6 +46,8 @@ import static com.android.internal.util.cm.QSConstants.TILE_VOLUME;
 import static com.android.internal.util.cm.QSConstants.TILE_WIFI;
 import static com.android.internal.util.cm.QSConstants.TILE_WIFIAP;
 import static com.android.internal.util.cm.QSConstants.TILE_WIMAX;
+import static com.android.internal.util.cm.QSConstants.TILE_FASTCHARGE;
+import static com.android.internal.util.cm.QSConstants.TILE_OTOUCH;
 
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
@@ -71,11 +73,13 @@ import com.android.systemui.quicksettings.BluetoothTile;
 import com.android.systemui.quicksettings.BrightnessTile;
 import com.android.systemui.quicksettings.BugReportTile;
 import com.android.systemui.quicksettings.CameraTile;
+import com.android.systemui.quicksettings.FastChargeTile;
 import com.android.systemui.quicksettings.GPSTile;
 import com.android.systemui.quicksettings.InputMethodTile;
 import com.android.systemui.quicksettings.LteTile;
 import com.android.systemui.quicksettings.MobileNetworkTile;
 import com.android.systemui.quicksettings.NfcTile;
+import com.android.systemui.quicksettings.OtouchTile;
 import com.android.systemui.quicksettings.PreferencesTile;
 import com.android.systemui.quicksettings.QuickSettingsTile;
 import com.android.systemui.quicksettings.RingerModeTile;
@@ -92,6 +96,8 @@ import com.android.systemui.quicksettings.WifiAPTile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+
+import org.codefirex.utils.CFXUtils;
 
 public class QuickSettingsController {
     private static String TAG = "QuickSettingsController";
@@ -157,7 +163,9 @@ public class QuickSettingsController {
         boolean mobileDataSupported = QSUtils.deviceSupportsMobileData(mContext);
         boolean lteSupported = QSUtils.deviceSupportsLte(mContext);
         boolean gpsSupported = QSUtils.deviceSupportsGps(mContext);
-      boolean torchSupported = QSUtils.deviceSupportsTorch(mContext);
+        boolean torchSupported = QSUtils.deviceSupportsTorch(mContext);
+        boolean fastChargeSupported = CFXUtils.hasKernelFeature(FastChargeTile.FFC_PATH);
+        boolean otouchSupported = CFXUtils.hasKernelFeature(OtouchTile.OT_PATH);
 
         if (!bluetoothSupported) {
             TILES_DEFAULT.remove(TILE_BLUETOOTH);
@@ -266,6 +274,14 @@ public class QuickSettingsController {
 //                if (QSUtils.adbEnabled(resolver)) {
 //                    qs = new NetworkAdbTile(mContext, this);
 //                }
+            } else if (tile.equals(TILE_FASTCHARGE)) {
+            	if (fastChargeSupported) {
+            		qs = new FastChargeTile(mContext, this);
+            	}
+            } else if (tile.equals(TILE_OTOUCH)) {
+            	if (otouchSupported) {
+            		qs = new OtouchTile(mContext, this);
+            	}
             }
 
             if (qs != null) {

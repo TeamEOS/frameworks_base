@@ -544,6 +544,10 @@
     <string name="quick_settings_camera_label">Camera</string>
     <string name="quick_settings_network_adb_disabled_label">Disabled</string>
     <string name="quick_settings_network_adb_enabled_label">Enabled</string>
+    <string name="quick_settings_fcharge_on_label">F-Charge On</string>
+    <string name="quick_settings_fcharge_off_label">F-Charge Off</string>
+    <string name="quick_settings_otouch_on_label">O-Touch On</string>
+    <string name="quick_settings_otouch_off_label">O-Touch Off</string>
 
     <!-- Expanded desktop strings break the rules a bit - the icon identifies the feature, the string indicates current state -->
     <string name="quick_settings_expanded_desktop">Expanded</string>

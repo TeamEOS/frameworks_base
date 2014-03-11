@@ -32,6 +32,8 @@ public class QSConstants {
         public static final String TILE_EXPANDEDDESKTOP = "toggleExpandedDesktop";
         public static final String TILE_CAMERA = "toggleCamera";
         public static final String TILE_NETWORKADB = "toggleNetworkAdb";
+        public static final String TILE_FASTCHARGE = "toggleFastCharge";
+        public static final String TILE_OTOUCH = "toggleOtouch";
 
         public static final String TILE_DELIMITER = "|";
         public static ArrayList<String> TILES_DEFAULT = new ArrayList<String>();

@@ -40,6 +40,7 @@ public final class CFXUtils {
 
     public static final String S2W_PATH = "/sys/android_touch/sweep2wake";
     public static final String FFC_PATH = "/sys/kernel/fast_charge/force_fast_charge";
+    public static final String OT_PATH = "/proc/touchpad/enable";
 
     // 10 inch tablets
     public static boolean isXLargeScreen() {
