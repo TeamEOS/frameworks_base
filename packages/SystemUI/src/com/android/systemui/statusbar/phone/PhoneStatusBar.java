@@ -598,6 +598,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         final SignalClusterView signalCluster =
                 (SignalClusterView)mStatusBarView.findViewById(R.id.signal_cluster);
         mBatteryView = (BatteryMeterView) mStatusBarView.findViewById(R.id.battery);
+        updateSettings();
 
         mNetworkController.addSignalCluster(signalCluster);
         signalCluster.setNetworkController(mNetworkController);
