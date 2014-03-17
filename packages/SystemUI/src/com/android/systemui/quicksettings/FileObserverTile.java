@@ -17,18 +17,18 @@ import com.android.systemui.statusbar.phone.QuickSettingsController;
 public abstract class FileObserverTile extends QuickSettingsTile {
 	protected static String TAG = FileObserverTile.class.getSimpleName();
 	protected TwoStateTileRes mTileRes;
-	protected boolean mFeatureEnabled = false;
+	protected boolean mFeatureEnabled;
 	protected FileObserver mObserver;
 	protected String mFilePath;
 
 	public FileObserverTile(Context context, QuickSettingsController qsc) {
 		super(context, qsc);
-		mFilePath = getFilePath();
-		mFeatureEnabled = isFeatureOn();
+		updateEnabled();
 		mOnClick = new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				toggleState();
+				updateEnabled();
 				updateResources();
 			}
 		};
@@ -36,6 +36,7 @@ public abstract class FileObserverTile extends QuickSettingsTile {
 
 	@Override
 	void onPostCreate() {
+		mFilePath = getFilePath();
 		mObserver = new FileObserver(mFilePath, FileObserver.MODIFY) {
 			@Override
 			public void onEvent(int event, String file) {
@@ -47,8 +48,16 @@ public abstract class FileObserverTile extends QuickSettingsTile {
 		};
 		mObserver.startWatching();
 		mTileRes = getTileRes();
+		updateEnabled();
 		updateTile();
+        super.onPostCreate();
 	}
+
+    @Override
+    public void onDestroy() {
+    	mObserver.stopWatching();
+    	super.onDestroy();
+    }
 
 	@Override
 	public void updateResources() {
@@ -64,7 +73,7 @@ public abstract class FileObserverTile extends QuickSettingsTile {
 		CFXUtils.setKernelFeatureEnabled(mFilePath, enabled);
 	}
 
-	protected void updateTile() {
+	private synchronized void updateTile() {
 		mLabel = mContext.getString(mFeatureEnabled ? mTileRes.mTileOnLabel
 				: mTileRes.mTileOffLabel);
 		mDrawable = mFeatureEnabled ? mTileRes.mTileOnDrawable
