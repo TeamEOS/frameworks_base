@@ -23,6 +23,8 @@ public abstract class FileObserverTile extends QuickSettingsTile {
 
 	public FileObserverTile(Context context, QuickSettingsController qsc) {
 		super(context, qsc);
+		mFilePath = getFilePath();
+		mFeatureEnabled = isFeatureOn();
 		mOnClick = new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -34,8 +36,6 @@ public abstract class FileObserverTile extends QuickSettingsTile {
 
 	@Override
 	void onPostCreate() {
-		mFilePath = getFilePath();
-		mFeatureEnabled = isFeatureOn();
 		mObserver = new FileObserver(mFilePath, FileObserver.MODIFY) {
 			@Override
 			public void onEvent(int event, String file) {
@@ -48,7 +48,6 @@ public abstract class FileObserverTile extends QuickSettingsTile {
 		mObserver.startWatching();
 		mTileRes = getTileRes();
 		updateTile();
-		super.onPostCreate();
 	}
 
 	@Override
