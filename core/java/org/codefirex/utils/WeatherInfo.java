@@ -40,6 +40,8 @@ public class WeatherInfo implements Parcelable {
 	public static final Uri ICON_URI = Uri.parse("content://" + WEATHER_AUTH
 			+ "/icons/#");
 	public static final Uri DATA_URI = Uri.parse("content://" + DATA_AUTH);
+	public static final String WEATHER_STATE_KEY = "weather_state_key";
+	public static final String WEATHER_INFO_KEY = "weather_info_key";
 
 	public static final int DEGREE_F = 1;
 	public static final int DEGREE_C = 2;
@@ -224,9 +226,22 @@ public class WeatherInfo implements Parcelable {
 
 	public static WeatherInfo getInfoFromProvider(Context context) {
 		ContentResolver resolver = context.getContentResolver();
-        Cursor cursor = resolver.query(DATA_URI, new String[] {MediaStore.MediaColumns.DATA}, null, null, null);
-        Bundle b = cursor.getExtras();
-		return getInfoFromBundle(b);
+		Cursor cursor = resolver
+				.query(DATA_URI, new String[] { MediaStore.MediaColumns.DATA },
+						null, null, null);
+		Bundle b = cursor.getExtras();
+		WeatherInfo info = b.getParcelable(WEATHER_INFO_KEY);
+		return info;
+	}
+
+	public static boolean getWeatherEnabled(Context context) {
+		ContentResolver resolver = context.getContentResolver();
+		Cursor cursor = resolver
+				.query(DATA_URI, new String[] { MediaStore.MediaColumns.DATA },
+						null, null, null);
+		Bundle b = cursor.getExtras();
+		boolean state = b.getBoolean(WEATHER_STATE_KEY, false);
+		return state;
 	}
 
 	public ForecastInfo getForecastInfo1() {

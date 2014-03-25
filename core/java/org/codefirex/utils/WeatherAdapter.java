@@ -67,6 +67,10 @@ public class WeatherAdapter extends BroadcastReceiver {
 		mListener = listener;
 	}
 
+	public boolean getEnabled() {
+		return WeatherInfo.getWeatherEnabled(mContext);
+	}
+
 	public int getServiceState() {
 		return mServiceState;
 	}

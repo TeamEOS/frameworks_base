@@ -40,7 +40,13 @@ public class WeatherView extends TextView implements WeatherListener {
 		mObserver = new SettingsObserver(mHandler);
 		mObserver.observe();
 		mAdapter = new WeatherAdapter(mContext, this);
+		mInfo = mAdapter.getLatestWeather();
+        mServiceEnabled = mAdapter.getEnabled();
 		mAdapter.startUpdates();
+		if(mServiceEnabled) {
+			updateWeather();
+			mObserver.onChange(true);
+		}
 	}
 
 	class SettingsObserver extends ContentObserver {
@@ -71,6 +77,10 @@ public class WeatherView extends TextView implements WeatherListener {
 
 	private void updateWeather() {
 		String weather = mInfo.getCurrentText();
+		if ("unknown".equals(weather)) {
+			setText("");
+			return;
+		}
 		String temp = WeatherInfo.addSymbol(mInfo.getCurrentTemp());
 		StringBuilder bb = new StringBuilder().append(weather).append(" ")
 				.append(temp);
