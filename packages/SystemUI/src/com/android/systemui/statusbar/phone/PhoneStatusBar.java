@@ -945,12 +945,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     private void repositionNavigationBar() {
         if (mNavigationBarView == null || !mNavigationBarView.isAttachedToWindow()) return;
 
-        CustomTheme newTheme = mContext.getResources().getConfiguration().customTheme;
-        if (newTheme != null &&
-                (mCurrentTheme == null || !mCurrentTheme.equals(newTheme))) {
-            // Nevermind, this will be re-created
-            return;
-        }
         prepareNavigationBarView();
 
         mWindowManager.updateViewLayout(mNavigationBarView, getNavigationBarLayoutParams());
@@ -2776,6 +2770,12 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         makeStatusBarView();
         repositionNavigationBar();
+<<<<<<< HEAD
+=======
+        if (mNavigationBarView != null) {
+            mNavigationBarView.updateResources();
+        }
+>>>>>>> 410ca69... Properly implement navigation bar theme change
 
         // recreate StatusBarIconViews.
         for (int i = 0; i < nIcons; i++) {

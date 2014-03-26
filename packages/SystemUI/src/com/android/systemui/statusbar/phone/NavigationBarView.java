@@ -56,6 +56,7 @@ import com.android.systemui.statusbar.policy.KeyButtonView;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 
 public class NavigationBarView extends LinearLayout {
     final static boolean DEBUG = false;
@@ -78,7 +79,7 @@ public class NavigationBarView extends LinearLayout {
     int mDisabledFlags = 0;
     int mNavigationIconHints = 0;
 
-    private Drawable mBackIcon, mBackLandIcon, mBackAltIcon, mBackAltLandIcon;
+    private Drawable mBackIcon, mBackLandIcon, mBackAltIcon, mBackAltLandIcon, mHomeIcon, mHomeLandIcon;
     private Drawable mRecentIcon;
     private Drawable mRecentLandIcon;
 
@@ -300,6 +301,25 @@ public class NavigationBarView extends LinearLayout {
         mRecentLandIcon = res.getDrawable(R.drawable.ic_sysbar_recent_land);
     }
 
+	protected void updateResources() {
+		getIcons(mContext.getResources());
+		((ImageView) findViewById(R.id.camera_button)).setImageDrawable(mContext.getResources()
+				.getDrawable(R.drawable.ic_sysbar_camera));
+
+		// update glow drawable (or any other resource)
+		for (View v : getAllChildren(findViewById(R.id.rot0))) {
+			if (v instanceof KeyButtonView) {
+				((KeyButtonView) v).updateResources(R.id.rot0);
+			}
+		}
+
+		for (View v : getAllChildren(findViewById(R.id.rot90))) {
+			if (v instanceof KeyButtonView) {
+				((KeyButtonView) v).updateResources(R.id.rot90);
+			}
+		}
+	}
+
     @Override
     public void setLayoutDirection(int layoutDirection) {
         getIcons(mContext.getResources());
@@ -334,7 +354,7 @@ public class NavigationBarView extends LinearLayout {
                 ? (mVertical ? mBackAltLandIcon : mBackAltIcon)
                 : (mVertical ? mBackLandIcon : mBackIcon));
 
-        ((ImageView)getRecentsButton()).setImageDrawable(mVertical ? mRecentLandIcon : mRecentIcon);
+        ((ImageView)getRecentsButton()).setImageDrawable(mVertical ? mRecentLandIcon : mRecentIcon);        
 
         setDisabledFlags(mDisabledFlags, true);
     }
@@ -503,6 +523,7 @@ public class NavigationBarView extends LinearLayout {
     }
 
     public void reorient() {
+        final Resources res = mContext.getResources();
         final int rot = mDisplay.getRotation();
         for (int i=0; i<4; i++) {
             mRotatedViews[i].setVisibility(View.GONE);
@@ -519,7 +540,16 @@ public class NavigationBarView extends LinearLayout {
 
         if (DEBUG) {
             Log.d(TAG, "reorient(): rot=" + mDisplay.getRotation());
-        }
+        }      
+
+		// update additional button resources for theme change
+		((ImageView) getHomeButton()).setImageDrawable(mVertical ? res
+				.getDrawable(R.drawable.ic_sysbar_home_land) : res
+				.getDrawable(R.drawable.ic_sysbar_home));
+
+		((ImageView) getSearchLight()).setImageDrawable(mVertical ? res
+				.getDrawable(R.drawable.search_light_land) : res
+				.getDrawable(R.drawable.search_light));
 
         setNavigationIconHints(mNavigationIconHints, true);
     }
@@ -649,4 +679,27 @@ public class NavigationBarView extends LinearLayout {
         pw.println();
     }
 
+    private ArrayList<View> getAllChildren(View v) {
+
+        if (!(v instanceof ViewGroup)) {
+            ArrayList<View> viewArrayList = new ArrayList<View>();
+            viewArrayList.add(v);
+            return viewArrayList;
+        }
+
+        ArrayList<View> result = new ArrayList<View>();
+
+        ViewGroup vg = (ViewGroup) v;
+        for (int i = 0; i < vg.getChildCount(); i++) {
+
+            View child = vg.getChildAt(i);
+
+            ArrayList<View> viewArrayList = new ArrayList<View>();
+            viewArrayList.add(v);
+            viewArrayList.addAll(getAllChildren(child));
+
+            result.addAll(viewArrayList);
+        }
+        return result;
+    }
 }

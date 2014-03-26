@@ -115,6 +115,7 @@ public class KeyButtonView extends ImageView implements FeatureListener {
 
         // this gives home button default behavior when LP is disabled
         mSupportsLpOrig = mSupportsLongpress;
+
         mGlowBG = a.getDrawable(R.styleable.KeyButtonView_glowBackground);
         setDrawingAlpha(mQuiescentAlpha);
         if (mGlowBG != null) {
@@ -210,6 +211,14 @@ public class KeyButtonView extends ImageView implements FeatureListener {
             }
         }
     }
+
+	public void updateResources(int rot) {
+		if (mGlowBG == null)
+			return;
+		int res = rot == R.id.rot0 ? R.drawable.ic_sysbar_highlight
+				: R.drawable.ic_sysbar_highlight_land;
+		mGlowBG = getResources().getDrawable(res);
+	}
 
     @Override
     protected void onDraw(Canvas canvas) {
