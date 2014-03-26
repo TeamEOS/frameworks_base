@@ -678,9 +678,16 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                         launchAssistLongPressAction();
                     } else if (activity.equals(CFXConstants.SYSTEMUI_TASK_ASSIST)) {
                         launchAssistAction();
-                    } else if (activity.equals(CFXConstants.SYSTEMUI_TASK_POWER_MENU)) {
-                        sendCloseSystemWindows(SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS);
-                        showGlobalActionsDialog();
+					} else if (activity
+							.equals(CFXConstants.SYSTEMUI_TASK_POWER_MENU)) {
+						// dialog ui: must post on pwm thread
+						mHandler.post(new Runnable() {
+							@Override
+							public void run() {
+								sendCloseSystemWindows(SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS);
+								showGlobalActionsDialog();
+							}
+						});
                     } else if (activity.equals(CFXConstants.SYSTEMUI_TASK_RECENTS)) {
                         sendCloseSystemWindows(SYSTEM_DIALOG_REASON_RECENT_APPS);
                         try {
