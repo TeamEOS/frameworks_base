@@ -21,15 +21,12 @@ import java.util.ArrayList;
 
 import org.codefirex.utils.ActionHandler;
 import org.codefirex.utils.CFXUtils;
-import android.animation.Animator.AnimatorListener;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.Drawable;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.RectF;
 import android.hardware.input.InputManager;
 import android.os.SystemClock;
@@ -56,8 +53,6 @@ public class KeyButtonView extends ImageView implements FeatureListener {
     private static final String TAG = "StatusBar.KeyButtonView";
     private static final boolean DEBUG = false;
     private static final String NO_LP = "empty";
-    private static final Mode mMode = Mode.SRC_ATOP;
-    private static final int DEFAULT_COLOR = -1;
 
     final float GLOW_MAX_SCALE_FACTOR = 1.8f;
     public static final float DEFAULT_QUIESCENT_ALPHA = 0.70f;
@@ -77,19 +72,12 @@ public class KeyButtonView extends ImageView implements FeatureListener {
     AnimatorSet mPressedAnim;
     Animator mAnimateToQuiescent = new ObjectAnimator();
     boolean mIsLongPressing = false;
-    boolean mAnimRunning = false;
-    int mKeyFilterColor;
-    int mGlowFilterColor;
     boolean mSupportsLpOrig;
     View.OnTouchListener mHomeSearchActionListener;
     int mPos;
     int MSG_SOFTKEY_LP_ACTION_CHANGED;
-	int MSG_KEY_COLOR_CHANGED;
-    int MSG_GLOW_COLOR_CHANGED;
     String mLpUri;
     String mLpAction;
-    String mKeyColorUri;
-    String mGlowColorUri;
 
     Runnable mCheckLongPress = new Runnable() {
         public void run() {
@@ -122,8 +110,6 @@ public class KeyButtonView extends ImageView implements FeatureListener {
                 defStyle, 0);
 
         mCode = a.getInteger(R.styleable.KeyButtonView_keyCode, 0);
-        mKeyColorUri = a.getString(R.styleable.KeyButtonView_keyColorUrl);
-        mGlowColorUri = a.getString(R.styleable.KeyButtonView_keyGlowColorUrl);
 
         mSupportsLongpress = a.getBoolean(R.styleable.KeyButtonView_keyRepeat, true);
 
@@ -149,18 +135,7 @@ public class KeyButtonView extends ImageView implements FeatureListener {
             mLpAction = NO_LP;
         }
 
-        if (TextUtils.isEmpty(mKeyColorUri)) {
-            mKeyColorUri = NO_LP;
-        }
-
-        if (TextUtils.isEmpty(mGlowColorUri)) {
-            mGlowColorUri = NO_LP;
-        }
-
         updateLpAction();
-		updateKeyFilter();
-        updateGlowFilter();
-
 
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
     }
@@ -236,100 +211,25 @@ public class KeyButtonView extends ImageView implements FeatureListener {
         }
     }
 
-    private void updateKeyFilter() {
-        int color = Settings.System.getInt(mContext.getContentResolver(),
-                mKeyColorUri, DEFAULT_COLOR);
-        if (color == DEFAULT_COLOR) {
-            mKeyFilterColor = DEFAULT_COLOR;
-            getDrawable().clearColorFilter();
-        } else {
-            mKeyFilterColor = Color.argb(0xFF, Color.red(color),
-                    Color.green(color), Color.blue(color));
-        }
-        applyKeyFilter();
-    }
-
-    public void applyKeyFilter() {
-        if (mKeyFilterColor != DEFAULT_COLOR)
-            getDrawable().setColorFilter(mKeyFilterColor, mMode);
-    }
-
-    private void updateGlowFilter() {
-        int color = mGlowFilterColor = Settings.System.getInt(mContext.getContentResolver(),
-                mGlowColorUri, DEFAULT_COLOR);
-        if (color == DEFAULT_COLOR) {
-            mGlowFilterColor = DEFAULT_COLOR;
-            if (mGlowBG != null)
-                mGlowBG.clearColorFilter();
-        } else {
-            mGlowFilterColor = Color.argb(0xFF, Color.red(color),
-                    Color.green(color), Color.blue(color));
-        }
-        applyGlowFilter();
-    }
-
-    private void applyGlowFilter() {
-        if (mGlowFilterColor != DEFAULT_COLOR) {
-            if (mGlowBG != null) {
-                mGlowBG.setColorFilter(mGlowFilterColor, mMode);
-            }
-        }
-    }
-
     @Override
     protected void onDraw(Canvas canvas) {
         if (mGlowBG != null) {
-            canvas = getCanvasForFeatureState(canvas);
+            canvas.save();
+            final int w = getWidth();
+            final int h = getHeight();
+            final float aspect = (float) mGlowWidth / mGlowHeight;
+            final int drawW = (int) (h * aspect);
+            final int drawH = h;
+            final int margin = (drawW - w) / 2;
+            canvas.scale(mGlowScale, mGlowScale, w * 0.5f, h * 0.5f);
+            mGlowBG.setBounds(-margin, 0, drawW - margin, drawH);
+            mGlowBG.setAlpha((int) (mDrawingAlpha * mGlowAlpha * 255));
+            mGlowBG.draw(canvas);
+            canvas.restore();
+            mRect.right = w;
+            mRect.bottom = h;
         }
         super.onDraw(canvas);
-    }
-
-    private Canvas getCanvasForFeatureState(Canvas canvas) {
-        if ((mGlowFilterColor == DEFAULT_COLOR) && mKeyFilterColor == DEFAULT_COLOR) {
-            return getCanvasForNoColorFeature(canvas);
-        } else {
-            return getCanvasForColorFeatures(canvas);
-        }
-    }
-
-    private Canvas getCanvasForNoColorFeature(Canvas canvas) {
-        canvas.save();
-        final int w = getWidth();
-        final int h = getHeight();
-        final float aspect = (float) mGlowWidth / mGlowHeight;
-        final int drawW = (int) (h * aspect);
-        final int drawH = h;
-        final int margin = (drawW - w) / 2;
-        canvas.scale(mGlowScale, mGlowScale, w * 0.5f, h * 0.5f);
-        mGlowBG.setBounds(-margin, 0, drawW - margin, drawH);
-        mGlowBG.setAlpha((int) (mDrawingAlpha * mGlowAlpha * 255));
-        mGlowBG.draw(canvas);
-        canvas.restore();
-        mRect.right = w;
-        mRect.bottom = h;
-        return canvas;
-    }
-
-    private Canvas getCanvasForColorFeatures(Canvas canvas) {
-        canvas.save();
-        if (mAnimRunning)
-            applyGlowFilter();
-        final int w = getWidth();
-        final int h = getHeight();
-        final float aspect = (float) mGlowWidth / mGlowHeight;
-        final int drawW = (int) (h * aspect);
-        final int drawH = h;
-        final int margin = (drawW - w) / 2;
-        canvas.scale(mGlowScale, mGlowScale, w * 0.5f, h * 0.5f);
-        mGlowBG.setBounds(-margin, 0, drawW - margin, drawH);
-        mGlowBG.setAlpha((int) (mDrawingAlpha * mGlowAlpha * 255));
-        mGlowBG.draw(canvas);
-        canvas.restore();
-        mRect.right = w;
-        mRect.bottom = h;
-        if (mAnimRunning)
-            applyKeyFilter();
-        return canvas;
     }
 
     public void setQuiescentAlpha(float alpha, boolean animate) {
@@ -413,28 +313,6 @@ public class KeyButtonView extends ImageView implements FeatureListener {
                     mPressedAnim.cancel();
                 }
                 final AnimatorSet as = mPressedAnim = new AnimatorSet();
-                mAnimRunning = true;
-                as.addListener(new AnimatorListener() {
-                    public void onAnimationEnd(Animator animation) {
-                        updateKeyFilter();
-                        updateGlowFilter();
-                        mAnimRunning = false;
-                    }
-
-                    public void onAnimationCancel(Animator animation) {
-                        mAnimRunning = false;
-                    }
-
-                    public void onAnimationRepeat(Animator animation) {
-                        ;
-                    }
-
-                    public void onAnimationStart(Animator animation) {
-                        updateKeyFilter();
-                        updateGlowFilter();
-                        ;
-                    }
-                });
                 if (pressed) {
                     if (mGlowScale < GLOW_MAX_SCALE_FACTOR)
                         mGlowScale = GLOW_MAX_SCALE_FACTOR;
@@ -545,8 +423,6 @@ public class KeyButtonView extends ImageView implements FeatureListener {
     public ArrayList<String> onRegisterClass() {
         ArrayList<String> uris = new ArrayList<String>();
         uris.add(mLpUri);
-        uris.add(mKeyColorUri);
-        uris.add(mGlowColorUri);
         return uris;
     }
 
@@ -554,10 +430,6 @@ public class KeyButtonView extends ImageView implements FeatureListener {
     public void onSetMessage(String uri, int msg) {
         if (uri.equals(mLpUri)) {
             MSG_SOFTKEY_LP_ACTION_CHANGED = msg;
-        } else if (uri.equals(mGlowColorUri)) {
-            MSG_GLOW_COLOR_CHANGED = msg;
-        } else if (uri.equals(mKeyColorUri)) {
-            MSG_KEY_COLOR_CHANGED = msg;
         }
     }
 
@@ -565,10 +437,6 @@ public class KeyButtonView extends ImageView implements FeatureListener {
     public void onFeatureStateChanged(int msg) {
         if (msg == MSG_SOFTKEY_LP_ACTION_CHANGED) {
             updateLpAction();
-        } else if (msg == MSG_KEY_COLOR_CHANGED) {
-            updateKeyFilter();
-        } else if (msg == MSG_GLOW_COLOR_CHANGED) {
-            updateGlowFilter();
         }
     }
 }
