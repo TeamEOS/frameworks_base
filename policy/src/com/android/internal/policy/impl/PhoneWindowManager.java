@@ -254,13 +254,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     boolean mHeadless;
     boolean mSafeMode;
     WindowState mStatusBar = null;
-    boolean mHasSystemNavBar;
     int mStatusBarHeight;
     WindowState mNavigationBar = null;
     boolean mHasNavigationBar = false;
     boolean mCanHideNavigationBar = false;
     boolean mNavigationBarCanMove = false; // can the navigation bar ever move to the side?
-    boolean mNavigationBarCanMoveDefaultState = false; // store device initial factory state
     boolean mNavigationBarOnBottom = true; // is the navigation bar on the bottom *right now*?
     int[] mNavigationBarHeightForRotation = new int[4];
     int[] mNavigationBarWidthForRotation = new int[4];
@@ -656,10 +654,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 			String reason;
 			if (action.equals(CFXConstants.ACTION_CFX_UI_CHANGE)) {
 				reason = intent.getStringExtra(CFXConstants.INTENT_REASON_UI_CHANGE);
-                if (reason != null
-                        && reason.equals(CFXConstants.INTENT_REASON_UI_BAR_MODE)) {
-                    updateUiMode();
-                }
+//                if (reason != null
+//                        && reason.equals(CFXConstants.INTENT_REASON_UI_BAR_MODE)) {
+//                    updateUiMode();
+//                }
                 if (reason != null
                         && reason.equals(CFXConstants.INTENT_REASON_UI_BAR_SIZE)) {
                     setNavigationBarSize();
@@ -699,6 +697,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     }
                 }
             }
+			/*
 			if (intent.getBooleanExtra(CFXConstants.INTENT_EXTRA_RESTART_SYSTEMUI, false)) {
 				closeApplication("com.android.systemui");
 				// if we restart systemui, reload any values set in here for aosp mode compliance
@@ -714,11 +713,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 												.unflattenFromString("com.android.systemui/.SystemUIService")),
 								new UserHandle(UserHandle.myUserId()));
 					}
+				
 				}, 250);
-			}
+			}*/
 		}
 	}
 
+	/*
 	private void closeApplication(String packageName) {
 		try {
 			ActivityManagerNative.getDefault().killApplicationProcess(
@@ -729,7 +730,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 			// Good luck next time!
 		}
 	}
+	*/
 
+	/*
     private void updateUiMode() {
         final boolean mIsCapkey = !mContext.getResources().getBoolean(
                 R.bool.config_showNavigationBar);
@@ -769,6 +772,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
         }
     }
+    */
 
     private void setNavigationBarSize() {
 
@@ -1406,15 +1410,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         int shortSizeDp = shortSize * DisplayMetrics.DENSITY_DEFAULT / density;
         int longSizeDp = longSize * DisplayMetrics.DENSITY_DEFAULT / density;
 
-        if (shortSizeDp < 600) {
-            mNavigationBarCanMoveDefaultState = true;
-        } else if (shortSizeDp < 720) {
-            mNavigationBarCanMoveDefaultState = false;
-        }        
+        // Allow the navigation bar to move on small devices (phones).
+        mNavigationBarCanMove = shortSizeDp < 600;
 
-        // figure out custom ui mode here
-        updateUiMode();
-
+        mHasNavigationBar = res.getBoolean(com.android.internal.R.bool.config_showNavigationBar);
         // Allow a system property to override this. Used by the emulator.
         // See also hasNavigationBar().
         String navBarOverride = SystemProperties.get("qemu.hw.mainkeys");
