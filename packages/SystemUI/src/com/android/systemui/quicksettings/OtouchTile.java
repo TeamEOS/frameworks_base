@@ -8,7 +8,7 @@ import com.android.systemui.R;
 import com.android.systemui.statusbar.phone.QuickSettingsController;
 
 public class OtouchTile extends FileObserverTile {
-	protected static String TAG = OtouchTile.class.getSimpleName();
+	public static final String TAG = OtouchTile.class.getSimpleName();
     public static final String OT_PATH = "/proc/touchpad/enable";
 
 	public OtouchTile(Context context, QuickSettingsController qsc) {
@@ -28,13 +28,11 @@ public class OtouchTile extends FileObserverTile {
 				,R.drawable.ic_qs_otouch_off);
 	}
 
-	@Override
-	protected void updateEnabled() {
-		super.updateEnabled();
+	protected void onFileChanged(boolean featureState) {
 		Intent i = new Intent();
 		i.setAction("com.cfx.settings.device.N1Settings.feature_changed");
-		i.putExtra("feature_otouch", mFeatureEnabled ? "1" : "0");
+		i.putExtra("feature_otouch", featureState ? "1" : "0");
 		mContext.sendBroadcast(i);
-		Log.i("TAG", OT_PATH + " changed. Notify interested parties");
+		Log.i(TAG, OT_PATH + " changed. Notify interested parties");
 	}
 }

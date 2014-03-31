@@ -18,8 +18,19 @@ public abstract class FileObserverTile extends QuickSettingsTile {
 	protected static String TAG = FileObserverTile.class.getSimpleName();
 	protected TwoStateTileRes mTileRes;
 	protected boolean mFeatureEnabled;
-	protected FileObserver mObserver;
 	protected String mFilePath;
+
+	private FileObserver mObserver;
+
+	// keep FileObserver onEvent() callback thread safe
+	private final Runnable mFileChangedRunnable = new Runnable() {
+		@Override
+		public void run() {
+			updateEnabled();
+			updateResources();
+			onFileChanged(mFeatureEnabled);
+		}		
+	};
 
 	public FileObserverTile(Context context, QuickSettingsController qsc) {
 		super(context, qsc);
@@ -40,10 +51,7 @@ public abstract class FileObserverTile extends QuickSettingsTile {
 		mObserver = new FileObserver(mFilePath, FileObserver.MODIFY) {
 			@Override
 			public void onEvent(int event, String file) {
-				Log.i(TAG, "feature file modified, event:" + event + ", file: "
-						+ file);
-				updateEnabled();
-				updateResources();
+				mStatusbarService.getHandler().post(mFileChangedRunnable);
 			}
 		};
 		mObserver.startWatching();
@@ -84,6 +92,13 @@ public abstract class FileObserverTile extends QuickSettingsTile {
 		updateEnabled();
 		setEnabled(!mFeatureEnabled);
 	}
+
+	/**
+	 * subclasses can override onFileChanged() to hook
+	 * into the FileObserver onEvent() callback
+	 */
+
+	protected void onFileChanged(boolean featureState){}
 
 	protected void updateEnabled() {
 		mFeatureEnabled = isFeatureOn();

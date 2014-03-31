@@ -1,12 +1,13 @@
 package com.android.systemui.quicksettings;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.android.systemui.R;
 import com.android.systemui.statusbar.phone.QuickSettingsController;
 
 public class FastChargeTile extends FileObserverTile {
-	protected static String TAG = FastChargeTile.class.getSimpleName();
+	public static final String TAG = FastChargeTile.class.getSimpleName();
     public static final String FFC_PATH = "/sys/kernel/fast_charge/force_fast_charge";
 
 	public FastChargeTile(Context context, QuickSettingsController qsc) {
@@ -24,5 +25,9 @@ public class FastChargeTile extends FileObserverTile {
 				,R.string.quick_settings_fcharge_off_label
 				,R.drawable.ic_qs_fcharge_on
 				,R.drawable.ic_qs_fcharge_off);
+	}
+	
+	protected void onFileChanged(boolean featureState) {
+		Log.i(TAG, FFC_PATH + " changed. Notify interested parties");
 	}
 }
