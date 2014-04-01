@@ -303,8 +303,13 @@ public class NavigationBarView extends LinearLayout {
 
 	protected void updateResources() {
 		getIcons(mContext.getResources());
-		((ImageView) findViewById(R.id.camera_button)).setImageDrawable(mContext.getResources()
-				.getDrawable(R.drawable.ic_sysbar_camera));
+
+		// tablets/phablets don't have this
+		ImageView camera = ((ImageView) findViewById(R.id.camera_button));
+		if(camera != null) {
+			camera.setImageDrawable(mContext.getResources()
+					.getDrawable(R.drawable.ic_sysbar_camera));
+		}
 
 		// update glow drawable (or any other resource)
 		for (View v : getAllChildren(findViewById(R.id.rot0))) {
