@@ -509,7 +509,7 @@ public class WeatherInfo implements Parcelable {
 		private String mForecastDay;
 		private String mForecastDate;
 		private int mForecastCode;
-		private int mDegreeScale = DEGREE_F;
+		private int mDegreeScale;
 		private String mForecastTempHighC;
 		private String mForecastTempLowC;
 		private String mForecastTempHighF;
@@ -666,62 +666,4 @@ public class WeatherInfo implements Parcelable {
 			mForecastText = forecastText;
 		}
 	}
-
-    static WeatherInfo getInfoFromBundle(Bundle b) {
-        WeatherInfo info = new WeatherInfo();
-        info.mTitle = b.getString("title", "unknown");
-        info.mLocationCity = b.getString("city", "unknown");
-        info.mLocationCountry = b.getString("country", "unknown");
-        info.mLastBuildDate = b.getString("date", "unknown");
-        info.mCurrentText = b.getString("weather", "unknown");
-        info.setCurrentScale(b.getInt("temp_scale", DEGREE_F));
-        info.mCurrentTempF = b.getString("tempF", "0");
-        info.mCurrentTempC = b.getString("tempC", "0");
-        info.mWindChillF = b.getString("chillF",  "0");
-        info.mWindChillC = b.getString("chillC",  "0");
-        info.mWindDirection = b.getString("direction",  "unknown");
-        info.mWindSpeed = b.getString("speed", "unknown");
-        info.mAtmosphereHumidity = b.getString("humidity", "unknown");
-        info.mAtmospherePressure = b.getString("pressure", "unknown");
-        info.mAtmosphereVisibility = b.getString("visibility", "unknown");
-        info.mCurrentCode = b.getInt("current_code", -1);
-        info.mCurrentConditionIconURL = b.getString("current_url", "unknown");
-
-        info.getForecastInfo1().setForecastDay(b.getString("f1_day", "unknown"));
-        info.getForecastInfo1().setForecastDate(b.getString("f1_date", "unknown"));
-        info.getForecastInfo1().setForecastText(b.getString("f1_weather","unknown"));
-        info.getForecastInfo1().setForecastTempLowF(b.getString("f1_temp_lowF", "0"));
-        info.getForecastInfo1().setForecastTempHighF(b.getString("f1_temp_highF", "0"));
-        info.getForecastInfo1().setForecastTempLowC(b.getString("f1_temp_lowC", "0"));
-        info.getForecastInfo1().setForecastTempHighC(b.getString("f1_temp_highC", "0"));
-        info.getForecastInfo1().setForecastCode(b.getInt("f1_current_code", -1));
-
-        info.getForecastInfo2().setForecastDay(b.getString("f2_day", "unknown"));
-        info.getForecastInfo2().setForecastDate(b.getString("f2_date", "unknown"));
-        info.getForecastInfo2().setForecastText(b.getString("f2_weather","unknown"));
-        info.getForecastInfo2().setForecastTempLowF(b.getString("f2_temp_lowF", "0"));
-        info.getForecastInfo2().setForecastTempHighF(b.getString("f2_temp_highF", "0"));
-        info.getForecastInfo2().setForecastTempLowC(b.getString("f2_temp_lowC", "0"));
-        info.getForecastInfo2().setForecastTempHighC(b.getString("f2_temp_highC", "0"));
-        info.getForecastInfo2().setForecastCode(b.getInt("f2_current_code", -1));
-
-        info.getForecastInfo3().setForecastDay(b.getString("f3_day", "unknown"));
-        info.getForecastInfo3().setForecastDate(b.getString("f3_date", "unknown"));
-        info.getForecastInfo3().setForecastText(b.getString("f3_weather","unknown"));
-        info.getForecastInfo3().setForecastTempLowF(b.getString("f3_temp_lowF", "0"));
-        info.getForecastInfo3().setForecastTempHighF(b.getString("f3_temp_highF", "0"));
-        info.getForecastInfo3().setForecastTempLowC(b.getString("f3_temp_lowC", "0"));
-        info.getForecastInfo3().setForecastTempHighC(b.getString("f3_temp_highC", "0"));
-        info.getForecastInfo3().setForecastCode(b.getInt("f3_current_code", -1));
-
-        info.getForecastInfo4().setForecastDay(b.getString("f4_day", "unknown"));
-        info.getForecastInfo4().setForecastDate(b.getString("f4_date", "unknown"));
-        info.getForecastInfo4().setForecastText(b.getString("f4_weather","unknown"));
-        info.getForecastInfo4().setForecastTempLowF(b.getString("f4_temp_lowF", "0"));
-        info.getForecastInfo4().setForecastTempHighF(b.getString("f4_temp_highF", "0"));
-        info.getForecastInfo4().setForecastTempLowC(b.getString("f4_temp_lowC", "0"));
-        info.getForecastInfo4().setForecastTempHighC(b.getString("f4_temp_highC", "0"));
-        info.getForecastInfo4().setForecastCode(b.getInt("f4_current_code", -1));
-        return info;
-    }
 }
