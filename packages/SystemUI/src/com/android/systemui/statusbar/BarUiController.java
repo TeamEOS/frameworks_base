@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.codefirex.utils.CFXConstants;
 import org.codefirex.utils.CFXUtils;
@@ -35,6 +36,7 @@ import com.android.systemui.R;
  */
 
 public abstract class BarUiController implements FeatureListener {
+	private List<String> mHardkeyActions;
     private int MSG_CLOCK_VISIBLE_SETTINGS;
     private int MSG_CLOCK_COLOR_SETTINGS;
 
@@ -42,6 +44,7 @@ public abstract class BarUiController implements FeatureListener {
     protected int mCurrentBarSizeMode;
     private boolean mIsNormalScreen;
     private boolean mIsLargeScreen;
+    private boolean mHasHardkeys;
 
     private PackageReceiver mPackageReceiver;
 
@@ -55,6 +58,23 @@ public abstract class BarUiController implements FeatureListener {
         mResolver = mContext.getContentResolver();
         mIsNormalScreen = CFXUtils.isNormalScreen();
         mIsLargeScreen = CFXUtils.isLargeScreen();
+        mHasHardkeys = CFXUtils.isCapKeyDevice(context);
+        if (mHasHardkeys) {
+        	mHardkeyActions = new ArrayList<String>();
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_BACK_DOUBLETAP);
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_BACK_LONGPRESS);
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_HOME_DOUBLETAP);
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_HOME_LONGPRESS);
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_RECENT_SINGLETAP);
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_RECENT_DOUBLETAP);
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_RECENT_LONGPRESS);
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_MENU_SINGLETAP);
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_MENU_DOUBLETAP);
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_MENU_LONGPRESS);
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_ASSIST_SINGLETAP);
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_ASSIST_DOUBLETAP);
+        	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_ASSIST_LONGPRESS);
+        }
         mObserver = new CfxObserver(mContext);
         mPackageReceiver = new PackageReceiver();
         mPackageReceiver.registerReceiver(context);
@@ -195,6 +215,7 @@ public abstract class BarUiController implements FeatureListener {
     }
 
     protected void handlePackageChanged() {
+    	// first the navigation bar if we have one
         View holder = getSoftkeyHolder();
         if (holder != null) {
             for (View v : getAllChildren(holder)) {
@@ -209,6 +230,19 @@ public abstract class BarUiController implements FeatureListener {
                     }
                 }
             }
+        }
+        // now the hardkeys, if we have them
+        if (mHasHardkeys) {
+        	for (String uri : mHardkeyActions) {
+                String action = Settings.System.getString(mContext.getContentResolver(),uri);
+                if (action != null) {
+                	if (action.startsWith("app:")) {
+                        if (!CFXUtils.isComponentResolved(mContext.getPackageManager(), action)) {
+                            Settings.System.putString(mContext.getContentResolver(), uri , "");
+                        }
+                	}
+                }
+        	}
         }
     }
 
