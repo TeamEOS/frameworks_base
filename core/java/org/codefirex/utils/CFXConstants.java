@@ -157,6 +157,11 @@ public final class CFXConstants {
     /**
      * @hide
      */
+    public static final String SYSTEMUI_TASK_SCREENRECORD = "task_screenrecord";
+
+    /**
+     * @hide
+     */
     public static final String SYSTEMUI_TASK_SCREENOFF = "task_screenoff";
 
     /**
