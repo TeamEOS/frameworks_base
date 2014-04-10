@@ -34,7 +34,7 @@ public class SystemUIService extends Service {
      */
     private final Class<?>[] SERVICES = new Class[] {
             com.android.systemui.recent.Recents.class,
-            com.android.systemui.statusbar.SystemBars.class,
+            com.android.systemui.statusbar.phone.PhoneStatusBar.class,
             com.android.systemui.usb.StorageNotification.class,
             com.android.systemui.power.PowerUI.class,
             com.android.systemui.media.RingtonePlayer.class,
