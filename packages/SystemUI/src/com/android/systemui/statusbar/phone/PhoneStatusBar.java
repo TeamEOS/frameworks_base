@@ -1565,10 +1565,10 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
     private void releaseFocus() {
         WindowManager.LayoutParams lp =
-                (WindowManager.LayoutParams) mStatusBarContainer.getLayoutParams();
+                (WindowManager.LayoutParams) mStatusBarWindow.getLayoutParams();
         lp.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         lp.flags &= ~WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
-        mWindowManager.updateViewLayout(mStatusBarContainer, lp);
+        mWindowManager.updateViewLayout(mStatusBarWindow, lp);
     }
 
     public void animateCollapsePanels() {
