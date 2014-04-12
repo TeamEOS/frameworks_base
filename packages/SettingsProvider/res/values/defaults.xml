@@ -183,4 +183,7 @@
     <!-- Default for Settings.Global.WIFI_SUSPEND_OPTIMIZATIONS_ENABLED -->
     <integer name="def_wifi_suspend_optimizations_enabled">1</integer>
 
+    <!-- Default value of Settings.System.NOISE_SUPPRESSION -->
+    <bool name="def_noise_suppression">false</bool>
+
 </resources>
