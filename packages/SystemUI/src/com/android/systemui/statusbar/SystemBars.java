@@ -90,14 +90,15 @@ public class SystemBars extends SystemUI implements ServiceMonitor.Callbacks {
         if (clsName == null || clsName.length() == 0) {
             throw andLog("No status bar component configured", null);
         }
-        Class<?> cls = null;
+        Class<?> cls = com.android.systemui.statusbar.phone.PhoneStatusBar.class;
+        /*
         try {
-            cls = mContext.getClassLoader().loadClass(clsName);
+            cls = Class.forName(clsName);
         } catch (Throwable t) {
             throw andLog("Error loading status bar component: " + clsName, t);
-        }
+        } */
         try {
-            mStatusBar = (BaseStatusBar) cls.newInstance();
+            mStatusBar = (BaseStatusBar)cls.newInstance();
         } catch (Throwable t) {
             throw andLog("Error creating status bar component: " + clsName, t);
         }
