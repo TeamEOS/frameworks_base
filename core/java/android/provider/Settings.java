@@ -2106,7 +2106,6 @@ public final class Settings {
         public static final String PHONE_BLACKLIST_REGEX_ENABLED = "phone_blacklist_regex_enabled";
 
         /**
-<<<<<<< HEAD
          * Display style of the status bar battery information
          * 0: Display the battery an icon in portrait mode
          * 2: Display the battery as a circle
@@ -2210,8 +2209,6 @@ public final class Settings {
         public static final String QUICK_SETTINGS_RIBBON_TILES = "quick_settings_ribbon_tiles";
 
         /**
-=======
->>>>>>> fd0c680... Core CM-11.0 framework for CM-11.0 telephony support much credit and respect
          * Whether the phone ringtone should be played in an increasing manner
          * @hide
          */
@@ -2682,6 +2679,20 @@ public final class Settings {
          * @hide
          */
         public static final String REVERSE_LOOKUP_PROVIDER = "reverse_lookup_provider";
+
+        /**
+         * The OpenCNAM paid account ID
+         *
+         * @hide
+         */
+        public static final String DIALER_OPENCNAM_ACCOUNT_SID = "dialer_opencnam_account_sid";
+
+        /**
+         * The OpenCNAM authentication token
+         *
+         * @hide
+         */
+        public static final String DIALER_OPENCNAM_AUTH_TOKEN = "dialer_opencnam_auth_token";
 
         /**
          * Whether to hide the notification screen after clicking on a widget
