@@ -23,8 +23,8 @@ import java.util.List;
 import org.codefirex.utils.CFXConstants;
 import org.codefirex.utils.CFXUtils;
 
-import com.android.systemui.cfx.CfxObserver;
-import com.android.systemui.cfx.CfxObserver.FeatureListener;
+import com.android.systemui.eos.EosObserver;
+import com.android.systemui.eos.EosObserver.FeatureListener;
 import com.android.systemui.statusbar.policy.KeyButtonView;
 
 import com.android.systemui.R;
@@ -51,7 +51,7 @@ public abstract class BarUiController implements FeatureListener {
     private View mCurrentClockView;
     protected ContentResolver mResolver;
     protected Context mContext;
-    protected CfxObserver mObserver;
+    protected EosObserver mObserver;
 
     public BarUiController(Context context) {
         mContext = context;
@@ -75,7 +75,7 @@ public abstract class BarUiController implements FeatureListener {
         	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_ASSIST_DOUBLETAP);
         	mHardkeyActions.add(CFXConstants.INPUT_HARDKEY_ASSIST_LONGPRESS);
         }
-        mObserver = new CfxObserver(mContext);
+        mObserver = new EosObserver(mContext);
         mPackageReceiver = new PackageReceiver();
         mPackageReceiver.registerReceiver(context);
     }

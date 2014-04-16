@@ -1,5 +1,5 @@
 
-package com.android.systemui.cfx;
+package com.android.systemui.eos;
 
 import android.content.ContentResolver;
 import android.content.Context;
@@ -12,7 +12,7 @@ import android.util.Log;
 
 import java.util.ArrayList;
 
-public class CfxObserver {
+public class EosObserver {
     private static final String TAG = "EosObserverHandler";
 
     // a good starting point that won't interfere anywhere
@@ -27,7 +27,7 @@ public class CfxObserver {
     private int mNextMessage = MESSAGE_START_VALUE;
     private ContentResolver mResolver;
     private UriObserver mObserver;
-    private CfxFeatureHandler mHandler;
+    private EosFeatureHandler mHandler;
 
     public interface FeatureListener {
         public ArrayList<String> onRegisterClass();
@@ -37,9 +37,9 @@ public class CfxObserver {
         public void onFeatureStateChanged(int msg);
     }
 
-    public CfxObserver(Context context) {
+    public EosObserver(Context context) {
         mResolver = context.getContentResolver();
-        mHandler = new CfxFeatureHandler();
+        mHandler = new EosFeatureHandler();
         mObserver = new UriObserver(mHandler);
     }
 
@@ -81,7 +81,7 @@ public class CfxObserver {
         }
     }
 
-    private class CfxFeatureHandler extends Handler {
+    private class EosFeatureHandler extends Handler {
         public void handleMessage(Message m) {
             super.handleMessage(m);
             if (m.what == MESSAGE_UPDATE_LISTENERS) {

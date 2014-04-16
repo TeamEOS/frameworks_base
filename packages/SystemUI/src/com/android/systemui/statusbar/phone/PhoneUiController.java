@@ -12,7 +12,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.android.systemui.R;
-import com.android.systemui.cfx.CfxObserver.FeatureListener;
+import com.android.systemui.eos.EosObserver.FeatureListener;
 import com.android.systemui.statusbar.BarUiController;
 import com.android.systemui.statusbar.policy.KeyButtonView;
 

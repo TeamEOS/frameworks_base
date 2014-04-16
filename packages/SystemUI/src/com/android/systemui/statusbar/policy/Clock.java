@@ -41,7 +41,7 @@ import java.util.TimeZone;
 import libcore.icu.LocaleData;
 
 import org.codefirex.utils.CFXConstants;
-import com.android.systemui.cfx.CfxObserver.FeatureListener;
+import com.android.systemui.eos.EosObserver.FeatureListener;
 /**
  * Digital clock for the status bar.
  */

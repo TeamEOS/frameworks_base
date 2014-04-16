@@ -47,7 +47,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.widget.ImageView;
 
 import com.android.systemui.R;
-import com.android.systemui.cfx.CfxObserver.FeatureListener;
+import com.android.systemui.eos.EosObserver.FeatureListener;
 
 public class KeyButtonView extends ImageView implements FeatureListener {
     private static final String TAG = "StatusBar.KeyButtonView";
