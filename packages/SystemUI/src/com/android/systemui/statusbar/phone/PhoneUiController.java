@@ -1,9 +1,12 @@
 
 package com.android.systemui.statusbar.phone;
 
+import android.content.ContentResolver;
 import android.content.Context;
+import android.database.ContentObserver;
 import android.app.ActivityManager;
 import android.graphics.PixelFormat;
+import android.os.Handler;
 import android.provider.Settings;
 import android.view.View;
 import android.view.WindowManager;
@@ -13,25 +16,33 @@ import android.widget.TextView;
 
 import com.android.systemui.R;
 import com.android.systemui.eos.EosObserver.FeatureListener;
+import com.android.systemui.eos.NxController;
 import com.android.systemui.statusbar.BarUiController;
 import com.android.systemui.statusbar.policy.KeyButtonView;
 
 public class PhoneUiController extends BarUiController {
 
-    static final String TAG = "CFXUiController";
+    static final String TAG = PhoneUiController.class.getSimpleName();
 
     static final int STOCK_NAV_BAR = com.android.systemui.R.layout.navigation_bar;
-//    static final int CFX_NAV_BAR = com.android.systemui.R.layout.CFX_navigation_bar;
+    static final String NX_ENABLED_URI = "eos_nx_enabled";
 
     private View mStatusBarView;
     private PhoneStatusBar mService;
     private NavigationBarView mNavigationBarView;
     private StatusBarWindowView mStatusBarWindow;
+    private NxController mNx;
+    private Handler mHandler;
+    private NxObserver mNxObserver;
+    private boolean isNxEnabled;
 
     private int mCurrentNavLayout;
 
-    public PhoneUiController(Context context) {
+    public PhoneUiController(Context context, Handler handler) {
         super(context);
+        mHandler = handler;
+        mNxObserver = new NxObserver(handler);
+        mNxObserver.observe();        
     }
 
     public WindowManager.LayoutParams getNavigationBarLayoutParams() {
@@ -66,6 +77,8 @@ public class PhoneUiController extends BarUiController {
                 mObserver.setOnFeatureChangedListener((FeatureListener) v);
             }
         }
+        // if enabled, bring it up, else do nothing
+        updateNx();
 
         // give it back to SystemUI
         return mNavigationBarView;
@@ -77,6 +90,10 @@ public class PhoneUiController extends BarUiController {
 
     public void setBarWindow(StatusBarWindowView window) {
         mStatusBarWindow = window;
+    }
+
+    public boolean isNxEnabled() {
+    	return isNxEnabled;
     }
 
     @Override
@@ -99,5 +116,47 @@ public class PhoneUiController extends BarUiController {
 	@Override
 	protected View getSoftkeyHolder() {
 		return mNavigationBarView;
+	}
+
+	private void updateNx() {
+		isNxEnabled = Settings.System.getBoolean(mContext.getContentResolver(),
+				NX_ENABLED_URI, false);
+		if (isNxEnabled) {
+			startNX();
+		} else {
+			stopNX();
+		}
+	}
+
+	void startNX() {
+		stopNX();
+		mNx = new NxController(mContext, mHandler, mService, mNavigationBarView);
+		View hostView = mNavigationBarView.onStartNX(mNx, mNx);
+		mNx.setHostView(hostView);
+	}
+
+	void stopNX() {
+		if (mNx != null) {
+			mNavigationBarView.onStopNX();
+			mNx.tearDown();
+			mNx = null;
+		}
+	}
+
+	class NxObserver extends ContentObserver {
+		NxObserver(Handler handler) {
+			super(handler);
+		}
+
+		void observe() {
+			ContentResolver resolver = mContext.getContentResolver();
+			resolver.registerContentObserver(
+					Settings.System.getUriFor(NX_ENABLED_URI), false, this);
+		}
+
+		@Override
+		public void onChange(boolean selfChange) {
+			updateNx();
+		}
 	}
 }

@@ -364,6 +364,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         mNavigationBarView.setDisabledFlags(mDisabled);
         mNavigationBarView.setBar(this);
+        mNavigationBarView.setAutoHideListener(mUserAutoHideListener);
         addNavigationBar();
     }
 
@@ -427,6 +428,14 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
                 notifyUiVisibilityChanged(requested);
             }
         }};
+
+	private View.OnTouchListener mUserAutoHideListener = new View.OnTouchListener() {
+		@Override
+		public boolean onTouch(View v, MotionEvent event) {
+			checkUserAutohide(v, event);
+			return false;
+		}
+	};
 
     @Override
     public void start() {
@@ -498,7 +507,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         mStatusBarView = (PhoneStatusBarView) mStatusBarWindow.findViewById(R.id.status_bar);
         mStatusBarView.setBar(this);
-        mPhoneController = new PhoneUiController(mContext);
+        mPhoneController = new PhoneUiController(mContext, getHandler());
         mPhoneController.setBar(this);
         mPhoneController.setBarWindow(mStatusBarWindow);
         mPhoneController.registerBarView(mStatusBarView);
@@ -546,12 +555,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
                 mNavigationBarView = mPhoneController.getNavigationBarView();
                 mNavigationBarView.setDisabledFlags(mDisabled);
                 mNavigationBarView.setBar(this);
-                mNavigationBarView.setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        checkUserAutohide(v, event);
-                        return false;
-                    }});
+                mNavigationBarView.setAutoHideListener(mUserAutoHideListener);
             }
         } catch (RemoteException ex) {
             // no window manager? good luck with that
@@ -939,6 +943,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         if (mNavigationBarView == null) return;
 
         mWindowManager.removeView(mNavigationBarView);
+        mPhoneController.stopNX();
         mNavigationBarView = null;
     }
 

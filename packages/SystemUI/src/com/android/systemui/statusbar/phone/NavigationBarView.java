@@ -29,6 +29,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
@@ -49,6 +50,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import com.android.systemui.R;
+import com.android.systemui.eos.CanvasInterceptor;
+import com.android.systemui.eos.NxCallbacks;
 import com.android.systemui.statusbar.BaseStatusBar;
 import com.android.systemui.statusbar.DelegateViewHelper;
 import com.android.systemui.statusbar.policy.DeadZone;
@@ -58,7 +61,7 @@ import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 
-public class NavigationBarView extends LinearLayout {
+public class NavigationBarView extends LinearLayout implements NxCallbacks {
     final static boolean DEBUG = false;
     final static String TAG = "PhoneStatusBar/NavigationBarView";
 
@@ -93,6 +96,15 @@ public class NavigationBarView extends LinearLayout {
 
     // used to disable the camera icon in navbar when disabled by DPM
     private boolean mCameraDisabledByDpm;
+
+    // NX Mode
+    private boolean mNxEnabled = false;
+    // NX can draw visual feedback
+    private CanvasInterceptor mNxDraw;
+    // Original host view background
+    private Drawable mBackgroundDrawable;
+    // set or restore when NX is disabled
+    private View.OnTouchListener mAutoHideListener;
 
     // performs manual animation in sync with layout transitions
     private final NavTransitionListener mTransitionListener = new NavTransitionListener();
@@ -231,6 +243,15 @@ public class NavigationBarView extends LinearLayout {
         }, filter);
     }
 
+    public void setAutoHideListener(View.OnTouchListener autoHideListener) {
+    	if (mAutoHideListener == null) {
+    		mAutoHideListener = autoHideListener;
+    	}
+    	if (!mNxEnabled) {
+    		setOnTouchListener(mAutoHideListener);
+    	}
+    }
+
     public BarTransitions getBarTransitions() {
         return mBarTransitions;
     }
@@ -245,6 +266,7 @@ public class NavigationBarView extends LinearLayout {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+    	if (mNxEnabled) return true;
         if (mDeadZone != null && event.getAction() == MotionEvent.ACTION_OUTSIDE) {
             mDeadZone.poke(event);
         }
@@ -257,6 +279,7 @@ public class NavigationBarView extends LinearLayout {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent event) {
+    	if (mNxEnabled) return false;
         return mDelegateHelper.onInterceptTouchEvent(event);
     }
 
@@ -369,6 +392,7 @@ public class NavigationBarView extends LinearLayout {
     }
 
     public void setDisabledFlags(int disabledFlags, boolean force) {
+    	if (mNxEnabled) return;
         if (!force && mDisabledFlags == disabledFlags) return;
 
         mDisabledFlags = disabledFlags;
@@ -457,6 +481,7 @@ public class NavigationBarView extends LinearLayout {
     }
 
     public void setMenuVisibility(final boolean show, final boolean force) {
+    	if (mNxEnabled) return;
         if (!force && mShowMenu == show) return;
 
         mShowMenu = show;
@@ -557,6 +582,12 @@ public class NavigationBarView extends LinearLayout {
 				.getDrawable(R.drawable.search_light));
 
         setNavigationIconHints(mNavigationIconHints, true);
+        if (mNxEnabled) {
+            getBackButton().setVisibility(View.INVISIBLE);
+            getHomeButton().setVisibility(View.INVISIBLE);
+            getRecentsButton().setVisibility(View.INVISIBLE);
+            getMenuButton().setVisibility(View.INVISIBLE);
+        }
     }
 
     @Override
@@ -706,5 +737,42 @@ public class NavigationBarView extends LinearLayout {
             result.addAll(viewArrayList);
         }
         return result;
+    }
+
+	@Override
+	public View onStartNX(OnTouchListener listener, CanvasInterceptor remoteCanvas) {
+		mNxEnabled = true;
+		mNxDraw = remoteCanvas;
+		mBackgroundDrawable = NavigationBarView.this.getBackground();
+        getBackButton().setVisibility(View.INVISIBLE);
+        getHomeButton().setVisibility(View.INVISIBLE);
+        getRecentsButton().setVisibility(View.INVISIBLE);
+        getMenuButton().setVisibility(View.INVISIBLE);
+		setOnTouchListener(listener);
+		return NavigationBarView.this;
+	}
+
+	@Override
+	public void onStopNX() {
+		mNxEnabled = false;
+		mNxDraw = null;
+		NavigationBarView.this.setBackground(mBackgroundDrawable);
+		setOnTouchListener(mAutoHideListener != null ? mAutoHideListener : null);
+		reorient();
+	}
+
+	@Override
+	public void onDispatchMotionEvent(MotionEvent event) {
+		if (mAutoHideListener != null) {
+			mAutoHideListener.onTouch(this, event);
+		}		
+	}
+
+    @Override
+    public void onDraw(Canvas canvas) {
+    	super.onDraw(canvas);
+    	if (mNxEnabled && mNxDraw != null) {
+    		mNxDraw.onInterceptDraw(canvas);
+    	}
     }
 }
