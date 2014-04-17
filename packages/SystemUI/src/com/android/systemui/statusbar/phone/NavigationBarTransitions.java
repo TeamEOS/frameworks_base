@@ -133,13 +133,14 @@ public final class NavigationBarTransitions extends BarTransitions {
         }
     }
 
-    private void applyLightsOut(boolean lightsOut, boolean animate, boolean force) {
-        if (!force && lightsOut == mLightsOut) return;
+	private void applyLightsOut(boolean lightsOut, boolean animate, boolean force) {
+		if (!force && lightsOut == mLightsOut) return;
+		boolean nxEnabled = mView.isNxEnabled();
 
         mLightsOut = lightsOut;
 
-        final View navButtons = mView.getCurrentView().findViewById(R.id.nav_buttons);
-        final View lowLights = mView.getCurrentView().findViewById(R.id.lights_out);
+        final View navButtons = mView.getCurrentView().findViewById(nxEnabled ? R.id.eos_nx_container : R.id.nav_buttons);
+        final View lowLights = mView.getCurrentView().findViewById(nxEnabled ? R.id.nx_lights_out : R.id.lights_out);
 
         // ok, everyone, stop it right there
         navButtons.animate().cancel();

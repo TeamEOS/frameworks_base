@@ -36,15 +36,18 @@ import com.android.systemui.R;
  */
 
 public abstract class BarUiController implements FeatureListener {
+	public static final int DEVICE_NORMAL_SCREEN = 1;
+	public static final int DEVICE_LARGE_SCREEN = 2;
+	public static final int DEVICE_XLARGE_SCREEN = 3;
+
 	private List<String> mHardkeyActions;
     private int MSG_CLOCK_VISIBLE_SETTINGS;
     private int MSG_CLOCK_COLOR_SETTINGS;
 
     private boolean mIsClockVisible = true;
     protected int mCurrentBarSizeMode;
-    private boolean mIsNormalScreen;
-    private boolean mIsLargeScreen;
-    private boolean mHasHardkeys;
+    private int mScreenSize;
+    protected boolean mHasHardkeys;
 
     private PackageReceiver mPackageReceiver;
 
@@ -56,8 +59,17 @@ public abstract class BarUiController implements FeatureListener {
     public BarUiController(Context context) {
         mContext = context;
         mResolver = mContext.getContentResolver();
-        mIsNormalScreen = CFXUtils.isNormalScreen();
-        mIsLargeScreen = CFXUtils.isLargeScreen();
+
+        if (CFXUtils.isNormalScreen()) {
+        	mScreenSize = DEVICE_NORMAL_SCREEN;
+        } else if (CFXUtils.isLargeScreen()) {
+        	mScreenSize = DEVICE_LARGE_SCREEN;
+        } else if (CFXUtils.isXLargeScreen()) {
+        	mScreenSize = DEVICE_XLARGE_SCREEN;
+        } else {
+        	mScreenSize = DEVICE_NORMAL_SCREEN;
+        }
+
         mHasHardkeys = CFXUtils.isCapKeyDevice(context);
         if (mHasHardkeys) {
         	mHardkeyActions = new ArrayList<String>();
@@ -88,12 +100,8 @@ public abstract class BarUiController implements FeatureListener {
 
     protected abstract void registerBarView(View v);
 
-    public boolean isNormalScreen() {
-        return mIsNormalScreen;
-    }
-
-    public boolean isLargeScreen() {
-        return mIsLargeScreen;
+    public int getScreenSize() {
+    	return mScreenSize;
     }
 
     protected void notifyBarViewRegistered() {
@@ -129,6 +137,11 @@ public abstract class BarUiController implements FeatureListener {
             return;
         }
     }
+
+	protected void onTearDown() {
+		mPackageReceiver.unregister(mContext);
+		mObserver.setEnabled(false);
+	}
 
     public void showClock(boolean show) {
         final View clock = mCurrentClockView;
