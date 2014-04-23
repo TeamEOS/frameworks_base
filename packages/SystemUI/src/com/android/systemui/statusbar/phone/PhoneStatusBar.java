@@ -1764,6 +1764,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
     final TimeInterpolator mAccelerateInterpolator = new AccelerateInterpolator();
     final TimeInterpolator mDecelerateInterpolator = new DecelerateInterpolator();
+    final float FLIP_DURATION_OUT_SCALE = 0.56f;
     final int FLIP_DURATION_OUT = 125;
     final int FLIP_DURATION_IN = 225;
     final int FLIP_DURATION = (FLIP_DURATION_IN + FLIP_DURATION_OUT);
