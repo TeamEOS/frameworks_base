@@ -8,3 +8,5 @@
 }
 
 -keep class com.android.systemui.statusbar.tv.TvStatusBar
+
+-dontwarn com.badlogic.gdx.jnigen.*
