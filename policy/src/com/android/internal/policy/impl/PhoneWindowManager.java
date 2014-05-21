@@ -990,9 +990,14 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 		HardKeyButton getAssistButton() {
 			return mAssistButton;
 		}
+		
+		boolean isActionHandlingDisabled() {
+		    return mDevForceNavbar || mHasNavigationBar;
+		}
 
 		void updateKeyAssignments() {
 			ContentResolver cr = mContext.getContentResolver();
+
 			final boolean hasMenu = (mDeviceHardwareKeys & KEY_MASK_MENU) != 0;
 			final boolean hasHome = (mDeviceHardwareKeys & KEY_MASK_HOME) != 0;
 			final boolean hasAssist = (mDeviceHardwareKeys & KEY_MASK_ASSIST) != 0;
@@ -1019,6 +1024,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 				mHasMenuKeyEnabled |= mRecentButton.keyHasMenuAction();
 			}
 			mHasMenuKeyEnabled |= mBackButton.keyHasMenuAction();
+
 		}		
 
 		@Override
@@ -2554,6 +2560,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         // it handle it, because that gives us the correct 5 second
         // timeout.
         if (keyCode == KeyEvent.KEYCODE_HOME) {
+            // don't let any navbar events slip through here
+            if(!down && !canceled && mActionHandler.isActionHandlingDisabled()) {
+                launchHomeFromHotKey();
+                return -1;
+            }
+
             if (!down && mActionHandler.getHomeButton().isPressed()) {
             	mActionHandler.getHomeButton().setPressed(false);
                 if (mActionHandler.getHomeButton().wasConsumed()) {
@@ -2725,6 +2737,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
             return 0;
         } else if (keyCode == KeyEvent.KEYCODE_APP_SWITCH) {
+            // don't let any navbar events slip through here
+            if(!down && !canceled && mActionHandler.isActionHandlingDisabled()) {
+                mActionHandler.toggleRecents();
+                return -1;
+            }
+
 			if (!down && mActionHandler.getRecentButton().isPressed()) {
 				mActionHandler.getRecentButton().setPressed(false);
 
