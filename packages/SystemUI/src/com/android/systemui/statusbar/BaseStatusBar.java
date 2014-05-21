@@ -903,6 +903,8 @@ public abstract class BaseStatusBar extends SystemUI implements
     protected abstract void tick(IBinder key, StatusBarNotification n, boolean firstTime);
     protected abstract void updateExpandedViewPos(int expandedPosition);
     protected abstract int getExpandedViewMaxHeight();
+    protected abstract boolean isNotificationPanelFullyVisible();
+    protected abstract boolean isTrackingNotificationPanel();
     protected abstract boolean shouldDisableNavbarGestures();
 
     protected boolean isTopNotification(ViewGroup parent, NotificationData.Entry entry) {

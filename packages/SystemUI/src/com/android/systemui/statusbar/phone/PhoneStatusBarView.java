@@ -16,16 +16,22 @@
 
 package com.android.systemui.statusbar.phone;
 
+import org.codefirex.utils.ActionHandler;
+
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.EventLog;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.GestureDetector;
+import android.os.PowerManager;
+import android.provider.Settings;
 
 import com.android.systemui.EventLogTags;
 import com.android.systemui.R;
@@ -46,6 +52,37 @@ public class PhoneStatusBarView extends PanelBar {
     PanelView mNotificationPanel, mSettingsPanel;
     private boolean mShouldFade;
     private final PhoneStatusBarTransitions mBarTransitions;
+    private GestureDetector mDoubleTapGesture;
+    private TheActionHandler mAH;
+
+    private class TheActionHandler extends ActionHandler {
+        private String theAction = "";
+
+        public TheActionHandler(Context context) {
+            super(context);
+            // TODO Auto-generated constructor stub
+        }
+
+        @Override
+        public boolean handleAction(String action) {
+            // TODO Auto-generated method stub
+            return false;
+        }
+
+        void fireAction() {
+            if (!isActionEmpty()) performTask(theAction);
+        }
+
+        private String getDTAction() {
+            theAction = Settings.System.getString(mContext.getContentResolver(),
+                    "eos_statusbar_double_tap");        
+            return theAction;
+        }
+
+        private boolean isActionEmpty() {
+            return null == theAction || TextUtils.isEmpty(theAction);
+        }
+    };
 
     public PhoneStatusBarView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -60,6 +97,15 @@ public class PhoneStatusBarView extends PanelBar {
         }
         mFullWidthNotifications = mSettingsPanelDragzoneFrac <= 0f;
         mBarTransitions = new PhoneStatusBarTransitions(this);
+        mAH = new TheActionHandler(context);
+
+        mDoubleTapGesture = new GestureDetector(mContext, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                    mAH.fireAction();
+                return true;
+            }
+        });
     }
 
     public BarTransitions getBarTransitions() {
@@ -93,12 +139,6 @@ public class PhoneStatusBarView extends PanelBar {
         pv.setRubberbandingEnabled(!mFullWidthNotifications);
     }
 
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        mBar.onBarViewDetached();
-    }
- 
     @Override
     public boolean panelsEnabled() {
         return mBar.panelsEnabled();
@@ -204,6 +244,10 @@ public class PhoneStatusBarView extends PanelBar {
             }
         }
 
+        mAH.getDTAction();
+        if (!mAH.isActionEmpty())
+            mDoubleTapGesture.onTouchEvent(event);
+
         return barConsumedEvent || super.onTouchEvent(event);
     }
 
@@ -220,7 +264,8 @@ public class PhoneStatusBarView extends PanelBar {
             Log.v(TAG, "panelExpansionChanged: f=" + frac);
         }
 
-        if (panel == mFadingPanel && mScrimColor != 0 && ActivityManager.isHighEndGfx()) {
+        if ((panel == mFadingPanel || mFadingPanel == null)
+                && mScrimColor != 0 && ActivityManager.isHighEndGfx()) {
             if (mShouldFade) {
                 frac = mPanelExpandedFractionSum; // don't judge me
                 // let's start this 20% of the way down the screen

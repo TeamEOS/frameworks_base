@@ -148,4 +148,16 @@ public class TvStatusBar extends BaseStatusBar {
     protected void refreshLayout(int layoutDirection) {
     }
 
+    @Override
+    protected boolean isNotificationPanelFullyVisible() {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    protected boolean isTrackingNotificationPanel() {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
 }
