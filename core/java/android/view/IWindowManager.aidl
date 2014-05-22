@@ -231,6 +231,22 @@ interface IWindowManager
     boolean needsNavigationBar();
 
     /**
+     * Get navigation bar width
+     *
+     * @return navigation bar width when the navigation bar is vertical
+     * on the screen. Returns 0 if a navigation bar is not visible
+     */
+     int getNavigationBarWidth();
+
+    /**
+     * Get navigation bar height
+     *
+     * @return navigation bar height when the navigation bar is horizontal
+     * on the screen. Returns 0 if a navigation bar is not visible
+     */
+     int getNavigationBarHeight();
+
+    /**
      * Device can generate KEY_ACTION_MENU keypress
      */
     boolean hasMenuKeyEnabled();

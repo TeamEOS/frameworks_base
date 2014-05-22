@@ -1150,6 +1150,22 @@ public interface WindowManagerPolicy {
     public boolean needsNavigationBar();
 
     /**
+     * Get navigation bar width
+     *
+     * @return navigation bar width when the navigation bar is vertical
+     * on the screen. Returns 0 if a navigation bar is not visible
+     */
+    public int getNavigationBarWidth();
+
+    /**
+     * Get navigation bar height
+     *
+     * @return navigation bar height when the navigation bar is horizontal
+     * on the screen. Returns 0 if a navigation bar is not visible
+     */
+    public int getNavigationBarHeight();
+
+    /**
      * Specifies whether device can generate KEY_ACTION_MENU keypress
      */
     public boolean hasMenuKeyEnabled();

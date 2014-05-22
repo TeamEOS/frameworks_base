@@ -10219,6 +10219,16 @@ public class WindowManagerService extends IWindowManager.Stub
     }
 
     @Override
+    public int getNavigationBarWidth() {
+        return mPolicy.getNavigationBarWidth();
+    }
+
+    @Override
+    public int getNavigationBarHeight() {
+        return mPolicy.getNavigationBarHeight();
+    }
+
+    @Override
     public boolean hasMenuKeyEnabled() {
         return mPolicy.hasMenuKeyEnabled();
     }

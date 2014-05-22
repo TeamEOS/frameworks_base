@@ -708,6 +708,31 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 		}
 	}
 
+    @Override
+    public int getNavigationBarWidth() {
+        int rot = Surface.ROTATION_0;
+        if (mNavigationBar == null)
+            return rot;
+        try {
+            rot = mWindowManager.getRotation();
+        } catch (Exception e) {
+            Slog.e(TAG, "Remote exception when getting current rotation");
+        }
+        return mNavigationBarWidthForRotation[rot];
+    }
+
+    @Override
+    public int getNavigationBarHeight() {
+        int rot = Surface.ROTATION_0;
+        if (mNavigationBar == null)
+            return rot;
+        try {
+            rot = mWindowManager.getRotation();
+        } catch (Exception e) {
+            Slog.e(TAG, "Remote exception when getting current rotation");
+        }
+        return mNavigationBarHeightForRotation[rot];
+    }
 
     private void setNavigationBarSize() {
 
