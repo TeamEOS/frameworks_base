@@ -30,6 +30,12 @@ import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.ViewConfiguration;
 import android.view.GestureDetector.OnGestureListener;
+import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
+import android.view.animation.AnimationSet;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
+import android.view.animation.ScaleAnimation;
 
 public class NxController extends ActionHandler 
                           implements ActionReceiver, OnTouchListener, OnGestureListener, NxCallback, NxAnimator.BufferListener {
@@ -127,13 +133,49 @@ public class NxController extends ActionHandler
 		mGestureDetector = new GestureDetector(context, this);
 	}
 
-	private void animatePress(boolean isDown) {
-		final float logoAlpha = isDown ? 0f : NxLogoView.DEFAULT_NX_ALPHA;
-		final int duration = isDown ? HIDE_LOGO_DURATION : SHOW_LOGO_DURATION;
-		mHost.getNxLogo().animate().cancel();
-		mHost.getNxLogo().animate().alpha(logoAlpha).setDuration(duration)
-				.start();
-	}
+    private void animateLogo(boolean isDown) {
+        final AnimationSet logoAnim = getLogoAnimator(isDown);
+        mHost.getNxLogo().animate().cancel();
+        mHost.getNxLogo().startAnimation(logoAnim);
+    }
+
+    private AnimationSet getLogoAnimator(boolean isDown) {
+        final boolean down = isDown;
+        final float from = isDown ? 1.0f : 0.1f;
+        final float to = isDown ? 0.1f : 1.0f;
+        final float fromDeg = isDown ? 0.0f : 360.0f;
+        final float toDeg = isDown ? 360.0f : 0.0f;
+
+        Animation scale = new ScaleAnimation(from, to, from, to, Animation.RELATIVE_TO_SELF,
+                0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        RotateAnimation rotate = new RotateAnimation(fromDeg, toDeg, Animation.RELATIVE_TO_SELF,
+                0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+
+        AnimationSet animSet = new AnimationSet(true);
+        animSet.setInterpolator(new LinearInterpolator());
+        animSet.setDuration(150);
+        animSet.setFillAfter(true);
+        animSet.addAnimation(scale);
+        animSet.addAnimation(rotate);
+        animSet.setAnimationListener(new AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                if (!down) mHost.getNxLogo().setAlpha(NxLogoView.DEFAULT_NX_ALPHA);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                if (down) mHost.getNxLogo().setAlpha(0.0f);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+                // TODO Auto-generated method stub
+            }
+
+        });
+        return animSet;
+    }
 
 	public void tearDown() {
 		mObserver.unregister();
@@ -312,7 +354,7 @@ public class NxController extends ActionHandler
 				injectKey(KeyEvent.KEYCODE_MENU);
 			} else if (task.equals(CFXConstants.SYSTEMUI_TASK_SCREENOFF)) {
 				wasConsumed = false;
-				animatePress(false);
+				animateLogo(false);
 			}
 			performTask(task);
 			mHost.getHostView().performHapticFeedback(
@@ -345,14 +387,14 @@ public class NxController extends ActionHandler
 //			mTrails.handleMotionEvent(event.getAction(), event.getX(), event.getY());
 //		}
 		if (event.getAction() == MotionEvent.ACTION_UP) {
-			animatePress(false);
+		    animateLogo(false);
 		}
 		return mGestureDetector.onTouchEvent(event);
 	}
 
 	@Override
 	public boolean onDown(MotionEvent e) {
-		animatePress(true);
+	    animateLogo(true);
 		if(isDoubleTapPending) {
 			isDoubleTapPending = false;
 			wasConsumed = true;
