@@ -13,6 +13,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -36,6 +37,14 @@ import com.android.systemui.R;
  */
 
 public abstract class BarUiController implements FeatureListener {
+    static {
+        try {
+            System.loadLibrary("gdx");
+        } catch (Exception e) {
+            Log.i("BarUiController", "Failed to load libgdx.so");
+        }
+    }
+
 	public static final int DEVICE_NORMAL_SCREEN = 1;
 	public static final int DEVICE_LARGE_SCREEN = 2;
 	public static final int DEVICE_XLARGE_SCREEN = 3;
