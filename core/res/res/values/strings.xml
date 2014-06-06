@@ -2883,6 +2883,11 @@
     <string name="permdesc_interceptSmsSent">Allows the app to
         intercept an outgoing SMS.
         Malicious apps may use this to prevent outgoing SMS messages.</string>
+
+    <!-- Title of an application permission, listed so the user can choose whether they want the application to do this. -->
+    <string name="permlab_useHardwareFramework">use hardware framework</string>
+    <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permdesc_useHardwareFramework">Allows an app access to the CM hardware framework.</string>
     <!-- If the user enters a password in a form on a website, a dialog will come up asking if they want to save the password. Text in the save password dialog, asking if the browser should remember a password. -->
     <string name="save_password_message">Do you want the browser to remember this password?</string>
     <!-- If the user enters a password in a form on a website, a dialog will come up asking if they want to save the password. Button in the save password dialog, saying not to remember this password. -->
