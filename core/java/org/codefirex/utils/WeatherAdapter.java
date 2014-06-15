@@ -32,7 +32,6 @@ public class WeatherAdapter extends BroadcastReceiver {
 	public WeatherAdapter(Context context, WeatherListener listener) {
 		mContext = context;
 		mListener = listener;
-		mWeatherInfo = WeatherInfo.getInfoFromProvider(mContext);
 	}	
 
 	@Override

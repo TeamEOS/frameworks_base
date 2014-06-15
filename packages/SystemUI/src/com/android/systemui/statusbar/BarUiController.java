@@ -98,7 +98,7 @@ public abstract class BarUiController implements FeatureListener {
         }
         mObserver = new EosObserver(mContext);
         mPackageReceiver = new PackageReceiver();
-        mPackageReceiver.registerReceiver(context);
+        mPackageReceiver.registerBootReceiver(context);
     }
 
     protected abstract TextView getClockCenterView();
@@ -206,29 +206,38 @@ public abstract class BarUiController implements FeatureListener {
         getClockCenterView().setTextColor(color);
     }
 
-    // protects action based features
+    /*
+     * Initially register for boot completed, as PackageManager is 
+     * likely not online yet. Once boot is completed, reregister
+     * for package changes and handle as needed
+     */
     private class PackageReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if (action.equals(Intent.ACTION_PACKAGE_REMOVED)
+            if(action.equals(Intent.ACTION_BOOT_COMPLETED)) {
+                registerPackageReceiver(mContext);
+            } else if (action.equals(Intent.ACTION_PACKAGE_REMOVED)
                     || action.equals(Intent.ACTION_PACKAGE_CHANGED)) {
                 handlePackageChanged();
             }
         }
 
-        IntentFilter getFilters() {
+        void registerPackageReceiver(Context ctx) {
+            Log.i("BarUiController", "Boot completed received, registering package receiver");
+            ctx.unregisterReceiver(this);
             IntentFilter filter = new IntentFilter();
-            filter.addAction(Intent.ACTION_PACKAGE_ADDED);
             filter.addAction(Intent.ACTION_PACKAGE_REMOVED);
             filter.addAction(Intent.ACTION_PACKAGE_CHANGED);
             filter.addDataScheme("package");
-            return filter;
+            ctx.registerReceiver(this, filter);
         }
 
-        void registerReceiver(Context ctx) {
-            ctx.registerReceiver(this, getFilters());
+        void registerBootReceiver(Context ctx) {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(Intent.ACTION_BOOT_COMPLETED);
+            ctx.registerReceiver(this, filter);
         }
 
         void unregister(Context ctx) {
