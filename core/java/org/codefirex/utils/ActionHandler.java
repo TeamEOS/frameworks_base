@@ -100,7 +100,9 @@ public abstract class ActionHandler {
     }
 
     public void performTask(String action) {
-        if (action.equals(CFXConstants.SYSTEMUI_TASK_KILL_PROCESS)) {
+        if (action.equals(CFXConstants.SYSTEMUI_TASK_NO_ACTION)) {
+            return;
+        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_KILL_PROCESS)) {
             killProcess();
         } else if (action.equals(CFXConstants.SYSTEMUI_TASK_SCREENSHOT)) {
             takeScreenshot();

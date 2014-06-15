@@ -152,6 +152,11 @@ public final class CFXConstants {
     /**
      * @hide
      */
+    public static final String SYSTEMUI_TASK_NO_ACTION = "task_no_action";
+
+    /**
+     * @hide
+     */
     public static final String SYSTEMUI_TASK_SCREENSHOT = "task_screenshot";
 
     /**

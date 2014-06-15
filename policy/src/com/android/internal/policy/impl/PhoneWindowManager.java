@@ -869,7 +869,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 		}
 
 		public boolean isDoubleTapEnabled() {
-			return !isActionEmpty(mDoubleTap);
+			return !isActionEmpty(mDoubleTap)
+			        || !CFXConstants.SYSTEMUI_TASK_NO_ACTION.equals(mDoubleTap);
 		}
 
 		public boolean isLongTapEnabled() {
