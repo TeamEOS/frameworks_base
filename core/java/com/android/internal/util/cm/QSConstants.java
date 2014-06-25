@@ -34,6 +34,7 @@ public class QSConstants {
         public static final String TILE_NETWORKADB = "toggleNetworkAdb";
         public static final String TILE_FASTCHARGE = "toggleFastCharge";
         public static final String TILE_OTOUCH = "toggleOtouch";
+        public static final String TILE_HEADS_UP = "toggleHeadsUp";
 
         public static final String TILE_DELIMITER = "|";
         public static ArrayList<String> TILES_DEFAULT = new ArrayList<String>();
