@@ -68,7 +68,7 @@ public class PhoneUiController extends BarUiController {
     }
 
     public NavigationBarView getNavigationBarView() {
-    	mCurrentNavLayout = STOCK_NAV_BAR;
+        mCurrentNavLayout = STOCK_NAV_BAR;
         mNavigationBarView = (NavigationBarView) View.inflate(mContext, mCurrentNavLayout, null);
 
         // register softkeys for features
@@ -92,10 +92,11 @@ public class PhoneUiController extends BarUiController {
         mStatusBarWindow = window;
     }
 
-	public boolean isNxEnabled() {
-		if (mNavigationBarView == null) return false;
-		return mNavigationBarView.isNxEnabled();
-	}
+    public boolean isNxEnabled() {
+        if (mNavigationBarView == null)
+            return false;
+        return mNavigationBarView.isNxEnabled();
+    }
 
     @Override
     protected TextView getClockCenterView() {
@@ -114,65 +115,65 @@ public class PhoneUiController extends BarUiController {
         notifyBarViewRegistered();
     }
 
-	@Override
-	protected View getSoftkeyHolder() {
-		return mNavigationBarView;
-	}
+    @Override
+    protected View getSoftkeyHolder() {
+        return mNavigationBarView;
+    }
 
-	void onScreenStateChanged(boolean screenOn) {
-		if (mNx != null) {
-			mNx.onScreenStateChanged(screenOn);
-		}		
-	}
+    void onScreenStateChanged(boolean screenOn) {
+        if (mNx != null) {
+            mNx.onScreenStateChanged(screenOn);
+        }
+    }
 
-	private void updateNx() {
-		boolean isNxEnabled = Settings.System.getBoolean(mContext.getContentResolver(),
-				NX_ENABLED_URI, false);
-		if (isNxEnabled) {
-			startNX();
-		} else {
-			stopNX();
-		}
-	}
+    private void updateNx() {
+        boolean isNxEnabled = Settings.System.getBoolean(mContext.getContentResolver(),
+                NX_ENABLED_URI, false);
+        if (isNxEnabled) {
+            startNX();
+        } else {
+            stopNX();
+        }
+    }
 
-	private void startNX() {
-		stopNX();
-		mNx = new NxController(mContext, mHandler, mService, mNavigationBarView, getScreenSize());
-		mNavigationBarView.onStartNX((NxCallback)mNx);
-	}
+    private void startNX() {
+        stopNX();
+        mNx = new NxController(mContext, mHandler, mNavigationBarView, getScreenSize());
+        mNavigationBarView.onStartNX((NxCallback) mNx);
+    }
 
-	protected void onTearDown() {
-		stopNX();
-		mResolver.unregisterContentObserver(mNxObserver);
-		super.onTearDown();
-	}
+    protected void onTearDown() {
+        stopNX();
+        mResolver.unregisterContentObserver(mNxObserver);
+        super.onTearDown();
+    }
 
-	void stopNX() {
-		if (mNx != null && mNavigationBarView != null) {
-			mNavigationBarView.onStopNX();
-			mNx.tearDown();
-			mNx = null;
-		}
-	}
+    void stopNX() {
+        if (mNx != null && mNavigationBarView != null) {
+            mNavigationBarView.onStopNX();
+            mNx.tearDown();
+            mNx = null;
+        }
+    }
 
-	void updateResources() {
-		if (mNx != null)
-			mNx.updateResources();
-	}
+    void updateResources() {
+        if (mNx != null)
+            mNx.updateResources();
+    }
 
-	class NxObserver extends ContentObserver {
-		NxObserver(Handler handler) {
-			super(handler);
-		}
+    class NxObserver extends ContentObserver {
+        NxObserver(Handler handler) {
+            super(handler);
+        }
 
-		void observe() {
-			mResolver.registerContentObserver(
-					Settings.System.getUriFor(NX_ENABLED_URI), false, this);
-		}
+        void observe() {
+            mResolver.registerContentObserver(
+                    Settings.System.getUriFor(NX_ENABLED_URI), false, this);
+        }
 
-		@Override
-		public void onChange(boolean selfChange) {
-			updateNx();
-		}
-	}
+        @Override
+        public void onChange(boolean selfChange) {
+            updateNx();
+        }
+    }
 }

@@ -39,12 +39,34 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.android.internal.statusbar.IStatusBarService;
 import com.android.internal.util.cm.TorchConstants;
 
 public abstract class ActionHandler {
     protected ArrayList<String> mActions;
     protected Context mContext;
     static final String TAG = "ActionHandler";
+
+    public static final String SYSTEMUI_TASK_NO_ACTION = "task_no_action";
+    public static final String SYSTEMUI_TASK_SETTINGS_PANEL = "task_settings_panel";
+    public static final String SYSTEMUI_TASK_NOTIFICATION_PANEL = "task_notification_panel";
+    public static final String SYSTEMUI_TASK_SCREENSHOT = "task_screenshot";
+    public static final String SYSTEMUI_TASK_SCREENRECORD = "task_screenrecord";
+    public static final String SYSTEMUI_TASK_SCREENOFF = "task_screenoff";
+    public static final String SYSTEMUI_TASK_KILL_PROCESS = "task_killcurrent";
+    public static final String SYSTEMUI_TASK_ASSIST = "task_assist";
+    public static final String SYSTEMUI_TASK_POWER_MENU = "task_powermenu";
+    public static final String SYSTEMUI_TASK_TORCH = "task_torch";
+    public static final String SYSTEMUI_TASK_CAMERA = "task_camera";
+    public static final String SYSTEMUI_TASK_BT = "task_bt";
+    public static final String SYSTEMUI_TASK_WIFI = "task_wifi";
+    public static final String SYSTEMUI_TASK_WIFIAP = "task_wifiap";
+    public static final String SYSTEMUI_TASK_RECENTS = "task_recents";
+    public static final String SYSTEMUI_TASK_VOICE_SEARCH = "task_voice_search";
+    public static final String SYSTEMUI_TASK_APP_SEARCH = "task_app_search";
+    public static final String SYSTEMUI_TASK_MENU = "task_menu";
+    public static final String SYSTEMUI_TASK_BACK = "task_back";
+    public static final String SYSTEMUI_TASK_HOME = "task_home";
 
     public ActionHandler(Context context, ArrayList<String> actions) {
         if (context == null) throw new IllegalArgumentException("Context cannot be null");
@@ -100,38 +122,46 @@ public abstract class ActionHandler {
     }
 
     public void performTask(String action) {
-        if (action.equals(CFXConstants.SYSTEMUI_TASK_NO_ACTION)) {
+        if (action.equals(SYSTEMUI_TASK_NO_ACTION)) {
             return;
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_KILL_PROCESS)) {
+        } else if (action.equals(SYSTEMUI_TASK_KILL_PROCESS)) {
             killProcess();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_SCREENSHOT)) {
+        } else if (action.equals(SYSTEMUI_TASK_SCREENSHOT)) {
             takeScreenshot();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_SCREENRECORD)) {
+        } else if (action.equals(SYSTEMUI_TASK_SCREENRECORD)) {
             takeScreenrecord();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_SCREENOFF)) {
+        } else if (action.equals(SYSTEMUI_TASK_SCREENOFF)) {
             screenOff();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_ASSIST)) {
-            startAssistActivity();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_POWER_MENU)) {
+        } else if (action.equals(SYSTEMUI_TASK_ASSIST)) {
+            launchAssistAction();
+        } else if (action.equals(SYSTEMUI_TASK_POWER_MENU)) {
             showPowerMenu();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_TORCH)) {
+        } else if (action.equals(SYSTEMUI_TASK_TORCH)) {
             toggleTorch();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_CAMERA)) {
+        } else if (action.equals(SYSTEMUI_TASK_CAMERA)) {
             launchCamera();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_WIFI)) {
+        } else if (action.equals(SYSTEMUI_TASK_WIFI)) {
             toggleWifi();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_WIFIAP)) {
+        } else if (action.equals(SYSTEMUI_TASK_WIFIAP)) {
             toggleWifiAP();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_BT)) {
+        } else if (action.equals(SYSTEMUI_TASK_BT)) {
             toggleBluetooth();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_RECENTS)) {
-            toggleRecents();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_VOICE_SEARCH)) {
-            launchVoiceSearch();
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_APP_SEARCH)) {
+        } else if (action.equals(SYSTEMUI_TASK_RECENTS)) {
+            callStatusbarStub(SYSTEMUI_TASK_RECENTS);
+        } else if (action.equals(SYSTEMUI_TASK_SETTINGS_PANEL)) {
+            callStatusbarStub(SYSTEMUI_TASK_SETTINGS_PANEL);
+        } else if (action.equals(SYSTEMUI_TASK_NOTIFICATION_PANEL)) {
+            callStatusbarStub(SYSTEMUI_TASK_NOTIFICATION_PANEL);
+        } else if (action.equals(SYSTEMUI_TASK_VOICE_SEARCH)) {
+            launchAssistLongPressAction();
+        } else if (action.equals(SYSTEMUI_TASK_APP_SEARCH)) {
             triggerVirtualKeypress(KeyEvent.KEYCODE_SEARCH);
-        } else if (action.equals(CFXConstants.SYSTEMUI_TASK_MENU)) {
+        } else if (action.equals(SYSTEMUI_TASK_MENU)) {
             triggerVirtualKeypress(KeyEvent.KEYCODE_MENU);
+        } else if (action.equals(SYSTEMUI_TASK_BACK)) {
+            triggerVirtualKeypress(KeyEvent.KEYCODE_BACK);
+        } else if (action.equals(SYSTEMUI_TASK_HOME)) {
+            triggerVirtualKeypress(KeyEvent.KEYCODE_HOME);
         } else if (action.startsWith("app:")) {
             launchActivity(action);
         }
@@ -185,16 +215,53 @@ public abstract class ActionHandler {
         }
     }
 
-    private void toggleRecents() {
-        Intent i = new Intent(CFXConstants.ACTION_CFX_INTERNAL_ACTIVITY);
-        i.putExtra(CFXConstants.INTENT_EXTRA_INTERNAL_ACTIVITY, CFXConstants.SYSTEMUI_TASK_RECENTS);
-        mContext.sendBroadcastAsUser(i, new UserHandle(UserHandle.USER_ALL));
+    private boolean callStatusbarStub(String action) {
+        try {
+            IStatusBarService barService = IStatusBarService.Stub.asInterface(
+                    ServiceManager.getService("statusbar"));
+            if (barService == null)
+                return false;
+            if (SYSTEMUI_TASK_RECENTS.equals(action)) {
+                sendCloseSystemWindows("recentapps");
+                barService.toggleRecentApps();
+            } else if (SYSTEMUI_TASK_SETTINGS_PANEL.equals(action)) {
+                barService.expandSettingsPanel();
+            } else if (SYSTEMUI_TASK_NOTIFICATION_PANEL.equals(action)) {
+                barService.expandNotificationsPanel();
+            } else {
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
-    private void launchVoiceSearch() {
-        Intent i = new Intent(CFXConstants.ACTION_CFX_INTERNAL_ACTIVITY);
-        i.putExtra(CFXConstants.INTENT_EXTRA_INTERNAL_ACTIVITY, CFXConstants.SYSTEMUI_TASK_VOICE_SEARCH);
-        mContext.sendBroadcastAsUser(i, new UserHandle(UserHandle.USER_ALL));
+    private static void sendCloseSystemWindows(String reason) {
+        if (ActivityManagerNative.isSystemReady()) {
+            try {
+                ActivityManagerNative.getDefault().closeSystemDialogs(reason);
+            } catch (RemoteException e) {
+            }
+        }
+    }
+
+    private void launchAssistLongPressAction() {
+        sendCloseSystemWindows("assist");
+        // launch the search activity
+        Intent intent = new Intent(Intent.ACTION_SEARCH_LONG_PRESS);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            // TODO: This only stops the factory-installed search manager.  
+            // Need to formalize an API to handle others
+            SearchManager searchManager = (SearchManager) mContext.getSystemService(Context.SEARCH_SERVICE);
+            if (searchManager != null) {
+                searchManager.stopSearch();
+            }
+            mContext.startActivityAsUser(intent, UserHandle.CURRENT);
+        } catch (ActivityNotFoundException e) {
+            Slog.w(TAG, "No activity to handle assist long press action.", e);
+        }
     }
 
     private void triggerVirtualKeypress(final int keyCode) {
@@ -492,16 +559,25 @@ public abstract class ActionHandler {
         pm.goToSleep(SystemClock.uptimeMillis());
     }
 
-
-    private void startAssistActivity() {
-        Intent i = new Intent(CFXConstants.ACTION_CFX_INTERNAL_ACTIVITY);
-        i.putExtra(CFXConstants.INTENT_EXTRA_INTERNAL_ACTIVITY, CFXConstants.SYSTEMUI_TASK_ASSIST);
-        mContext.sendBroadcastAsUser(i, new UserHandle(UserHandle.USER_ALL));
+    private void launchAssistAction() {
+        sendCloseSystemWindows("assist");
+        Intent intent = ((SearchManager) mContext.getSystemService(Context.SEARCH_SERVICE))
+                .getAssistIntent(mContext, true, UserHandle.USER_CURRENT);
+        if (intent != null) {
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            try {
+                mContext.startActivityAsUser(intent, UserHandle.CURRENT);
+            } catch (ActivityNotFoundException e) {
+                Slog.w(TAG, "No activity to handle assist action.", e);
+            }
+        }
     }
 
     private void showPowerMenu() {
         Intent i = new Intent(CFXConstants.ACTION_CFX_INTERNAL_ACTIVITY);
-        i.putExtra(CFXConstants.INTENT_EXTRA_INTERNAL_ACTIVITY, CFXConstants.SYSTEMUI_TASK_POWER_MENU);
+        i.putExtra(CFXConstants.INTENT_EXTRA_INTERNAL_ACTIVITY, SYSTEMUI_TASK_POWER_MENU);
         mContext.sendBroadcastAsUser(i, new UserHandle(UserHandle.USER_ALL));
     }
 

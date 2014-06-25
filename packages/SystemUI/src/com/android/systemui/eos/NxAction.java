@@ -1,6 +1,6 @@
 package com.android.systemui.eos;
 
-import org.codefirex.utils.CFXConstants;
+import org.codefirex.utils.ActionHandler;
 
 import android.os.Handler;
 import android.text.TextUtils;
@@ -69,7 +69,7 @@ public class NxAction {
 	}
 
 	public boolean isEnabled() {
-		return !isActionEmpty(mAction) || !CFXConstants.SYSTEMUI_TASK_NO_ACTION.equals(mAction);
+		return !isActionEmpty(mAction) || !ActionHandler.SYSTEMUI_TASK_NO_ACTION.equals(mAction);
 	}
 
 	private boolean isActionEmpty(String action) {

@@ -626,14 +626,16 @@ public final class ShutdownThread extends Thread {
      */
     public static void rebootOrShutdown(boolean reboot, String reason) {
         if (reboot) {
-			if (mRebootHot && sInstance.mContext != null) {
-				Log.i(TAG, "Hot Rebooting");
-				Intent intent = new Intent()
-						.setAction(CFXConstants.ACTION_CFX_HOT_REBOOT);
-				sInstance.mContext.sendBroadcastAsUser(intent, new UserHandle(
-						UserHandle.USER_ALL));
-				return;
-			}
+            if (mRebootHot && sInstance.mContext != null) {
+                Log.i(TAG, "Hot Rebooting");
+                try {
+                    Runtime.getRuntime().exec("pkill -9 system_server");
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                return;
+            }
             Log.i(TAG, "Rebooting, reason: " + reason);
             PowerManagerService.lowLevelReboot(reason);
             Log.e(TAG, "Reboot failed, will attempt shutdown instead");

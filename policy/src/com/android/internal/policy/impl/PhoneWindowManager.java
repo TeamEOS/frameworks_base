@@ -1,10 +1,8 @@
 /*
-<<<<<<< HEAD
  * Copyright (C) 2008 The Android Open Source Project
  * Copyright (C) 2012-2013 The CyanogenMod Project
-=======
+ * Copyright (C) 2013-2014 The TeamEos Project
  * Modifications Copyright (C) 2013 The OmniROM Project
->>>>>>> 4b79eae... base: Add a key combo to start/stop video recording
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -622,6 +620,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.DEV_FORCE_SHOW_NAVBAR), false, this,
                     UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    CFXConstants.SYSTEMUI_NAVBAR_SIZE_DP), false, this,
+                    UserHandle.USER_ALL);
 
             updateSettings();
         }
@@ -649,66 +650,35 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
         }
 
-		@Override
-		public void onReceive(Context context, Intent intent) {
+        @Override
+        public void onReceive(Context context, Intent intent) {
             try {
                 checkSenderAuthentication(context);
             } catch (SecurityException e) {
                 Log.e(TAG, e.toString());
                 return;
             }
-			String action = intent.getAction();
-			String reason;
-			if (action.equals(CFXConstants.ACTION_CFX_UI_CHANGE)) {
-				reason = intent.getStringExtra(CFXConstants.INTENT_REASON_UI_CHANGE);
-                if (reason != null
-                        && reason.equals(CFXConstants.INTENT_REASON_UI_BAR_SIZE)) {
-                    setNavigationBarSize();
-                }
-			} else if (action.equals(CFXConstants.ACTION_CFX_HOT_REBOOT)) {
-				try {
-					Runtime.getRuntime().exec("pkill -9 system_server");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-            } else if (action.equals(CFXConstants.ACTION_CFX_INTERNAL_ACTIVITY)) {
+            String action = intent.getAction();
+            if (action.equals(CFXConstants.ACTION_CFX_INTERNAL_ACTIVITY)) {
                 Log.i(TAG, "CFX Internal action received");
-                String activity = intent.getStringExtra(CFXConstants.INTENT_EXTRA_INTERNAL_ACTIVITY);
+                String activity = intent
+                        .getStringExtra(CFXConstants.INTENT_EXTRA_INTERNAL_ACTIVITY);
                 if (activity != null) {
-                    Log.i(TAG, "CFX Internal action activty " + activity);
-                    if (activity.equals(CFXConstants.SYSTEMUI_TASK_VOICE_SEARCH)) {
-                        launchAssistLongPressAction();
-                    } else if (activity.equals(CFXConstants.SYSTEMUI_TASK_ASSIST)) {
-                        launchAssistAction();
-					} else if (activity
-							.equals(CFXConstants.SYSTEMUI_TASK_POWER_MENU)) {
-						// dialog ui: must post on pwm thread
-						mHandler.post(new Runnable() {
-							@Override
-							public void run() {
-								sendCloseSystemWindows(SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS);
-								showGlobalActionsDialog();
-							}
-						});
-                    } else if (activity.equals(CFXConstants.SYSTEMUI_TASK_RECENTS)) {
-                        sendCloseSystemWindows(SYSTEM_DIALOG_REASON_RECENT_APPS);
-                        try {
-                            IStatusBarService statusbar = getStatusBarService();
-                            if (statusbar != null) {
-                                statusbar.toggleRecentApps();
+                    if (activity
+                            .equals(ActionHandler.SYSTEMUI_TASK_POWER_MENU)) {
+                        // dialog ui: must post on pwm thread
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                sendCloseSystemWindows(SYSTEM_DIALOG_REASON_GLOBAL_ACTIONS);
+                                showGlobalActionsDialog();
                             }
-                        } catch (RemoteException e) {
-                            Slog.e(TAG, "RemoteException when showing recent apps", e);
-                            // re-acquire status bar service next time it is
-                            // needed.
-                            mStatusBarService = null;
-                        }
+                        });
                     }
                 }
             }
-		}
-	}
+        }
+    }
 
     @Override
     public int getNavigationBarWidth() {
@@ -765,349 +735,332 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     // we don't want to create a bunch of ActionHandlers
     // create one instance in ButtonHandler and let buttons call back
     private interface ActionReceiver {
-    	public void onActionDispatched(HardKeyButton button, String task);
+        public void onActionDispatched(HardKeyButton button, String task);
     }
 
-	private class HardKeyButton {
-		static final String NONE = "";
-		static final String BACK = "back";
-		static final String HOME = "home";
-		static final String RECENTS = CFXConstants.SYSTEMUI_TASK_RECENTS;
-		static final String MENU = CFXConstants.SYSTEMUI_TASK_MENU;
-		static final String ASSIST = CFXConstants.SYSTEMUI_TASK_ASSIST;
-		static final String VOICE = CFXConstants.SYSTEMUI_TASK_VOICE_SEARCH;
-		static final String SLEEP = CFXConstants.SYSTEMUI_TASK_SCREENOFF;
+    private class HardKeyButton {
+        static final String NONE = "";
+        static final String BACK = ActionHandler.SYSTEMUI_TASK_BACK;
+        static final String HOME = ActionHandler.SYSTEMUI_TASK_HOME;
+        static final String RECENTS = ActionHandler.SYSTEMUI_TASK_RECENTS;
+        static final String MENU = ActionHandler.SYSTEMUI_TASK_MENU;
+        static final String ASSIST = ActionHandler.SYSTEMUI_TASK_ASSIST;
+        static final String VOICE = ActionHandler.SYSTEMUI_TASK_VOICE_SEARCH;
+        static final String SLEEP = ActionHandler.SYSTEMUI_TASK_SCREENOFF;
 
-		private Handler mHandler;
-		private ActionReceiver mActionReceiver;
+        private Handler mHandler;
+        private ActionReceiver mActionReceiver;
 
-		private String mSingleTapUri = NONE;
-		private String mLongPressUri = NONE;
-		private String mDoubleTapUri = NONE;
-		private String mSingleTap = NONE;
-		private String mLongPress = NONE;
-		private String mDoubleTap = NONE;
-		private String mSingleTapDef = NONE;
-		private String mLongPressDef = NONE;
-		private String mDoubleTapDef = NONE;
+        private String mSingleTapUri = NONE;
+        private String mLongPressUri = NONE;
+        private String mDoubleTapUri = NONE;
+        private String mSingleTap = NONE;
+        private String mLongPress = NONE;
+        private String mDoubleTap = NONE;
+        private String mSingleTapDef = NONE;
+        private String mLongPressDef = NONE;
+        private String mDoubleTapDef = NONE;
 
-		private boolean mStaticSingleTap = false;
-		private boolean mDoubleTapPending = false;
-		private boolean mIsPressed = false;
-		private boolean mWasConsumed = false;
+        private boolean mStaticSingleTap = false;
+        private boolean mDoubleTapPending = false;
+        private boolean mIsPressed = false;
+        private boolean mWasConsumed = false;
 
-		public HardKeyButton(Context ctx, String singleTapUri, String longPressUri,
-				String doubleTapUri, Handler handler, ActionReceiver receiver) {
-			mSingleTapUri = singleTapUri;
-			mLongPressUri = longPressUri;
-			mDoubleTapUri = doubleTapUri;
-			mHandler = handler;
-			mActionReceiver = receiver;
-		}
+        public HardKeyButton(Context ctx, String singleTapUri, String longPressUri,
+                String doubleTapUri, Handler handler, ActionReceiver receiver) {
+            mSingleTapUri = singleTapUri;
+            mLongPressUri = longPressUri;
+            mDoubleTapUri = doubleTapUri;
+            mHandler = handler;
+            mActionReceiver = receiver;
+        }
 
-		public HardKeyButton(Context ctx, String longPressUri,
-				String doubleTapUri, Handler handler, ActionReceiver receiver) {
-			this(ctx, NONE, longPressUri, doubleTapUri, handler, receiver);
-			mStaticSingleTap = true;
-		}
+        public HardKeyButton(Context ctx, String longPressUri,
+                String doubleTapUri, Handler handler, ActionReceiver receiver) {
+            this(ctx, NONE, longPressUri, doubleTapUri, handler, receiver);
+            mStaticSingleTap = true;
+        }
 
-		void setDefaults(String singleTapDef, String longPressDef, String doubleTapDef) {
-			mSingleTapDef = singleTapDef;
-			if (mStaticSingleTap) {
-				mSingleTap = mSingleTapDef;
-			}
-			mLongPressDef = longPressDef;
-			mDoubleTapDef = doubleTapDef;
-		}
+        void setDefaults(String singleTapDef, String longPressDef, String doubleTapDef) {
+            mSingleTapDef = singleTapDef;
+            if (mStaticSingleTap) {
+                mSingleTap = mSingleTapDef;
+            }
+            mLongPressDef = longPressDef;
+            mDoubleTapDef = doubleTapDef;
+        }
 
-		private final Runnable mDoubleTapTimeout  = new Runnable() {
-			public void run() {
-				if (mDoubleTapPending) {
-					mDoubleTapPending = false;
-					if (!keyHasSingleTapRecent()) {
-						cancelPreloadRecentApps();
-					}
-					mActionReceiver.onActionDispatched(HardKeyButton.this, mSingleTap);
-				}
-			}
-		};
+        private final Runnable mDoubleTapTimeout = new Runnable() {
+            public void run() {
+                if (mDoubleTapPending) {
+                    mDoubleTapPending = false;
+                    if (!keyHasSingleTapRecent()) {
+                        cancelPreloadRecentApps();
+                    }
+                    mActionReceiver.onActionDispatched(HardKeyButton.this, mSingleTap);
+                }
+            }
+        };
 
-		private final Runnable mSTRunnable = new Runnable() {
-			public void run() {
-				mActionReceiver.onActionDispatched(HardKeyButton.this, mSingleTap);
-			}
-		};
+        private final Runnable mSTRunnable = new Runnable() {
+            public void run() {
+                mActionReceiver.onActionDispatched(HardKeyButton.this, mSingleTap);
+            }
+        };
 
-		private final Runnable mDTRunnable = new Runnable() {
-			public void run() {
-				mActionReceiver.onActionDispatched(HardKeyButton.this, mDoubleTap);
-			}
-		};
+        private final Runnable mDTRunnable = new Runnable() {
+            public void run() {
+                mActionReceiver.onActionDispatched(HardKeyButton.this, mDoubleTap);
+            }
+        };
 
-		private final Runnable mLPRunnable = new Runnable() {
-			public void run() {
-				mActionReceiver.onActionDispatched(HardKeyButton.this, mLongPress);
-			}
-		};
+        private final Runnable mLPRunnable = new Runnable() {
+            public void run() {
+                mActionReceiver.onActionDispatched(HardKeyButton.this, mLongPress);
+            }
+        };
 
-		public boolean keyHasSingleTapRecent() {
-			return RECENTS.equals(mSingleTap);
-		}
+        public boolean keyHasSingleTapRecent() {
+            return RECENTS.equals(mSingleTap);
+        }
 
-		public boolean keyHasLongPressRecents() {
-			return RECENTS.equals(mLongPress);
-		}
+        public boolean keyHasLongPressRecents() {
+            return RECENTS.equals(mLongPress);
+        }
 
-		public boolean keyHasDoubleTapRecents() {
-			return RECENTS.equals(mDoubleTap);
-		}		
+        public boolean keyHasDoubleTapRecents() {
+            return RECENTS.equals(mDoubleTap);
+        }
 
-		public boolean keyHasMenuAction() {
-			return MENU.equals(mSingleTap)
-					|| MENU.equals(mLongPress)
-					|| MENU.equals(mDoubleTap);
-		}
+        public boolean keyHasMenuAction() {
+            return MENU.equals(mSingleTap)
+                    || MENU.equals(mLongPress)
+                    || MENU.equals(mDoubleTap);
+        }
 
-		public boolean isDoubleTapEnabled() {
-			return !isActionEmpty(mDoubleTap)
-			        || !CFXConstants.SYSTEMUI_TASK_NO_ACTION.equals(mDoubleTap);
-		}
+        public boolean isDoubleTapEnabled() {
+            return !isActionEmpty(mDoubleTap)
+                    || !ActionHandler.SYSTEMUI_TASK_NO_ACTION.equals(mDoubleTap);
+        }
 
-		public boolean isLongTapEnabled() {
-			return !isActionEmpty(mLongPress);
-		}
+        public boolean isLongTapEnabled() {
+            return !isActionEmpty(mLongPress);
+        }
 
-		void updateActions(ContentResolver cr) {
-			if (!mStaticSingleTap) {
-				mSingleTap = getActionFromProvider(cr, mSingleTapUri, mSingleTapDef);
-			}
-			mDoubleTap = getActionFromProvider(cr, mDoubleTapUri, mDoubleTapDef);
-			mLongPress = getActionFromProvider(cr, mLongPressUri, mLongPressDef);
-		}
+        void updateActions(ContentResolver cr) {
+            if (!mStaticSingleTap) {
+                mSingleTap = getActionFromProvider(cr, mSingleTapUri, mSingleTapDef);
+            }
+            mDoubleTap = getActionFromProvider(cr, mDoubleTapUri, mDoubleTapDef);
+            mLongPress = getActionFromProvider(cr, mLongPressUri, mLongPressDef);
+        }
 
-		void setDoubleTapPending(boolean pending) {
-			mDoubleTapPending = pending;
-		}
+        void setDoubleTapPending(boolean pending) {
+            mDoubleTapPending = pending;
+        }
 
-		boolean isDoubleTapPending() {
-			return mDoubleTapPending;
-		}
+        boolean isDoubleTapPending() {
+            return mDoubleTapPending;
+        }
 
-		void setPressed(boolean pressed) {
-			mIsPressed = pressed;
-		}
+        void setPressed(boolean pressed) {
+            mIsPressed = pressed;
+        }
 
-		boolean isPressed() {
-			return mIsPressed;
-		}		
+        boolean isPressed() {
+            return mIsPressed;
+        }
 
-		void setWasConsumed(boolean consumed) {
-			mWasConsumed = consumed;
-		}
+        void setWasConsumed(boolean consumed) {
+            mWasConsumed = consumed;
+        }
 
-		boolean wasConsumed() {
-			return mWasConsumed;
-		}
+        boolean wasConsumed() {
+            return mWasConsumed;
+        }
 
-		protected String getActionFromProvider(ContentResolver cr, String uri,
-				String def) {
-			String tmp = Settings.System.getString(cr, uri);
-			tmp = checkEmpty(tmp, def);
-			return tmp;
-		}
+        protected String getActionFromProvider(ContentResolver cr, String uri,
+                String def) {
+            String tmp = Settings.System.getString(cr, uri);
+            tmp = checkEmpty(tmp, def);
+            return tmp;
+        }
 
-		private String checkEmpty(String action, String def) {
-			if (isActionEmpty(action)) {
-				action = def;
-			}
-			return action;
-		}
+        private String checkEmpty(String action, String def) {
+            if (isActionEmpty(action)) {
+                action = def;
+            }
+            return action;
+        }
 
-		private boolean isActionEmpty(String action) {
-			return TextUtils.isEmpty(action) 
-					|| action.startsWith("empty")
-					|| null == action;
-		}		
+        private boolean isActionEmpty(String action) {
+            return TextUtils.isEmpty(action)
+                    || action.startsWith("empty")
+                    || null == action;
+        }
 
-		void fireDoubleTap() {
-			mHandler.post(mDTRunnable);
-		}
+        void fireDoubleTap() {
+            mHandler.post(mDTRunnable);
+        }
 
-		void fireLongPress() {
-			mHandler.post(mLPRunnable);
-		}
+        void fireLongPress() {
+            mHandler.post(mLPRunnable);
+        }
 
-		void fireSingleTap() {
-			mHandler.post(mSTRunnable);
-		}
-		
-		void cancelDTTimeout() {
-			mHandler.removeCallbacks(mDoubleTapTimeout);
-		}
-		
-		void postDTTimeout() {
-			mHandler.postDelayed(mDoubleTapTimeout, ViewConfiguration.getDoubleTapTimeout());
-		}
-	}
+        void fireSingleTap() {
+            mHandler.post(mSTRunnable);
+        }
 
-	private class KeyActionHandler extends ActionHandler implements ActionReceiver {
-		private HardKeyButton mBackButton;
-		private HardKeyButton mHomeButton;
-		private HardKeyButton mRecentButton;
-		private HardKeyButton mMenuButton;
-		private HardKeyButton mAssistButton;
+        void cancelDTTimeout() {
+            mHandler.removeCallbacks(mDoubleTapTimeout);
+        }
 
-		public KeyActionHandler(Context context, Handler handler) {
-			super(context);
-			mBackButton = new HardKeyButton(context,
-					CFXConstants.INPUT_HARDKEY_BACK_LONGPRESS,
-					CFXConstants.INPUT_HARDKEY_BACK_DOUBLETAP, handler, this);
+        void postDTTimeout() {
+            mHandler.postDelayed(mDoubleTapTimeout, ViewConfiguration.getDoubleTapTimeout());
+        }
+    }
 
-			mHomeButton = new HardKeyButton(context,
-					CFXConstants.INPUT_HARDKEY_HOME_LONGPRESS,
-					CFXConstants.INPUT_HARDKEY_HOME_DOUBLETAP, handler, this);
+    private class KeyActionHandler extends ActionHandler implements ActionReceiver {
+        private HardKeyButton mBackButton;
+        private HardKeyButton mHomeButton;
+        private HardKeyButton mRecentButton;
+        private HardKeyButton mMenuButton;
+        private HardKeyButton mAssistButton;
 
-			mRecentButton = new HardKeyButton(context,
-					CFXConstants.INPUT_HARDKEY_RECENT_SINGLETAP,
-					CFXConstants.INPUT_HARDKEY_RECENT_LONGPRESS,
-					CFXConstants.INPUT_HARDKEY_RECENT_DOUBLETAP, handler, this);
+        public KeyActionHandler(Context context, Handler handler) {
+            super(context);
+            mBackButton = new HardKeyButton(context,
+                    CFXConstants.INPUT_HARDKEY_BACK_LONGPRESS,
+                    CFXConstants.INPUT_HARDKEY_BACK_DOUBLETAP, handler, this);
 
-			mMenuButton = new HardKeyButton(context,
-					CFXConstants.INPUT_HARDKEY_MENU_SINGLETAP,
-					CFXConstants.INPUT_HARDKEY_MENU_LONGPRESS,
-					CFXConstants.INPUT_HARDKEY_MENU_DOUBLETAP, handler, this);
+            mHomeButton = new HardKeyButton(context,
+                    CFXConstants.INPUT_HARDKEY_HOME_LONGPRESS,
+                    CFXConstants.INPUT_HARDKEY_HOME_DOUBLETAP, handler, this);
 
-			mAssistButton = new HardKeyButton(context,
-					CFXConstants.INPUT_HARDKEY_ASSIST_SINGLETAP,
-					CFXConstants.INPUT_HARDKEY_ASSIST_LONGPRESS,
-					CFXConstants.INPUT_HARDKEY_ASSIST_DOUBLETAP, handler, this);
-			
-			mBackButton.setDefaults(HardKeyButton.BACK,
-					HardKeyButton.NONE,
-					HardKeyButton.NONE);
-			mHomeButton.setDefaults(HardKeyButton.HOME,
-					HardKeyButton.MENU,
-					HardKeyButton.RECENTS);
-			mRecentButton.setDefaults(HardKeyButton.RECENTS,
-					HardKeyButton.NONE,
-					HardKeyButton.NONE);
-			mMenuButton.setDefaults(HardKeyButton.MENU,
-					HardKeyButton.NONE,
-					HardKeyButton.NONE);
-			mAssistButton.setDefaults(HardKeyButton.ASSIST,
-					HardKeyButton.VOICE,
-					HardKeyButton.NONE);
-		}
+            mRecentButton = new HardKeyButton(context,
+                    CFXConstants.INPUT_HARDKEY_RECENT_SINGLETAP,
+                    CFXConstants.INPUT_HARDKEY_RECENT_LONGPRESS,
+                    CFXConstants.INPUT_HARDKEY_RECENT_DOUBLETAP, handler, this);
 
-		HardKeyButton getBackButton() {
-			return mBackButton;
-		}
+            mMenuButton = new HardKeyButton(context,
+                    CFXConstants.INPUT_HARDKEY_MENU_SINGLETAP,
+                    CFXConstants.INPUT_HARDKEY_MENU_LONGPRESS,
+                    CFXConstants.INPUT_HARDKEY_MENU_DOUBLETAP, handler, this);
 
-		HardKeyButton getHomeButton() {
-			return mHomeButton;
-		}
+            mAssistButton = new HardKeyButton(context,
+                    CFXConstants.INPUT_HARDKEY_ASSIST_SINGLETAP,
+                    CFXConstants.INPUT_HARDKEY_ASSIST_LONGPRESS,
+                    CFXConstants.INPUT_HARDKEY_ASSIST_DOUBLETAP, handler, this);
 
-		HardKeyButton getRecentButton() {
-			return mRecentButton;
-		}
+            mBackButton.setDefaults(HardKeyButton.BACK,
+                    HardKeyButton.NONE,
+                    HardKeyButton.NONE);
+            mHomeButton.setDefaults(HardKeyButton.HOME,
+                    HardKeyButton.MENU,
+                    HardKeyButton.RECENTS);
+            mRecentButton.setDefaults(HardKeyButton.RECENTS,
+                    HardKeyButton.NONE,
+                    HardKeyButton.NONE);
+            mMenuButton.setDefaults(HardKeyButton.MENU,
+                    HardKeyButton.NONE,
+                    HardKeyButton.NONE);
+            mAssistButton.setDefaults(HardKeyButton.ASSIST,
+                    HardKeyButton.VOICE,
+                    HardKeyButton.NONE);
+        }
 
-		HardKeyButton getMenuButton() {
-			return mMenuButton;
-		}
+        HardKeyButton getBackButton() {
+            return mBackButton;
+        }
 
-		HardKeyButton getAssistButton() {
-			return mAssistButton;
-		}
-		
-		boolean isActionHandlingDisabled() {
-		    return mDevForceNavbar || mHasNavigationBar;
-		}
+        HardKeyButton getHomeButton() {
+            return mHomeButton;
+        }
 
-		void updateKeyAssignments() {
-			ContentResolver cr = mContext.getContentResolver();
+        HardKeyButton getRecentButton() {
+            return mRecentButton;
+        }
 
-			final boolean hasMenu = (mDeviceHardwareKeys & KEY_MASK_MENU) != 0;
-			final boolean hasHome = (mDeviceHardwareKeys & KEY_MASK_HOME) != 0;
-			final boolean hasAssist = (mDeviceHardwareKeys & KEY_MASK_ASSIST) != 0;
-			final boolean hasAppSwitch = (mDeviceHardwareKeys & KEY_MASK_APP_SWITCH) != 0;
+        HardKeyButton getMenuButton() {
+            return mMenuButton;
+        }
 
-			mBackButton.updateActions(cr);
-			mHomeButton.updateActions(cr);
-			mRecentButton.updateActions(cr);
-			mMenuButton.updateActions(cr);
-			mAssistButton.updateActions(cr);
+        HardKeyButton getAssistButton() {
+            return mAssistButton;
+        }
 
-			mHasMenuKeyEnabled = false;
+        boolean isActionHandlingDisabled() {
+            return mDevForceNavbar || mHasNavigationBar;
+        }
 
-			if (hasHome) {
-				mHasMenuKeyEnabled = mHomeButton.keyHasMenuAction();
-			}
-			if (hasMenu) {
-				mHasMenuKeyEnabled |= mMenuButton.keyHasMenuAction();
-			}
-			if (hasAssist) {
-				mHasMenuKeyEnabled |= mAssistButton.keyHasMenuAction();
-			}
-			if (hasAppSwitch) {
-				mHasMenuKeyEnabled |= mRecentButton.keyHasMenuAction();
-			}
-			mHasMenuKeyEnabled |= mBackButton.keyHasMenuAction();
+        void updateKeyAssignments() {
+            ContentResolver cr = mContext.getContentResolver();
 
-		}		
+            final boolean hasMenu = (mDeviceHardwareKeys & KEY_MASK_MENU) != 0;
+            final boolean hasHome = (mDeviceHardwareKeys & KEY_MASK_HOME) != 0;
+            final boolean hasAssist = (mDeviceHardwareKeys & KEY_MASK_ASSIST) != 0;
+            final boolean hasAppSwitch = (mDeviceHardwareKeys & KEY_MASK_APP_SWITCH) != 0;
 
-		@Override
-		public boolean handleAction(String action) {
-			return false;
-		}
+            mBackButton.updateActions(cr);
+            mHomeButton.updateActions(cr);
+            mRecentButton.updateActions(cr);
+            mMenuButton.updateActions(cr);
+            mAssistButton.updateActions(cr);
 
-		@Override
-		public void onActionDispatched(HardKeyButton button, String task) {
-			if (task.equals(HardKeyButton.BACK)) {
-				triggerVirtualKeypress(KeyEvent.KEYCODE_BACK);
-			} else if (task.equals(HardKeyButton.HOME)) {
-				launchHomeFromHotKey();
-			} else if (task.equals(HardKeyButton.RECENTS)) {
-				toggleRecents();
-			} else if (task.equals(HardKeyButton.MENU)) {
-				triggerVirtualKeypress(KeyEvent.KEYCODE_MENU);
-			} else if(task.equals(HardKeyButton.SLEEP)) {
-				// can't consume UP event if screen is off, do it manually
-					button.setPressed(false);
-					button.setWasConsumed(false);
-					performTask(task);
-			} else {
-				performTask(task);
-			}			
-		}
+            mHasMenuKeyEnabled = false;
 
-	    void triggerVirtualKeypress(final int keyCode) {
-	        InputManager im = InputManager.getInstance();
-	        long now = SystemClock.uptimeMillis();
+            if (hasHome) {
+                mHasMenuKeyEnabled = mHomeButton.keyHasMenuAction();
+            }
+            if (hasMenu) {
+                mHasMenuKeyEnabled |= mMenuButton.keyHasMenuAction();
+            }
+            if (hasAssist) {
+                mHasMenuKeyEnabled |= mAssistButton.keyHasMenuAction();
+            }
+            if (hasAppSwitch) {
+                mHasMenuKeyEnabled |= mRecentButton.keyHasMenuAction();
+            }
+            mHasMenuKeyEnabled |= mBackButton.keyHasMenuAction();
 
-	        final KeyEvent downEvent = new KeyEvent(now, now, KeyEvent.ACTION_DOWN,
-	                keyCode, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0,
-	                KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_KEYBOARD);
-	        final KeyEvent upEvent = KeyEvent.changeAction(downEvent, KeyEvent.ACTION_UP);
+        }
 
-	        im.injectInputEvent(downEvent, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
-	        im.injectInputEvent(upEvent, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
-	    }
+        @Override
+        public boolean handleAction(String action) {
+            return false;
+        }
 
-		private void toggleRecents() {
-			sendCloseSystemWindows(SYSTEM_DIALOG_REASON_RECENT_APPS);
-			try {
-				IStatusBarService statusbar = getStatusBarService();
-				if (statusbar != null) {
-					statusbar.toggleRecentApps();
-				}
-			} catch (RemoteException e) {
-				Slog.e(TAG, "RemoteException when showing recent apps", e);
-				// re-acquire status bar service next time it is
-				// needed.
-				mStatusBarService = null;
-			}
-		}
-	};
+        @Override
+        public void onActionDispatched(HardKeyButton button, String task) {
+            if (task.equals(HardKeyButton.HOME)) {
+                launchHomeFromHotKey();
+            } else if (task.equals(HardKeyButton.RECENTS)) {
+                toggleRecents();
+            } else if (task.equals(HardKeyButton.SLEEP)) {
+                // can't consume UP event if screen is off, do it manually
+                button.setPressed(false);
+                button.setWasConsumed(false);
+                performTask(task);
+            } else {
+                performTask(task);
+            }
+        }
+
+        private void toggleRecents() {
+            sendCloseSystemWindows(SYSTEM_DIALOG_REASON_RECENT_APPS);
+            try {
+                IStatusBarService statusbar = getStatusBarService();
+                if (statusbar != null) {
+                    statusbar.toggleRecentApps();
+                }
+            } catch (RemoteException e) {
+                Slog.e(TAG, "RemoteException when showing recent apps", e);
+                // re-acquire status bar service next time it is
+                // needed.
+                mStatusBarService = null;
+            }
+        }
+    }
 
     class MyOrientationListener extends WindowOrientationListener {
         MyOrientationListener(Context context, Handler handler) {
@@ -1538,8 +1491,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
         mCfxReceiver = new CfxReceiver();
         filter = new IntentFilter();
-        filter.addAction(CFXConstants.ACTION_CFX_UI_CHANGE);
-        filter.addAction(CFXConstants.ACTION_CFX_HOT_REBOOT);
         filter.addAction(CFXConstants.ACTION_CFX_INTERNAL_ACTIVITY);
         context.registerReceiver(mCfxReceiver, filter);
 
@@ -1709,6 +1660,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
 
             mActionHandler.updateKeyAssignments();
+
+            setNavigationBarSize();
 
             // Configure rotation lock.
             int userRotation = Settings.System.getIntForUser(resolver,
