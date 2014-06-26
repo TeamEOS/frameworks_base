@@ -3119,10 +3119,15 @@ public final class Settings {
         */
         public static final String EXPANDED_RING_MODE = "expanded_ring_mode";
 
-	    /**
+	/**
          * volume rocker wake
          * @hide
          */
+
+        /**
+         * @hide
+         */
+        public static final String PROXIMITY_ON_WAKE = "proximity_on_wake";
 
         /**
          * Boolean value whether to link ringtone and notification volumes
