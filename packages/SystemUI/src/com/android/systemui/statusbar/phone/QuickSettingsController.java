@@ -80,6 +80,7 @@ import com.android.systemui.quicksettings.HeadsUpTile;
 import com.android.systemui.quicksettings.InputMethodTile;
 import com.android.systemui.quicksettings.LteTile;
 import com.android.systemui.quicksettings.MobileNetworkTile;
+import com.android.systemui.quicksettings.MobileNetworkTypeTile;
 import com.android.systemui.quicksettings.NfcTile;
 import com.android.systemui.quicksettings.OtouchTile;
 import com.android.systemui.quicksettings.PreferencesTile;
@@ -235,8 +236,8 @@ public class QuickSettingsController {
                 qs = new MobileNetworkTile(mContext, this, mStatusBarService.mNetworkController);
             } else if (tile.equals(TILE_LOCKSCREEN)) {
                 qs = new ToggleLockscreenTile(mContext, this);
-//            } else if (tile.equals(TILE_NETWORKMODE) && mobileDataSupported) {
-//                qs = new MobileNetworkTypeTile(mContext, this, mStatusBarService.mNetworkController);
+            } else if (tile.equals(TILE_NETWORKMODE) && mobileDataSupported) {
+                qs = new MobileNetworkTypeTile(mContext, this, mStatusBarService.mNetworkController);
             } else if (tile.equals(TILE_AUTOROTATE)) {
                 qs = new AutoRotateTile(mContext, this, mHandler);
             } else if (tile.equals(TILE_AIRPLANE)) {
