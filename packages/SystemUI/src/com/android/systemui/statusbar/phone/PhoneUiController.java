@@ -16,86 +16,48 @@ import android.widget.TextView;
 
 import com.android.systemui.R;
 import com.android.systemui.eos.EosObserver.FeatureListener;
-import com.android.systemui.eos.NxCallback;
-import com.android.systemui.eos.NxController;
+import com.android.systemui.eos.Navigator;
 import com.android.systemui.statusbar.BarUiController;
 import com.android.systemui.statusbar.policy.KeyButtonView;
 
 public class PhoneUiController extends BarUiController {
-
     static final String TAG = PhoneUiController.class.getSimpleName();
 
-    static final int STOCK_NAV_BAR = com.android.systemui.R.layout.navigation_bar;
+    private static final int MSG_BAR_MODE_CHANGED = 14673;
+
+    static final int NAVBAR_LAYOUT = com.android.systemui.R.layout.navigation_bar;
+    static final int NX_LAYOUT = com.android.systemui.R.layout.nx_bar;
     static final String NX_ENABLED_URI = "eos_nx_enabled";
 
     private View mStatusBarView;
-    private PhoneStatusBar mService;
-    private NavigationBarView mNavigationBarView;
-    private StatusBarWindowView mStatusBarWindow;
-    private NxController mNx;
+    private Navigator mNavigator;
+    private NavModeObserver mNavModeObserver;
     private Handler mHandler;
-    private NxObserver mNxObserver;
 
     private int mCurrentNavLayout;
 
-    public PhoneUiController(Context context, Handler handler) {
+    public PhoneUiController(Context context, Handler h) {
         super(context);
-        mHandler = handler;
-        mNxObserver = new NxObserver(handler);
-        mNxObserver.observe();
+        mHandler = h;
+        mNavModeObserver = new NavModeObserver(new Handler());
+        mNavModeObserver.observe();
     }
 
-    public WindowManager.LayoutParams getNavigationBarLayoutParams() {
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
-                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.TYPE_NAVIGATION_BAR,
-                0
-                        | WindowManager.LayoutParams.FLAG_TOUCHABLE_WHEN_WAKING
-                        | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                        | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
-                        | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
-                        | WindowManager.LayoutParams.FLAG_SPLIT_TOUCH,
-                PixelFormat.TRANSLUCENT);
-        // this will allow the navbar to run in an overlay on devices that
-        // support this
-        if (ActivityManager.isHighEndGfx()) {
-            lp.flags |= WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED;
-        }
+    public Navigator getNavigationBarView() {
+        boolean isNxEnabled = Settings.System.getBoolean(mContext.getContentResolver(),
+                NX_ENABLED_URI, false);
+        mCurrentNavLayout = isNxEnabled ? NX_LAYOUT : NAVBAR_LAYOUT;
+        mNavigator = (Navigator) View.inflate(mContext, mCurrentNavLayout, null);
 
-        lp.setTitle("NavigationBar");
-        lp.windowAnimations = 0;
-        return lp;
-    }
-
-    public NavigationBarView getNavigationBarView() {
-        mCurrentNavLayout = STOCK_NAV_BAR;
-        mNavigationBarView = (NavigationBarView) View.inflate(mContext, mCurrentNavLayout, null);
-
-        // register softkeys for features
-        for (View v : getAllChildren(mNavigationBarView)) {
-            if (v instanceof KeyButtonView) {
-                mObserver.setOnFeatureChangedListener((FeatureListener) v);
+        if (!isNxEnabled) {
+            for (View v : getAllChildren(mNavigator.getViewForWindowManager())) {
+                if (v instanceof KeyButtonView) {
+                    mObserver.setOnFeatureChangedListener((FeatureListener) v);
+                }
             }
         }
-        // if enabled, bring it up, else do nothing
-        updateNx();
 
-        // give it back to SystemUI
-        return mNavigationBarView;
-    }
-
-    public void setBar(PhoneStatusBar service) {
-        mService = service;
-    }
-
-    public void setBarWindow(StatusBarWindowView window) {
-        mStatusBarWindow = window;
-    }
-
-    public boolean isNxEnabled() {
-        if (mNavigationBarView == null)
-            return false;
-        return mNavigationBarView.isNxEnabled();
+        return mNavigator;
     }
 
     @Override
@@ -117,52 +79,16 @@ public class PhoneUiController extends BarUiController {
 
     @Override
     protected View getSoftkeyHolder() {
-        return mNavigationBarView;
-    }
-
-    void onScreenStateChanged(boolean screenOn) {
-        if (mNx != null) {
-            mNx.onScreenStateChanged(screenOn);
-        }
-    }
-
-    private void updateNx() {
-        boolean isNxEnabled = Settings.System.getBoolean(mContext.getContentResolver(),
-                NX_ENABLED_URI, false);
-        if (isNxEnabled) {
-            startNX();
-        } else {
-            stopNX();
-        }
-    }
-
-    private void startNX() {
-        stopNX();
-        mNx = new NxController(mContext, mHandler, mNavigationBarView, getScreenSize());
-        mNavigationBarView.onStartNX((NxCallback) mNx);
+        return mNavigator.getViewForWindowManager();
     }
 
     protected void onTearDown() {
-        stopNX();
-        mResolver.unregisterContentObserver(mNxObserver);
+        mResolver.unregisterContentObserver(mNavModeObserver);
         super.onTearDown();
     }
 
-    void stopNX() {
-        if (mNx != null && mNavigationBarView != null) {
-            mNavigationBarView.onStopNX();
-            mNx.tearDown();
-            mNx = null;
-        }
-    }
-
-    void updateResources() {
-        if (mNx != null)
-            mNx.updateResources();
-    }
-
-    class NxObserver extends ContentObserver {
-        NxObserver(Handler handler) {
+    class NavModeObserver extends ContentObserver {
+        NavModeObserver(Handler handler) {
             super(handler);
         }
 
@@ -173,7 +99,7 @@ public class PhoneUiController extends BarUiController {
 
         @Override
         public void onChange(boolean selfChange) {
-            updateNx();
+            mHandler.sendEmptyMessage(MSG_BAR_MODE_CHANGED);
         }
     }
 }

@@ -1,5 +1,8 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2014 The TeamEos Project
+ * 
+ * Contributor: Randall Rushing aka Bigrushdog
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +15,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
+ * AOSP based Softkey navigation implementation and action executor
+ * 
  */
 
 package com.android.systemui.statusbar.phone;
@@ -21,99 +27,35 @@ import android.animation.LayoutTransition.TransitionListener;
 import android.animation.ObjectAnimator;
 import android.animation.TimeInterpolator;
 import android.animation.ValueAnimator;
-import android.app.ActivityManagerNative;
-import android.app.KeyguardManager;
 import android.app.StatusBarManager;
-import android.app.admin.DevicePolicyManager;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Resources;
-import android.graphics.Canvas;
-import android.graphics.Point;
-import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.os.Handler;
-import android.os.Message;
-import android.os.RemoteException;
-import android.os.ServiceManager;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.Display;
-import android.view.IWindowManager;
-import android.view.MotionEvent;
-import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.view.accessibility.AccessibilityManager;
-import android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 
 import com.android.systemui.R;
-import com.android.systemui.eos.NxCallback;
-import com.android.systemui.eos.NxHost;
-import com.android.systemui.eos.NxLogoView;
-import com.android.systemui.statusbar.BaseStatusBar;
-import com.android.systemui.statusbar.DelegateViewHelper;
-import com.android.systemui.statusbar.policy.DeadZone;
+import com.android.systemui.statusbar.BaseNavigationBar;
 import com.android.systemui.statusbar.policy.KeyButtonView;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 
-public class NavigationBarView extends LinearLayout implements NxHost {
-    final static boolean DEBUG = false;
+public class NavigationBarView extends BaseNavigationBar {
     final static String TAG = "PhoneStatusBar/NavigationBarView";
 
-    final static boolean NAVBAR_ALWAYS_AT_RIGHT = true;
-
-    // slippery nav bar when everything is disabled, e.g. during setup
-    final static boolean SLIPPERY_WHEN_DISABLED = true;
-
-    final Display mDisplay;
-    View mCurrentView = null;
-    View[] mRotatedViews = new View[4];
-
-    int mBarSize;
-    boolean mVertical;
-    boolean mScreenOn;
-
-    boolean mShowMenu;
-    int mDisabledFlags = 0;
-    int mNavigationIconHints = 0;
-
-    private Drawable mBackIcon, mBackLandIcon, mBackAltIcon, mBackAltLandIcon, mHomeIcon, mHomeLandIcon;
+    private Drawable mBackIcon, mBackLandIcon, mBackAltIcon, mBackAltLandIcon;
     private Drawable mRecentIcon;
     private Drawable mRecentLandIcon;
 
-    private DelegateViewHelper mDelegateHelper;
-    private DeadZone mDeadZone;
     private final NavigationBarTransitions mBarTransitions;
-
-    // workaround for LayoutTransitions leaving the nav buttons in a weird state (bug 5549288)
-    final static boolean WORKAROUND_INVALID_LAYOUT = true;
-    final static int MSG_CHECK_INVALID_LAYOUT = 8686;
-
-    // used to disable the camera icon in navbar when disabled by DPM
-    private boolean mCameraDisabledByDpm;
-
-    // NX Mode
-    private boolean mNxEnabled = false;
-    // start/stop delegate intercept
-    private boolean mIsNxPaused = true;
-    // interface to NX Controller
-    private NxCallback mNxManager;
-    // Original host view background
-    private Drawable mBackgroundDrawable;
-    // set or restore when NX is disabled
-    private View.OnTouchListener mAutoHideListener;
 
     // performs manual animation in sync with layout transitions
     private final NavTransitionListener mTransitionListener = new NavTransitionListener();
+
+    private boolean mShowMenu;
 
     private class NavTransitionListener implements TransitionListener {
         private boolean mBackTransitioning;
@@ -160,143 +102,16 @@ public class NavigationBarView extends LinearLayout implements NxHost {
         }
     }
 
-    // simplified click handler to be used when device is in accessibility mode
-    private final OnClickListener mAccessibilityClickListener = new OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            if (v.getId() == R.id.camera_button) {
-                KeyguardTouchDelegate.getInstance(getContext()).launchCamera();
-            } else if (v.getId() == R.id.search_light) {
-                KeyguardTouchDelegate.getInstance(getContext()).showAssistant();
-            }
-        }
-    };
-
-    private final OnTouchListener mCameraTouchListener = new OnTouchListener() {
-        @Override
-        public boolean onTouch(View cameraButtonView, MotionEvent event) {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    // disable search gesture while interacting with camera
-                    mDelegateHelper.setDisabled(true);
-                    mBarTransitions.setContentVisible(false);
-                    break;
-                case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_CANCEL:
-                    mDelegateHelper.setDisabled(false);
-                    mBarTransitions.setContentVisible(true);
-                    break;
-            }
-            return KeyguardTouchDelegate.getInstance(getContext()).dispatch(event);
-        }
-    };
-
-    private class H extends Handler {
-        public void handleMessage(Message m) {
-            switch (m.what) {
-                case MSG_CHECK_INVALID_LAYOUT:
-                    final String how = "" + m.obj;
-                    final int w = getWidth();
-                    final int h = getHeight();
-                    final int vw = mCurrentView.getWidth();
-                    final int vh = mCurrentView.getHeight();
-
-                    if (h != vh || w != vw) {
-                        Log.w(TAG, String.format(
-                            "*** Invalid layout in navigation bar (%s this=%dx%d cur=%dx%d)",
-                            how, w, h, vw, vh));
-                        if (WORKAROUND_INVALID_LAYOUT) {
-                            requestLayout();
-                        }
-                    }
-                    break;
-            }
-        }
-    }
-
     public NavigationBarView(Context context, AttributeSet attrs) {
         super(context, attrs);
-
-        mDisplay = ((WindowManager)context.getSystemService(
-                Context.WINDOW_SERVICE)).getDefaultDisplay();
-
         final Resources res = mContext.getResources();
-        mBarSize = res.getDimensionPixelSize(R.dimen.navigation_bar_size);
-        mVertical = false;
         mShowMenu = false;
-        mDelegateHelper = new DelegateViewHelper(this);
-
         getIcons(res);
-
         mBarTransitions = new NavigationBarTransitions(this);
-
-        mCameraDisabledByDpm = isCameraDisabledByDpm();
-        watchForDevicePolicyChanges();
     }
-
-    private void watchForDevicePolicyChanges() {
-        final IntentFilter filter = new IntentFilter();
-        filter.addAction(DevicePolicyManager.ACTION_DEVICE_POLICY_MANAGER_STATE_CHANGED);
-        mContext.registerReceiver(new BroadcastReceiver() {
-            public void onReceive(Context context, Intent intent) {
-                post(new Runnable() {
-                    @Override
-                    public void run() {
-                        mCameraDisabledByDpm = isCameraDisabledByDpm();
-                    }
-                });
-            }
-        }, filter);
-    }
-
-	public void setAutoHideListener(View.OnTouchListener autoHideListener) {
-		if (mAutoHideListener == null) {
-			mAutoHideListener = autoHideListener;
-		}
-		if (!mNxEnabled) {
-			setOnTouchListener(mAutoHideListener);
-		}
-	}
 
     public BarTransitions getBarTransitions() {
         return mBarTransitions;
-    }
-
-    public void setDelegateView(View view) {
-        mDelegateHelper.setDelegateView(view);
-    }
-
-    public void setBar(BaseStatusBar phoneStatusBar) {
-        mDelegateHelper.setBar(phoneStatusBar);
-    }
-
-	public boolean isNxEnabled() {
-		return mNxEnabled;
-	}
-
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-		if (mNxEnabled && !mIsNxPaused) return true;
-        if (mDeadZone != null && event.getAction() == MotionEvent.ACTION_OUTSIDE) {
-            mDeadZone.poke(event);
-        }
-        if (mDelegateHelper != null) {
-            boolean ret = mDelegateHelper.onInterceptTouchEvent(event);
-            if (ret) return true;
-        }
-        return super.onTouchEvent(event);
-    }
-
-    @Override
-    public boolean onInterceptTouchEvent(MotionEvent event) {
-		if (mNxEnabled && !mIsNxPaused) return false;
-        return mDelegateHelper.onInterceptTouchEvent(event);
-    }
-
-    private H mHandler = new H();
-
-    public View getCurrentView() {
-        return mCurrentView;
     }
 
     public View getRecentsButton() {
@@ -315,25 +130,6 @@ public class NavigationBarView extends LinearLayout implements NxHost {
         return mCurrentView.findViewById(R.id.home);
     }
 
-    // for when home is disabled, but search isn't
-    public View getSearchLight() {
-        return mCurrentView.findViewById(R.id.search_light);
-    }
-
-    // shown when keyguard is visible and camera is available
-    public View getCameraButton() {
-        return mCurrentView.findViewById(R.id.camera_button);
-    }
-
-    @Override
-    public NxLogoView getNxLogo() {
-        return (NxLogoView)mCurrentView.findViewById(R.id.eos_nx);
-    }
-
-    public View getNxContainer() {
-    	return mCurrentView.findViewById(R.id.eos_nx_container);
-    }
-
     private void getIcons(Resources res) {
         mBackIcon = res.getDrawable(R.drawable.ic_sysbar_back);
         mBackLandIcon = res.getDrawable(R.drawable.ic_sysbar_back_land);
@@ -343,7 +139,9 @@ public class NavigationBarView extends LinearLayout implements NxHost {
         mRecentLandIcon = res.getDrawable(R.drawable.ic_sysbar_recent_land);
     }
 
-	protected void updateResources() {
+    @Override
+	public void updateResources() {
+	    super.updateResources();
 		getIcons(mContext.getResources());
 
 		// tablets/phablets don't have this
@@ -352,37 +150,15 @@ public class NavigationBarView extends LinearLayout implements NxHost {
 			camera.setImageDrawable(mContext.getResources()
 					.getDrawable(R.drawable.ic_sysbar_camera));
 		}
-
-		// update glow drawable (or any other resource)
-		for (View v : getAllChildren(findViewById(R.id.rot0))) {
-			if (v instanceof KeyButtonView) {
-				((KeyButtonView) v).updateResources(R.id.rot0);
-			} else if (v instanceof NxLogoView) {
-				((NxLogoView) v).updateResources(R.id.rot0);
-			}
-		}
-
-		for (View v : getAllChildren(findViewById(R.id.rot90))) {
-			if (v instanceof KeyButtonView) {
-				((KeyButtonView) v).updateResources(R.id.rot90);
-			} else if (v instanceof NxLogoView) {
-				((NxLogoView) v).updateResources(R.id.rot90);
-			}
-		}
 	}
 
     @Override
     public void setLayoutDirection(int layoutDirection) {
         getIcons(mContext.getResources());
-
         super.setLayoutDirection(layoutDirection);
     }
 
-    public void notifyScreenOn(boolean screenOn) {
-        mScreenOn = screenOn;
-        setDisabledFlags(mDisabledFlags, true);
-    }
-
+    @Override
     public void setNavigationIconHints(int hints) {
         setNavigationIconHints(hints, false);
     }
@@ -410,24 +186,13 @@ public class NavigationBarView extends LinearLayout implements NxHost {
         setDisabledFlags(mDisabledFlags, true);
     }
 
-    public void setDisabledFlags(int disabledFlags) {
-        setDisabledFlags(disabledFlags, false);
-    }
-
-    public void setDisabledFlags(int disabledFlags, boolean force) {
-         if (!force && mDisabledFlags == disabledFlags) return;
-
-        mDisabledFlags = disabledFlags;
+    protected void setDisabledFlags(int disabledFlags, boolean force) {
+        super.setDisabledFlags(disabledFlags, force);
 
         final boolean disableHome = ((disabledFlags & View.STATUS_BAR_DISABLE_HOME) != 0);
         final boolean disableRecent = ((disabledFlags & View.STATUS_BAR_DISABLE_RECENT) != 0);
         final boolean disableBack = ((disabledFlags & View.STATUS_BAR_DISABLE_BACK) != 0)
                 && ((mNavigationIconHints & StatusBarManager.NAVIGATION_HINT_BACK_ALT) == 0);
-        final boolean disableSearch = ((disabledFlags & View.STATUS_BAR_DISABLE_SEARCH) != 0);
-
-        if (SLIPPERY_WHEN_DISABLED) {
-            setSlippery(disableHome && disableRecent && disableBack && disableSearch);
-        }
 
         ViewGroup navButtons = (ViewGroup) mCurrentView.findViewById(R.id.nav_buttons);
         if (navButtons != null) {
@@ -446,182 +211,41 @@ public class NavigationBarView extends LinearLayout implements NxHost {
             }
         }
 
-		if (!mNxEnabled) {
-			getBackButton().setVisibility(disableBack ? View.INVISIBLE : View.VISIBLE);
-			getHomeButton().setVisibility(disableHome ? View.INVISIBLE : View.VISIBLE);
-			getRecentsButton().setVisibility(disableRecent ? View.INVISIBLE : View.VISIBLE);
-		}
-
-        final boolean showSearch = disableHome && !disableSearch;
-        final boolean showCamera = showSearch && !mCameraDisabledByDpm;
-        setVisibleOrGone(getSearchLight(), showSearch);
-        setVisibleOrGone(getCameraButton(), showCamera);
-
-		// mirror home behavior
-		if (mNxEnabled) {
-			mIsNxPaused = disableHome || isKeyguardShowing() || getSearchLight().getVisibility() == View.VISIBLE;
-			getNxContainer().setVisibility(mIsNxPaused ? View.GONE : View.VISIBLE);
-			setOnTouchListener(mIsNxPaused ? null : mNxManager.getNxGestureListener());
-		}
+        getBackButton().setVisibility(disableBack ? View.INVISIBLE : View.VISIBLE);
+		getHomeButton().setVisibility(disableHome ? View.INVISIBLE : View.VISIBLE);
+		getRecentsButton().setVisibility(disableRecent ? View.INVISIBLE : View.VISIBLE);
 
         mBarTransitions.applyBackButtonQuiescentAlpha(mBarTransitions.getMode(), true /*animate*/);
     }
 
-    private void setVisibleOrGone(View view, boolean visible) {
-        if (view != null) {
-            view.setVisibility(visible ? VISIBLE : GONE);
-        }
-    }
-
-    private boolean isCameraDisabledByDpm() {
-        final DevicePolicyManager dpm =
-                (DevicePolicyManager) mContext.getSystemService(Context.DEVICE_POLICY_SERVICE);
-        if (dpm != null) {
-            try {
-                final int userId = ActivityManagerNative.getDefault().getCurrentUser().id;
-                final int disabledFlags = dpm.getKeyguardDisabledFeatures(null, userId);
-                final  boolean disabledBecauseKeyguardSecure =
-                        (disabledFlags & DevicePolicyManager.KEYGUARD_DISABLE_SECURE_CAMERA) != 0
-                        && KeyguardTouchDelegate.getInstance(getContext()).isSecure();
-                return dpm.getCameraDisabled(null) || disabledBecauseKeyguardSecure;
-            } catch (RemoteException e) {
-                Log.e(TAG, "Can't get userId", e);
-            }
-        }
-        return false;
-    }
-
-    public void setSlippery(boolean newSlippery) {
-        WindowManager.LayoutParams lp = (WindowManager.LayoutParams) getLayoutParams();
-        if (lp != null) {
-            boolean oldSlippery = (lp.flags & WindowManager.LayoutParams.FLAG_SLIPPERY) != 0;
-            if (!oldSlippery && newSlippery) {
-                lp.flags |= WindowManager.LayoutParams.FLAG_SLIPPERY;
-            } else if (oldSlippery && !newSlippery) {
-                lp.flags &= ~WindowManager.LayoutParams.FLAG_SLIPPERY;
-            } else {
-                return;
-            }
-            WindowManager wm = (WindowManager)getContext().getSystemService(Context.WINDOW_SERVICE);
-            wm.updateViewLayout(this, lp);
-        }
-    }
-
+    @Override
     public void setMenuVisibility(final boolean show) {
         setMenuVisibility(show, false);
     }
 
     public void setMenuVisibility(final boolean show, final boolean force) {
-		if (mNxEnabled) return;
         if (!force && mShowMenu == show) return;
-
         mShowMenu = show;
-
         getMenuButton().setVisibility(mShowMenu ? View.VISIBLE : View.INVISIBLE);
     }
 
     @Override
-    public void onFinishInflate() {
-        mRotatedViews[Surface.ROTATION_0] =
-        mRotatedViews[Surface.ROTATION_180] = findViewById(R.id.rot0);
-
-        mRotatedViews[Surface.ROTATION_90] = findViewById(R.id.rot90);
-
-        mRotatedViews[Surface.ROTATION_270] = NAVBAR_ALWAYS_AT_RIGHT
-                                                ? findViewById(R.id.rot90)
-                                                : findViewById(R.id.rot270);
-
-        mCurrentView = mRotatedViews[Surface.ROTATION_0];
-        watchForAccessibilityChanges();
-    }
-
-    private void watchForAccessibilityChanges() {
-        final AccessibilityManager am =
-                (AccessibilityManager) mContext.getSystemService(Context.ACCESSIBILITY_SERVICE);
-
-        // Set the initial state
-        enableAccessibility(am.isTouchExplorationEnabled());
-
-        // Watch for changes
-        am.addTouchExplorationStateChangeListener(new TouchExplorationStateChangeListener() {
-            @Override
-            public void onTouchExplorationStateChanged(boolean enabled) {
-                enableAccessibility(enabled);
-            }
-        });
-    }
-
-    private void enableAccessibility(boolean touchEnabled) {
-        Log.v(TAG, "touchEnabled:"  + touchEnabled);
-
-        // Add a touch handler or accessibility click listener for camera and search buttons
-        // for all view orientations.
-        final OnClickListener onClickListener = touchEnabled ? mAccessibilityClickListener : null;
-        final OnTouchListener onTouchListener = touchEnabled ? null : mCameraTouchListener;
-        boolean hasCamera = false;
-        for (int i = 0; i < mRotatedViews.length; i++) {
-            final View cameraButton = mRotatedViews[i].findViewById(R.id.camera_button);
-            final View searchLight = mRotatedViews[i].findViewById(R.id.search_light);
-            if (cameraButton != null) {
-                hasCamera = true;
-                cameraButton.setOnTouchListener(onTouchListener);
-                cameraButton.setOnClickListener(onClickListener);
-            }
-            if (searchLight != null) {
-                searchLight.setOnClickListener(onClickListener);
-            }
-        }
-        if (hasCamera) {
-            // Warm up KeyguardTouchDelegate so it's ready by the time the camera button is touched.
-            // This will connect to KeyguardService so that touch events are processed.
-            KeyguardTouchDelegate.getInstance(mContext);
-        }
-    }
-
-    public boolean isVertical() {
-        return mVertical;
-    }
-
     public void reorient() {
-        final Resources res = mContext.getResources();
-        final int rot = mDisplay.getRotation();
-        for (int i=0; i<4; i++) {
-            mRotatedViews[i].setVisibility(View.GONE);
-        }
-        mCurrentView = mRotatedViews[rot];
-        mCurrentView.setVisibility(View.VISIBLE);
+        super.reorient();
 
-        mDeadZone = (DeadZone) mCurrentView.findViewById(R.id.deadzone);
+        final Resources res = mContext.getResources();
 
         // force the low profile & disabled states into compliance
         mBarTransitions.init(mVertical);
         setDisabledFlags(mDisabledFlags, true /* force */);
         setMenuVisibility(mShowMenu, true /* force */);
 
-        if (DEBUG) {
-            Log.d(TAG, "reorient(): rot=" + mDisplay.getRotation());
-        }      
-
 		// update additional button resources for theme change
 		((ImageView) getHomeButton()).setImageDrawable(mVertical ? res
 				.getDrawable(R.drawable.ic_sysbar_home_land) : res
 				.getDrawable(R.drawable.ic_sysbar_home));
 
-		((ImageView) getSearchLight()).setImageDrawable(mVertical ? res
-				.getDrawable(R.drawable.search_light_land) : res
-				.getDrawable(R.drawable.search_light));
-
         setNavigationIconHints(mNavigationIconHints, true);
-
-        if (mNxEnabled) {
-            getBackButton().setVisibility(View.INVISIBLE);
-            getHomeButton().setVisibility(View.INVISIBLE);
-            getRecentsButton().setVisibility(View.INVISIBLE);
-            getMenuButton().setVisibility(View.INVISIBLE);
-        }
-        final boolean dontShowNx = getSearchLight().getVisibility() == View.VISIBLE || isKeyguardShowing();
-        getNxContainer().setVisibility(mNxEnabled && !dontShowNx ? View.VISIBLE : View.GONE);
-        setOnTouchListener(mNxEnabled && !dontShowNx ? mNxManager.getNxGestureListener() : null);
     }
 
     @Override
@@ -631,100 +255,8 @@ public class NavigationBarView extends LinearLayout implements NxHost {
     }
 
     @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        if (DEBUG) Log.d(TAG, String.format(
-                    "onSizeChanged: (%dx%d) old: (%dx%d)", w, h, oldw, oldh));
-
-        final boolean newVertical = w > 0 && h > w;
-        if (newVertical != mVertical) {
-            mVertical = newVertical;
-            //Log.v(TAG, String.format("onSizeChanged: h=%d, w=%d, vert=%s", h, w, mVertical?"y":"n"));
-            reorient();
-            if (mNxManager != null) mNxManager.onSizeChanged(this, w, h);
-        }
-
-        postCheckForInvalidLayout("sizeChanged");
-        super.onSizeChanged(w, h, oldw, oldh);
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        setMeasuredDimension(getMeasuredWidth(), getMeasuredHeight());
-        if (mNxManager != null) mNxManager.onSizeChanged(this, getMeasuredWidth(), getMeasuredHeight());
-    }
-
-    /*
-    @Override
-    protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
-        if (DEBUG) Log.d(TAG, String.format(
-                    "onLayout: %s (%d,%d,%d,%d)",
-                    changed?"changed":"notchanged", left, top, right, bottom));
-        super.onLayout(changed, left, top, right, bottom);
-    }
-
-    // uncomment this for extra defensiveness in WORKAROUND_INVALID_LAYOUT situations: if all else
-    // fails, any touch on the display will fix the layout.
-    @Override
-    public boolean onInterceptTouchEvent(MotionEvent ev) {
-        if (DEBUG) Log.d(TAG, "onInterceptTouchEvent: " + ev.toString());
-        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
-            postCheckForInvalidLayout("touch");
-        }
-        return super.onInterceptTouchEvent(ev);
-    }
-    */
-
-
-    private String getResourceName(int resId) {
-        if (resId != 0) {
-            final android.content.res.Resources res = mContext.getResources();
-            try {
-                return res.getResourceName(resId);
-            } catch (android.content.res.Resources.NotFoundException ex) {
-                return "(unknown)";
-            }
-        } else {
-            return "(null)";
-        }
-    }
-
-    private void postCheckForInvalidLayout(final String how) {
-        mHandler.obtainMessage(MSG_CHECK_INVALID_LAYOUT, 0, 0, how).sendToTarget();
-    }
-
-    private static String visibilityToString(int vis) {
-        switch (vis) {
-            case View.INVISIBLE:
-                return "INVISIBLE";
-            case View.GONE:
-                return "GONE";
-            default:
-                return "VISIBLE";
-        }
-    }
-
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
-        pw.println("NavigationBarView {");
-        final Rect r = new Rect();
-        final Point size = new Point();
-        mDisplay.getRealSize(size);
-
-        pw.println(String.format("      this: " + PhoneStatusBar.viewInfo(this)
-                        + " " + visibilityToString(getVisibility())));
-
-        getWindowVisibleDisplayFrame(r);
-        final boolean offscreen = r.right > size.x || r.bottom > size.y;
-        pw.println("      window: "
-                + r.toShortString()
-                + " " + visibilityToString(getWindowVisibility())
-                + (offscreen ? " OFFSCREEN!" : ""));
-
-        pw.println(String.format("      mCurrentView: id=%s (%dx%d) %s",
-                        getResourceName(mCurrentView.getId()),
-                        mCurrentView.getWidth(), mCurrentView.getHeight(),
-                        visibilityToString(mCurrentView.getVisibility())));
-
+        super.dump(fd, pw, args);
         pw.println(String.format("      disabled=0x%08x vertical=%s menu=%s",
                         mDisabledFlags,
                         mVertical ? "true" : "false",
@@ -734,100 +266,22 @@ public class NavigationBarView extends LinearLayout implements NxHost {
         dumpButton(pw, "home", getHomeButton());
         dumpButton(pw, "rcnt", getRecentsButton());
         dumpButton(pw, "menu", getMenuButton());
-        dumpButton(pw, "srch", getSearchLight());
-        dumpButton(pw, "cmra", getCameraButton());
-        dumpButton(pw, "nx",   getNxLogo());
 
         pw.println("    }");
     }
 
-    private static void dumpButton(PrintWriter pw, String caption, View button) {
-        pw.print("      " + caption + ": ");
-        if (button == null) {
-            pw.print("null");
-        } else {
-            pw.print(PhoneStatusBar.viewInfo(button)
-                    + " " + visibilityToString(button.getVisibility())
-                    + " alpha=" + button.getAlpha()
-                    );
-            if (button instanceof KeyButtonView) {
-                pw.print(" drawingAlpha=" + ((KeyButtonView)button).getDrawingAlpha());
-                pw.print(" quiescentAlpha=" + ((KeyButtonView)button).getQuiescentAlpha());
-            }
-        }
-        pw.println();
+    @Override
+    public void setNavigatorListeners(OnClickListener recentsClickListener,
+            OnTouchListener recentsPreloadOnTouchListener,
+            OnTouchListener homeSearchActionListener,
+            View.OnTouchListener userAutoHideListener) {
+        super.setNavigatorListeners(recentsClickListener, recentsPreloadOnTouchListener,
+                homeSearchActionListener,
+                userAutoHideListener);
+
+        setOnTouchListener(mUserAutoHideListener);
+        getRecentsButton().setOnClickListener(mRecentsClickListener);
+        getRecentsButton().setOnTouchListener(mRecentsPreloadOnTouchListener);
+        ((KeyButtonView) getHomeButton()).setHomeSearchActionListener(mHomeSearchActionListener);
     }
-
-    private ArrayList<View> getAllChildren(View v) {
-
-        if (!(v instanceof ViewGroup)) {
-            ArrayList<View> viewArrayList = new ArrayList<View>();
-            viewArrayList.add(v);
-            return viewArrayList;
-        }
-
-        ArrayList<View> result = new ArrayList<View>();
-
-        ViewGroup vg = (ViewGroup) v;
-        for (int i = 0; i < vg.getChildCount(); i++) {
-
-            View child = vg.getChildAt(i);
-
-            ArrayList<View> viewArrayList = new ArrayList<View>();
-            viewArrayList.add(v);
-            viewArrayList.addAll(getAllChildren(child));
-
-            result.addAll(viewArrayList);
-        }
-        return result;
-    }
-
-	private boolean isKeyguardShowing() {
-		KeyguardManager km = (KeyguardManager) mContext
-				.getSystemService(Context.KEYGUARD_SERVICE);
-		if (km == null)
-			return false;
-		return km.isKeyguardLocked();
-	}
-
-	@Override
-	public void onStartNX(NxCallback callback) {
-		mNxEnabled = true;
-		mIsNxPaused = false;
-		mNxManager = callback;
-		mBackgroundDrawable = NavigationBarView.this.getBackground();
-		reorient();
-		setDisabledFlags(mDisabledFlags, true);
-		setOnTouchListener(mNxManager.getNxGestureListener());
-	}
-
-	@Override
-	public void onStopNX() {
-		mNxEnabled = false;
-		mIsNxPaused = true;
-		setOnTouchListener(mAutoHideListener != null ? mAutoHideListener : null);
-		mNxManager = null;
-		NavigationBarView.this.setBackground(mBackgroundDrawable);		
-		reorient();
-	}
-
-	@Override
-	public View getHostView() {
-		return NavigationBarView.this;
-	}
-
-	@Override
-	public void onDispatchMotionEvent(MotionEvent event) {
-		if (mAutoHideListener != null) {
-			mAutoHideListener.onTouch(this, event);
-		}
-	}
-
-	@Override
-	public void onDraw(Canvas canvas) {
-		super.onDraw(canvas);
-		if (mNxEnabled) {
-			mNxManager.onInterceptDraw(canvas);
-		}
-	}
 }

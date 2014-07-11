@@ -198,32 +198,6 @@
                 />
         </LinearLayout>
 
-        <!-- NX lights out layout -->
-        <LinearLayout
-            android:id="@+id/nx_lights_out"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:visibility="gone" >
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                />
-            <ImageView
-                android:layout_width="128dp" android:paddingStart="25dp" android:paddingEnd="25dp"
-                android:layout_height="match_parent"
-                android:src="@drawable/ic_sysbar_lights_out_dot_large"
-                android:scaleType="center"
-                android:layout_weight="0"
-                />
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                />
-        </LinearLayout>
-
         <com.android.systemui.statusbar.policy.KeyButtonView
             android:layout_width="128dp"
             android:id="@+id/search_light"
@@ -234,23 +208,6 @@
             android:visibility="gone"
             android:contentDescription="@string/accessibility_search_light"
             />
-
-        <LinearLayout
-            android:id="@+id/eos_nx_container"
-            android:layout_width="128dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="center_horizontal"
-            android:animateLayoutChanges="true"
-            android:visibility="gone" >
-
-            <com.android.systemui.eos.NxLogoView
-                android:id="@+id/eos_nx"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:contentDescription="@string/accessibility_nx_button"
-                android:src="@drawable/ic_eos_nx" />
-        </LinearLayout>
 
         <com.android.systemui.statusbar.policy.DeadZone
             android:id="@+id/deadzone"
@@ -440,33 +397,6 @@
                 />
         </LinearLayout>
 
-        <!-- NX lights out layout -->
-        <LinearLayout
-            android:layout_height="match_parent"
-            android:layout_width="match_parent"
-            android:orientation="horizontal"
-            android:id="@+id/nx_lights_out"
-            android:visibility="gone"
-            >
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                />
-            <ImageView
-                android:layout_width="162dp" android:paddingStart="42dp" android:paddingEnd="42dp"
-                android:layout_height="match_parent"
-                android:src="@drawable/ic_sysbar_lights_out_dot_large"
-                android:scaleType="center"
-                android:layout_weight="0"
-                />
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                />
-        </LinearLayout>
-
         <com.android.systemui.statusbar.policy.KeyButtonView
             android:layout_width="162dp"
             android:id="@+id/search_light"
@@ -477,23 +407,6 @@
             android:visibility="gone"
             android:contentDescription="@string/accessibility_search_light"
             />
-
-        <LinearLayout
-            android:id="@+id/eos_nx_container"
-            android:layout_width="162dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="center_horizontal"
-            android:animateLayoutChanges="true"
-            android:visibility="gone" >
-
-            <com.android.systemui.eos.NxLogoView
-                android:id="@+id/eos_nx"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:contentDescription="@string/accessibility_nx_button"
-                android:src="@drawable/ic_eos_nx" />
-        </LinearLayout>
 
         <com.android.systemui.statusbar.policy.DeadZone
             android:id="@+id/deadzone"

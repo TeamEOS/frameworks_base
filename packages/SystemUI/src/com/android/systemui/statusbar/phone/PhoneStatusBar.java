@@ -100,6 +100,7 @@ import com.android.systemui.DemoMode;
 import com.android.systemui.BatteryMeterView;
 import com.android.systemui.EventLogTags;
 import com.android.systemui.R;
+import com.android.systemui.eos.Navigator;
 import com.android.systemui.statusbar.BaseStatusBar;
 import com.android.systemui.statusbar.CommandQueue;
 import com.android.systemui.statusbar.GestureRecorder;
@@ -260,8 +261,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     private HeadsUpNotificationView mHeadsUpNotificationView;
     private int mHeadsUpNotificationDecay;
 
-    // on-screen navigation buttons
-    private NavigationBarView mNavigationBarView = null;
+    // Eos implementation of a navigation view
+    private Navigator mNavigationBarView = null;
+    private BarHandler mBarHandler = new BarHandler();
     private int mNavigationBarWindowState = WINDOW_STATE_SHOWING;
 
     // the tracker view
@@ -405,9 +407,36 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         mNavigationBarView.setDisabledFlags(mDisabled);
         mNavigationBarView.setBar(this);
-        mNavigationBarView.setAutoHideListener(mUserAutoHideListener);
         addNavigationBar();
     }
+
+    private static final int MSG_BAR_MODE_CHANGED = 14673;
+
+    private class BarHandler extends Handler {
+        public void handleMessage(Message m) {
+            super.handleMessage(m);
+            switch (m.what) {
+                case MSG_BAR_MODE_CHANGED:
+                    mHandler.post(mRemoveNavigationBar);
+                    mHandler.postDelayed(mAddNavigationBar, 500);
+                    break;
+            }
+        }
+    }
+
+    private final Runnable mRemoveNavigationBar = new Runnable() {
+        @Override
+        public void run() {
+            removeNavigationBar();
+        }
+    };
+
+    private final Runnable mAddNavigationBar = new Runnable() {
+        @Override
+        public void run() {
+            forceAddNavigationBar();
+        }
+    };
 
     // ensure quick settings is disabled until the current user makes it through the setup wizard
     private boolean mUserSetup = false;
@@ -566,11 +595,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         mStatusBarView.setBar(this);
 
         if (!mRecreating) {
-            mPhoneController = new PhoneUiController(mContext, getHandler());
+            mPhoneController = new PhoneUiController(mContext, mBarHandler);
         }
 
-        mPhoneController.setBar(this);
-        mPhoneController.setBarWindow(mStatusBarWindow);
         mPhoneController.registerBarView(mStatusBarView);
 
         PanelHolder holder;
@@ -621,7 +648,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
                 mNavigationBarView = mPhoneController.getNavigationBarView();
                 mNavigationBarView.setDisabledFlags(mDisabled);
                 mNavigationBarView.setBar(this);
-                mNavigationBarView.setAutoHideListener(mUserAutoHideListener);
             }
         } catch (RemoteException ex) {
             // no window manager? good luck with that
@@ -957,9 +983,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         if (mNavigationBarView != null) {
             WindowManager.LayoutParams lp =
-                (android.view.WindowManager.LayoutParams) mNavigationBarView.getLayoutParams();
+                (android.view.WindowManager.LayoutParams) mNavigationBarView.getViewForWindowManager().getLayoutParams();
             lp.flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
-            mWindowManager.updateViewLayout(mNavigationBarView, lp);
+            mWindowManager.updateViewLayout(mNavigationBarView.getViewForWindowManager(), lp);
         }
     }
 
@@ -968,9 +994,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         super.hideSearchPanel();
         if (mNavigationBarView != null) {
             WindowManager.LayoutParams lp =
-                (android.view.WindowManager.LayoutParams) mNavigationBarView.getLayoutParams();
+                (android.view.WindowManager.LayoutParams) mNavigationBarView.getViewForWindowManager().getLayoutParams();
             lp.flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
-            mWindowManager.updateViewLayout(mNavigationBarView, lp);
+            mWindowManager.updateViewLayout(mNavigationBarView.getViewForWindowManager(), lp);
         }
     }
 
@@ -1034,11 +1060,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
     private void prepareNavigationBarView() {
         mNavigationBarView.reorient();
-
-        mNavigationBarView.getRecentsButton().setOnClickListener(mRecentsClickListener);
-        mNavigationBarView.getRecentsButton().setOnTouchListener(mRecentsPreloadOnTouchListener);
-        ((KeyButtonView)mNavigationBarView.getHomeButton()).setHomeSearchActionListener(mHomeSearchActionListener);
-        mNavigationBarView.getSearchLight().setOnTouchListener(mHomeSearchActionListener);
+        mNavigationBarView.setNavigatorListeners(mRecentsClickListener,
+                mRecentsPreloadOnTouchListener, mHomeSearchActionListener, mUserAutoHideListener);
         updateSearchPanel();
     }
 
@@ -1056,24 +1079,22 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         prepareNavigationBarView();
 
-        mWindowManager.addView(mNavigationBarView, getNavigationBarLayoutParams());
+        mWindowManager.addView(mNavigationBarView.getViewForWindowManager(), getNavigationBarLayoutParams());
     }
 
     private void removeNavigationBar() {
         if (DEBUG) Log.d(TAG, "removeNavigationBar: about to remove " + mNavigationBarView);
         if (mNavigationBarView == null) return;
-
-        mWindowManager.removeView(mNavigationBarView);
-        mPhoneController.stopNX();
+        mWindowManager.removeView(mNavigationBarView.getViewForWindowManager());
         mNavigationBarView = null;
     }
 
     private void repositionNavigationBar() {
-        if (mNavigationBarView == null || !mNavigationBarView.isAttachedToWindow()) return;
+        if (mNavigationBarView == null || !mNavigationBarView.getViewForWindowManager().isAttachedToWindow()) return;
 
         prepareNavigationBarView();
 
-        mWindowManager.updateViewLayout(mNavigationBarView, getNavigationBarLayoutParams());
+        mWindowManager.updateViewLayout(mNavigationBarView.getViewForWindowManager(), getNavigationBarLayoutParams());
     }
 
     private void notifyNavigationBarScreenOn(boolean screenOn) {
@@ -1273,7 +1294,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     @Override
     protected void refreshLayout(int layoutDirection) {
         if (mNavigationBarView != null) {
-            mNavigationBarView.setLayoutDirection(layoutDirection);
+            mNavigationBarView.getViewForWindowManager().setLayoutDirection(layoutDirection);
         }
 
         if (mClearButton != null && mClearButton instanceof ImageView) {
@@ -2922,8 +2943,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
             }
             else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
                 mScreenOn = false;
-                // no waiting!
-                mPhoneController.onScreenStateChanged(mScreenOn);
                 makeExpandedInvisible();
                 notifyNavigationBarScreenOn(false);
                 notifyHeadsUpScreenOn(false);
@@ -2931,7 +2950,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
             }
             else if (Intent.ACTION_SCREEN_ON.equals(action)) {
                 mScreenOn = true;
-                mPhoneController.onScreenStateChanged(mScreenOn);
                 // work around problem where mDisplay.getRotation() is not stable while screen is off (bug 7086018)
                 repositionNavigationBar();
                 notifyNavigationBarScreenOn(true);
@@ -3171,7 +3189,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         // Update the QuickSettings container
         if (mQS != null) mQS.updateResources();
-        mPhoneController.updateResources();
 		updateSearchPanel();
     }
 
@@ -3323,7 +3340,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
             mWindowManager.removeViewImmediate(mStatusBarWindow);
         }
         if (mNavigationBarView != null) {
-            mWindowManager.removeViewImmediate(mNavigationBarView);
+            mWindowManager.removeViewImmediate(mNavigationBarView.getViewForWindowManager());
         }
         mContext.unregisterReceiver(mBroadcastReceiver);
     }

@@ -1,3 +1,5 @@
+package com.android.systemui.eos;
+
 /*
  * Copyright (C) 2013 The Android Open Source Project
  *
@@ -14,8 +16,6 @@
  * limitations under the License.
  */
 
-package com.android.systemui.statusbar.phone;
-
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
@@ -23,24 +23,31 @@ import android.os.ServiceManager;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
+import android.view.animation.ScaleAnimation;
+import android.view.animation.Animation.AnimationListener;
 
 import com.android.internal.statusbar.IStatusBarService;
 import com.android.systemui.R;
+import com.android.systemui.statusbar.phone.BarTransitions;
 import com.android.systemui.statusbar.policy.KeyButtonView;
 
-public final class NavigationBarTransitions extends BarTransitions {
+public final class NxBarTransitions extends BarTransitions {
 
     private static final float KEYGUARD_QUIESCENT_ALPHA = 0.5f;
     private static final int CONTENT_FADE_DURATION = 200;
 
-    private final NavigationBarView mView;
+    private final NxBarView mView;
     private final IStatusBarService mBarService;
 
     private boolean mLightsOut;
     private boolean mVertical;
     private int mRequestedMode;
 
-    public NavigationBarTransitions(NavigationBarView view) {
+    public NxBarTransitions(NxBarView view) {
         super(view, R.drawable.nav_background);
         mView = view;
         mBarService = IStatusBarService.Stub.asInterface(
@@ -77,16 +84,9 @@ public final class NavigationBarTransitions extends BarTransitions {
     private void applyMode(int mode, boolean animate, boolean force) {
         // apply to key buttons
         final float alpha = alphaForMode(mode);
-        setKeyButtonViewQuiescentAlpha(mView.getHomeButton(), alpha, animate);
-        setKeyButtonViewQuiescentAlpha(mView.getRecentsButton(), alpha, animate);
-        setKeyButtonViewQuiescentAlpha(mView.getMenuButton(), alpha, animate);
-
         setKeyButtonViewQuiescentAlpha(mView.getSearchLight(), KEYGUARD_QUIESCENT_ALPHA, animate);
         setKeyButtonViewQuiescentAlpha(mView.getCameraButton(), KEYGUARD_QUIESCENT_ALPHA, animate);
-
         applyBackButtonQuiescentAlpha(mode, animate);
-
-        // apply to lights out
         applyLightsOut(mode == MODE_LIGHTS_OUT, animate, force);
     }
 
@@ -99,12 +99,6 @@ public final class NavigationBarTransitions extends BarTransitions {
         float backAlpha = 0;
         backAlpha = maxVisibleQuiescentAlpha(backAlpha, mView.getSearchLight());
         backAlpha = maxVisibleQuiescentAlpha(backAlpha, mView.getCameraButton());
-        backAlpha = maxVisibleQuiescentAlpha(backAlpha, mView.getHomeButton());
-        backAlpha = maxVisibleQuiescentAlpha(backAlpha, mView.getRecentsButton());
-        backAlpha = maxVisibleQuiescentAlpha(backAlpha, mView.getMenuButton());
-        if (backAlpha > 0) {
-            setKeyButtonViewQuiescentAlpha(mView.getBackButton(), backAlpha, animate);
-        }
     }
 
     private static float maxVisibleQuiescentAlpha(float max, View v) {
@@ -133,13 +127,13 @@ public final class NavigationBarTransitions extends BarTransitions {
         }
     }
 
-	private void applyLightsOut(boolean lightsOut, boolean animate, boolean force) {
-		if (!force && lightsOut == mLightsOut) return;
+    private void applyLightsOut(boolean lightsOut, boolean animate, boolean force) {
+        if (!force && lightsOut == mLightsOut) return;
 
         mLightsOut = lightsOut;
 
-        final View navButtons = mView.getCurrentView().findViewById(R.id.nav_buttons);
-        final View lowLights = mView.getCurrentView().findViewById(R.id.lights_out);
+        final View navButtons = mView.getCurrentView().findViewById(R.id.eos_nx_container);
+        final View lowLights = mView.getCurrentView().findViewById(R.id.nx_lights_out);
 
         // ok, everyone, stop it right there
         navButtons.animate().cancel();
@@ -196,3 +190,4 @@ public final class NavigationBarTransitions extends BarTransitions {
         }
     };
 }
+
