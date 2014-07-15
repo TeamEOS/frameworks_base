@@ -2646,6 +2646,171 @@ public final class Settings {
         public static final String POWER_SOUNDS_ENABLED = Global.POWER_SOUNDS_ENABLED;
 
         /**
+         * @deprecated Use {@link android.provider.Settings.Global#DOCK_SOUNDS_ENABLED}
+         * instead
+         * @hide
+         */
+        @Deprecated
+        public static final String DOCK_SOUNDS_ENABLED = Global.DOCK_SOUNDS_ENABLED;
+
+        /**
+         * Whether to play sounds when the keyguard is shown and dismissed.
+         * @hide
+         */
+        public static final String LOCKSCREEN_SOUNDS_ENABLED = "lockscreen_sounds_enabled";
+
+        /**
+         * Whether the lockscreen should be completely disabled.
+         * @hide
+         */
+        public static final String LOCKSCREEN_DISABLED = "lockscreen.disabled";
+
+        /**
+         * Stores values for custom lockscreen targets
+         * @hide
+         */
+        public static final String LOCKSCREEN_TARGETS = "lockscreen_targets";
+
+        /**
+         * Lockscreen battery status visibility mode
+         * 0 = show if charging
+         * 1 = always show
+         * 2 = never show
+         * @hide
+         */
+        public static final String LOCKSCREEN_BATTERY_VISIBILITY = "lockscreen_always_show_battery";
+
+        /**
+         * Whether to enable the modlock keyguard
+         * @hide
+         */
+        public static final String LOCKSCREEN_MODLOCK_ENABLED = "lockscreen_modlock_enabled";
+
+        /**
+         * @deprecated Use {@link android.provider.Settings.Global#LOW_BATTERY_SOUND}
+         * instead
+         * @hide
+         */
+        @Deprecated
+        public static final String LOW_BATTERY_SOUND = Global.LOW_BATTERY_SOUND;
+
+        /**
+         * @deprecated Use {@link android.provider.Settings.Global#DESK_DOCK_SOUND}
+         * instead
+         * @hide
+         */
+        @Deprecated
+        public static final String DESK_DOCK_SOUND = Global.DESK_DOCK_SOUND;
+
+        /**
+         * @deprecated Use {@link android.provider.Settings.Global#DESK_UNDOCK_SOUND}
+         * instead
+         * @hide
+         */
+        @Deprecated
+        public static final String DESK_UNDOCK_SOUND = Global.DESK_UNDOCK_SOUND;
+
+        /**
+         * @deprecated Use {@link android.provider.Settings.Global#CAR_DOCK_SOUND}
+         * instead
+         * @hide
+         */
+        @Deprecated
+        public static final String CAR_DOCK_SOUND = Global.CAR_DOCK_SOUND;
+
+        /**
+         * @deprecated Use {@link android.provider.Settings.Global#CAR_UNDOCK_SOUND}
+         * instead
+         * @hide
+         */
+        @Deprecated
+        public static final String CAR_UNDOCK_SOUND = Global.CAR_UNDOCK_SOUND;
+
+        /**
+         * @deprecated Use {@link android.provider.Settings.Global#LOCK_SOUND}
+         * instead
+         * @hide
+         */
+        @Deprecated
+        public static final String LOCK_SOUND = Global.LOCK_SOUND;
+
+        /**
+         * @deprecated Use {@link android.provider.Settings.Global#UNLOCK_SOUND}
+         * instead
+         * @hide
+         */
+        @Deprecated
+        public static final String UNLOCK_SOUND = Global.UNLOCK_SOUND;
+
+        /**
+         * Receive incoming SIP calls?
+         * 0 = no
+         * 1 = yes
+         * @hide
+         */
+        public static final String SIP_RECEIVE_CALLS = "sip_receive_calls";
+
+        /**
+         * Call Preference String.
+         * "SIP_ALWAYS" : Always use SIP with network access
+         * "SIP_ADDRESS_ONLY" : Only if destination is a SIP address
+         * "SIP_ASK_ME_EACH_TIME" : Always ask me each time
+         * @hide
+         */
+        public static final String SIP_CALL_OPTIONS = "sip_call_options";
+
+        /**
+         * One of the sip call options: Always use SIP with network access.
+         * @hide
+         */
+        public static final String SIP_ALWAYS = "SIP_ALWAYS";
+
+        /**
+         * One of the sip call options: Only if destination is a SIP address.
+         * @hide
+         */
+        public static final String SIP_ADDRESS_ONLY = "SIP_ADDRESS_ONLY";
+
+        /**
+         * One of the sip call options: Always ask me each time.
+         * @hide
+         */
+        public static final String SIP_ASK_ME_EACH_TIME = "SIP_ASK_ME_EACH_TIME";
+
+        /**
+         * Pointer speed setting.
+         * This is an integer value in a range between -7 and +7, so there are 15 possible values.
+         *   -7 = slowest
+         *    0 = default speed
+         *   +7 = fastest
+         * @hide
+         */
+        public static final String POINTER_SPEED = "pointer_speed";
+
+        /**
+         * I am the lolrus.
+         * <p>
+         * Nonzero values indicate that the user has a bukkit.
+         * Backward-compatible with <code>PrefGetPreference(prefAllowEasterEggs)</code>.
+         * @hide
+         */
+        public static final String EGG_MODE = "egg_mode";
+
+        /**
+         * Global stats collection
+         *
+         * @hide
+         */
+        public static final String STATS_COLLECTION = "stats_collection";
+
+        /**
+         * Quick Settings show small icons
+         *
+         * @hide
+         */
+        public static final String QUICK_SETTINGS_SMALL_ICONS = "qs_small_icons";
+
+        /**
          * Enable looking up of phone numbers of nearby places
          *
          * @hide
@@ -2940,136 +3105,6 @@ public final class Settings {
         public static final String QUIET_HOURS_ENABLED = "quiet_hours_enabled";
 
         /**
-         * @deprecated Use {@link android.provider.Settings.Global#DOCK_SOUNDS_ENABLED}
-         * instead
-         * @hide
-         */
-        @Deprecated
-        public static final String DOCK_SOUNDS_ENABLED = Global.DOCK_SOUNDS_ENABLED;
-
-        /**
-         * Whether to play sounds when the keyguard is shown and dismissed.
-         * @hide
-         */
-        public static final String LOCKSCREEN_SOUNDS_ENABLED = "lockscreen_sounds_enabled";
-
-        /**
-         * Whether the lockscreen should be completely disabled.
-         * @hide
-         */
-        public static final String LOCKSCREEN_DISABLED = "lockscreen.disabled";
-
-        /**
-         * @deprecated Use {@link android.provider.Settings.Global#LOW_BATTERY_SOUND}
-         * instead
-         * @hide
-         */
-        @Deprecated
-        public static final String LOW_BATTERY_SOUND = Global.LOW_BATTERY_SOUND;
-
-        /**
-         * @deprecated Use {@link android.provider.Settings.Global#DESK_DOCK_SOUND}
-         * instead
-         * @hide
-         */
-        @Deprecated
-        public static final String DESK_DOCK_SOUND = Global.DESK_DOCK_SOUND;
-
-        /**
-         * @deprecated Use {@link android.provider.Settings.Global#DESK_UNDOCK_SOUND}
-         * instead
-         * @hide
-         */
-        @Deprecated
-        public static final String DESK_UNDOCK_SOUND = Global.DESK_UNDOCK_SOUND;
-
-        /**
-         * @deprecated Use {@link android.provider.Settings.Global#CAR_DOCK_SOUND}
-         * instead
-         * @hide
-         */
-        @Deprecated
-        public static final String CAR_DOCK_SOUND = Global.CAR_DOCK_SOUND;
-
-        /**
-         * @deprecated Use {@link android.provider.Settings.Global#CAR_UNDOCK_SOUND}
-         * instead
-         * @hide
-         */
-        @Deprecated
-        public static final String CAR_UNDOCK_SOUND = Global.CAR_UNDOCK_SOUND;
-
-        /**
-         * @deprecated Use {@link android.provider.Settings.Global#LOCK_SOUND}
-         * instead
-         * @hide
-         */
-        @Deprecated
-        public static final String LOCK_SOUND = Global.LOCK_SOUND;
-
-        /**
-         * @deprecated Use {@link android.provider.Settings.Global#UNLOCK_SOUND}
-         * instead
-         * @hide
-         */
-        @Deprecated
-        public static final String UNLOCK_SOUND = Global.UNLOCK_SOUND;
-
-        /**
-         * Receive incoming SIP calls?
-         * 0 = no
-         * 1 = yes
-         * @hide
-         */
-        public static final String SIP_RECEIVE_CALLS = "sip_receive_calls";
-
-        /**
-         * Call Preference String.
-         * "SIP_ALWAYS" : Always use SIP with network access
-         * "SIP_ADDRESS_ONLY" : Only if destination is a SIP address
-         * "SIP_ASK_ME_EACH_TIME" : Always ask me each time
-         * @hide
-         */
-        public static final String SIP_CALL_OPTIONS = "sip_call_options";
-
-        /**
-         * One of the sip call options: Always use SIP with network access.
-         * @hide
-         */
-        public static final String SIP_ALWAYS = "SIP_ALWAYS";
-
-        /**
-         * One of the sip call options: Only if destination is a SIP address.
-         * @hide
-         */
-        public static final String SIP_ADDRESS_ONLY = "SIP_ADDRESS_ONLY";
-
-        /**
-         * One of the sip call options: Always ask me each time.
-         * @hide
-         */
-        public static final String SIP_ASK_ME_EACH_TIME = "SIP_ASK_ME_EACH_TIME";
-
-        /**
-         * Pointer speed setting.
-         * This is an integer value in a range between -7 and +7, so there are 15 possible values.
-         *   -7 = slowest
-         *    0 = default speed
-         *   +7 = fastest
-         * @hide
-         */
-        public static final String POINTER_SPEED = "pointer_speed";
-
-        /**
-         * I am the lolrus.
-         * <p>
-         * Nonzero values indicate that the user has a bukkit.
-         * Backward-compatible with <code>PrefGetPreference(prefAllowEasterEggs)</code>.
-         * @hide
-         */
-        public static final String EGG_MODE = "egg_mode";
-
-        /**
         * Notification Power Widget - Custom Ring Mode
         * @hide
         */
@@ -3154,7 +3189,7 @@ public final class Settings {
         /**
          * Long press Action
          *
-         * @hide
+         * @hide9ee9a04c3fefaff4d37713cf8570995221e4f85f
          */
         public static final String GESTURES_LONG_PRESS = "gestures_long_press";
 
