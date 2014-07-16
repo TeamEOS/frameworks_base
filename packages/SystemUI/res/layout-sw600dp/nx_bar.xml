@@ -17,7 +17,8 @@
 -->
 
 <!--  navigation bar for sw600dp (small tablets) -->
-<com.android.systemui.eos.NxBarView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.android.systemui.eos.NxBarView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:prvandroid="http://schemas.android.com/apk/prv/res/android"
     xmlns:systemui="http://schemas.android.com/apk/res/com.android.systemui"
     android:layout_width="match_parent"
@@ -44,7 +45,6 @@
                 android:layout_width="48dp"
                 android:layout_height="match_parent"
                 android:layout_weight="0"
-                android:layout_marginStart="2dp"
                 android:visibility="invisible"
                 />
             <Space
@@ -52,14 +52,12 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 />
-            <View
+            <com.android.systemui.eos.NxLogoView
                 android:id="@+id/nx_stub_middle"
-                android:layout_width="128dp"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_weight="0"
-                android:paddingStart="25dp"
-                android:paddingEnd="25dp"
-                android:visibility="invisible"/>
+                android:src="@drawable/ic_eos_nx" />
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -67,7 +65,7 @@
                 />
              <View
                 android:id="@+id/nx_stub_right"
-                android:layout_width="128dp"
+                android:layout_width="48dp"
                 android:layout_height="match_parent"
                 android:layout_weight="0"
                 android:visibility="invisible"
@@ -87,7 +85,6 @@
                 android:layout_weight="1"/>
             <ImageView
                 android:layout_width="128dp" android:paddingStart="25dp" android:paddingEnd="25dp"
-                android:layout_marginEnd="40dp"
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_sysbar_lights_out_dot_small"
                 android:scaleType="center"
@@ -152,12 +149,12 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 />
-            <View
+            <com.android.systemui.eos.NxLogoView
                 android:id="@+id/nx_stub_middle"
-                android:layout_width="162dp" android:paddingStart="42dp" android:paddingEnd="42dp"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_weight="0"
-                android:visibility="invisible" />
+                android:src="@drawable/ic_eos_nx" />
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"

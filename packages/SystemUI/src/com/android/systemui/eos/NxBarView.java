@@ -26,6 +26,10 @@ import com.android.systemui.statusbar.phone.BarTransitions;
 
 import android.animation.LayoutTransition;
 import android.content.Context;
+import android.database.ContentObserver;
+import android.net.Uri;
+import android.os.Handler;
+import android.provider.Settings;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -39,6 +43,33 @@ public class NxBarView extends BaseNavigationBar {
     private NxGestureHandler mGestureHandler;
     private GestureDetector mGestureDetector;
     private final NxBarTransitions mBarTransitions;
+    private NxBarObserver mObserver = new NxBarObserver(new Handler());
+
+    private boolean mLogoEnabled;
+
+    private class NxBarObserver extends ContentObserver {
+
+        public NxBarObserver(Handler handler) {
+            super(handler);
+        }
+
+        void register() {
+            mContext.getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor("nx_logo_visible"), false,
+                    NxBarObserver.this);
+        }
+
+        void unregister() {
+            mContext.getContentResolver().unregisterContentObserver(
+                    NxBarObserver.this);
+        }
+
+        public void onChange(boolean selfChange, Uri uri) {
+            mLogoEnabled = Settings.System.getBoolean(mContext.getContentResolver(),
+                    "nx_logo_visible", true);
+            setDisabledFlags(mDisabledFlags, true);
+        }
+    }
 
     private final OnTouchListener mNxTouchListener = new OnTouchListener() {
 
@@ -57,6 +88,10 @@ public class NxBarView extends BaseNavigationBar {
         mActionHandler = new NxActionHandler(context);
         mGestureHandler = new NxGestureHandler(context, mActionHandler, this);
         mGestureDetector = new GestureDetector(context, mGestureHandler);
+        mObserver = new NxBarObserver(new Handler());
+        mObserver.register();
+        mLogoEnabled = Settings.System.getBoolean(mContext.getContentResolver(),
+                "nx_logo_visible", true);
     }
 
     // total touch control, except on keyguard
@@ -92,8 +127,24 @@ public class NxBarView extends BaseNavigationBar {
         return mCurrentView.findViewById(R.id.nx_stub_right);
     }
 
-    private View getMiddleStub() {
-        return mCurrentView.findViewById(R.id.nx_stub_middle);
+    private NxLogoView getNxLogo() {
+        return (NxLogoView)mCurrentView.findViewById(R.id.nx_stub_middle);
+    }
+
+    @Override
+    public void updateResources() {
+        super.updateResources();
+        for (View v : getAllChildren(findViewById(R.id.rot0))) {
+            if (v instanceof NxLogoView) {
+                ((NxLogoView) v).updateResources(R.id.rot0);
+            }
+        }
+
+        for (View v : getAllChildren(findViewById(R.id.rot90))) {
+            if (v instanceof NxLogoView) {
+                ((NxLogoView) v).updateResources(R.id.rot90);
+            }
+        }
     }
 
     // we still receive all flags from service so we can be aware
@@ -114,6 +165,7 @@ public class NxBarView extends BaseNavigationBar {
             }
         }
 
+        getNxLogo().setVisibility(!isKeyguardShowing() && mLogoEnabled ? View.VISIBLE : View.INVISIBLE);
         setOnTouchListener(!isKeyguardShowing() ? mNxTouchListener : null);
         mBarTransitions.applyBackButtonQuiescentAlpha(mBarTransitions.getMode(), true /* animate */);
     }
@@ -136,7 +188,7 @@ public class NxBarView extends BaseNavigationBar {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
-        mDelegateHelper.setInitialTouchRegion(getMiddleStub(), getLeftStub(), getRightStub());
+        mDelegateHelper.setInitialTouchRegion(getNxLogo(), getLeftStub(), getRightStub());
     }
 
     @Override

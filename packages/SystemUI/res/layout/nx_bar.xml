@@ -53,13 +53,13 @@
                 android:layout_weight="1"
                 android:visibility="invisible"
                 />
-            <View
+            <com.android.systemui.eos.NxLogoView
                 android:id="@+id/nx_stub_middle"
-                android:layout_width="80dp"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
                 android:layout_weight="0"
-                android:visibility="invisible"/>
+                android:src="@drawable/ic_eos_nx" />
             <View
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -110,7 +110,7 @@
 
             <com.android.systemui.statusbar.policy.KeyButtonView
                 android:id="@+id/search_light"
-                android:layout_width="80dp"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
                 android:contentDescription="@string/accessibility_search_light"
@@ -171,13 +171,13 @@
                 android:layout_weight="1"
                 android:visibility="invisible"
                 />
-            <View
+            <com.android.systemui.eos.NxLogoView
                 android:id="@+id/nx_stub_middle"
                 android:layout_width="match_parent"
-                android:layout_height="80dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="0"
                 android:layout_gravity="center"
-                android:visibility="invisible"/>
+                android:src="@drawable/ic_eos_nx" />
             <View
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"

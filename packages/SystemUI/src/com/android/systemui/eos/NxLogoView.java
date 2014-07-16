@@ -1,7 +1,6 @@
 package com.android.systemui.eos;
 
 import com.android.systemui.R;
-import com.android.systemui.statusbar.policy.KeyButtonView;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -15,6 +14,8 @@ import android.util.AttributeSet;
 import android.widget.ImageView;
 
 public class NxLogoView extends ImageView {
+    public static final String TAG = NxLogoView.class.getSimpleName();
+    public static final float DEFAULT_ALPHA = 0.50f;
 	private int mLogoColor;
 
 	public NxLogoView(Context context, AttributeSet attrs) {
@@ -30,11 +31,24 @@ public class NxLogoView extends ImageView {
 		mLogoColor = getContext().getResources().getColor(
 				R.color.status_bar_clock_color);
 		setColorFilter(new PorterDuffColorFilter(mLogoColor, PorterDuff.Mode.SRC_ATOP));
+		setDrawingAlpha(DEFAULT_ALPHA);
 	}
+
+	public void setDrawingAlpha(int alpha) {
+	    setAlpha((int) alpha);
+	}
+
+    public void setDrawingAlpha(float alpha) {
+        setAlpha((int)Math.round(alpha * 255));
+    }
+
+    public void setViewAlpha(float alpha) {
+        setAlpha(alpha);
+    }
 
 	// generate a sprite for trails
 	public Bitmap cloneBitmap() {
-		Bitmap src = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.eos_logo);
+		Bitmap src = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.ic_eos_nx);
         Bitmap dest = Bitmap.createBitmap(src.getWidth(),src.getHeight(), Config.ARGB_8888);
         Canvas canvas = new Canvas(dest);
         Paint p = new Paint();
