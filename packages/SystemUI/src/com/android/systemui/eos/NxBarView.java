@@ -85,7 +85,7 @@ public class NxBarView extends BaseNavigationBar {
     public NxBarView(Context context, AttributeSet attrs) {
         super(context, attrs);
         mBarTransitions = new NxBarTransitions(this);
-        mActionHandler = new NxActionHandler(context);
+        mActionHandler = new NxActionHandler(context, this);
         mGestureHandler = new NxGestureHandler(context, mActionHandler, this);
         mGestureDetector = new GestureDetector(context, mGestureHandler);
         mObserver = new NxBarObserver(new Handler());
@@ -165,6 +165,7 @@ public class NxBarView extends BaseNavigationBar {
             }
         }
 
+        mGestureHandler.onScreenStateChanged(mScreenOn);
         getNxLogo().setVisibility(!isKeyguardShowing() && mLogoEnabled ? View.VISIBLE : View.INVISIBLE);
         setOnTouchListener(!isKeyguardShowing() ? mNxTouchListener : null);
         mBarTransitions.applyBackButtonQuiescentAlpha(mBarTransitions.getMode(), true /* animate */);

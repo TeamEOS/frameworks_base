@@ -22,10 +22,7 @@
 
 package com.android.systemui.eos;
 
-import org.codefirex.utils.ActionHandler;
 import org.codefirex.utils.CFXUtils;
-
-import com.android.systemui.eos.NxAction.ActionReceiver;
 
 import android.content.Context;
 import android.content.res.Configuration;
@@ -34,13 +31,30 @@ import android.database.ContentObserver;
 import android.net.Uri;
 import android.os.Handler;
 import android.provider.Settings;
-import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
-import android.view.SoundEffectConstants;
+import android.view.ViewConfiguration;
 import android.view.GestureDetector.OnGestureListener;
 import android.view.View;
 
-public class NxGestureHandler implements OnGestureListener, ActionReceiver {
+public class NxGestureHandler implements OnGestureListener {
+
+    public interface Swipeable {
+        public boolean onDoubleTapEnabled();
+        public void onSingleLeftPress();
+        public void onSingleRightPress();
+        public void onDoubleLeftTap();
+        public void onDoubleRightTap();
+        public void onLongLeftPress();
+        public void onLongRightPress();
+        public void onShortLeftSwipe();
+        public void onLongLeftSwipe();
+        public void onShortRightSwipe();
+        public void onLongRightSwipe();
+    }
+
+    // AOSP DT timeout feels a bit slow on nx
+    private static final int DT_TIMEOUT = ViewConfiguration.getDoubleTapTimeout() - 100;
+
     private static final String LONG_SWIPE_URI_LEFT_H = "eos_nx_long_swipe_left_h_threshold";
     private static final String LONG_SWIPE_URI_RIGHT_H = "eos_nx_long_swipe_right_h_threshold";
     private static final String LONG_SWIPE_URI_LEFT_V = "eos_nx_long_swipe_left_v_threshold";
@@ -50,8 +64,8 @@ public class NxGestureHandler implements OnGestureListener, ActionReceiver {
     private static final String LONG_SWIPE_URI_UP = "eos_nx_long_swipe_up_threshold";
     private static final String LONG_SWIPE_URI_DOWN = "eos_nx_long_swipe_down_threshold";
 
-    private Handler H = new Handler();
-
+    // in-house double tap logic
+    private Handler mHandler = new Handler();
     private boolean isDoubleTapPending;
     private boolean wasConsumed;
 
@@ -65,32 +79,68 @@ public class NxGestureHandler implements OnGestureListener, ActionReceiver {
     private float mUpVal;
     private float mDownVal;
 
-    // pass motion events to action handler
-    private NxActionHandler mActionHandler;
+    // pass motion events to listener
+    private Swipeable mReceiver;
+    // watch for user changes to swipe thresholds
     private GestureObserver mObserver;
     private Context mContext;
 
-    // for width/height
+    // for width/height logic
     private View mHost;
     private boolean mVertical;
 
-    public NxGestureHandler(Context context, NxActionHandler actionHandler, View host) {
+    private Runnable mDoubleTapLeftTimeout = new Runnable() {
+        @Override
+        public void run() {
+            wasConsumed = false;
+            isDoubleTapPending = false;
+            mReceiver.onSingleLeftPress();
+        }
+    };
+
+    private Runnable mDoubleTapRightTimeout = new Runnable() {
+        @Override
+        public void run() {
+            wasConsumed = false;
+            isDoubleTapPending = false;
+            mReceiver.onSingleRightPress();
+        }
+    };
+
+    public NxGestureHandler(Context context, Swipeable swiper, View host) {
         mContext = context;
-        mActionHandler = actionHandler;
-        mActionHandler.setActionReceiver(this);
+        mReceiver = swiper;
         mHost = host;
-        mObserver = new GestureObserver(H);
+        mObserver = new GestureObserver(mHandler);
         mObserver.register();
-        updateLPThreshold();
+        updateSettings();
+    }
+
+    // special case: double tap for screen off we never capture up motion event
+    // maybe use broadcast receiver instead on depending on host
+    public void onScreenStateChanged(boolean screeOn) {
+        wasConsumed = false;
+    }
+
+    public void setOnSwipeListener(Swipeable swiper) {
+        if (swiper != null) {
+            mReceiver = swiper;
+        }
     }
 
     @Override
     public boolean onDown(MotionEvent e) {
         if (isDoubleTapPending) {
+            boolean isRight = isRightSide(e.getX(), e.getY());
             isDoubleTapPending = false;
             wasConsumed = true;
-            mActionHandler.cancelAction(NxAction.EVENT_SINGLE_TAP);
-            mActionHandler.fireAction(NxAction.EVENT_DOUBLE_TAP);
+            mHandler.removeCallbacks(mDoubleTapLeftTimeout);
+            mHandler.removeCallbacks(mDoubleTapRightTimeout);
+            if (isRight) {
+                mReceiver.onDoubleRightTap();
+            } else {
+                mReceiver.onDoubleLeftTap();
+            }
             return true;
         }
         return false;
@@ -99,21 +149,28 @@ public class NxGestureHandler implements OnGestureListener, ActionReceiver {
     @Override
     public void onShowPress(MotionEvent e) {
         // TODO Auto-generated method stub
-
     }
 
     @Override
     public boolean onSingleTapUp(MotionEvent e) {
-        if (mActionHandler.isDoubleTapEnabled()) {
+        boolean isRight = isRightSide(e.getX(), e.getY());
+        if (mReceiver.onDoubleTapEnabled()) {
             if (wasConsumed) {
                 wasConsumed = false;
                 return true;
             }
             isDoubleTapPending = true;
-            mActionHandler.cancelAction(NxAction.EVENT_SINGLE_TAP);
-            mActionHandler.queueAction(NxAction.EVENT_SINGLE_TAP);
+            if (isRight) {
+                mHandler.postDelayed(mDoubleTapRightTimeout, DT_TIMEOUT);
+            } else {
+                mHandler.postDelayed(mDoubleTapLeftTimeout, DT_TIMEOUT);
+            }
         } else {
-            mActionHandler.fireAction(NxAction.EVENT_SINGLE_TAP);
+            if (isRight) {
+                mReceiver.onSingleRightPress();
+            } else {
+                mReceiver.onSingleLeftPress();
+            }
         }
         return true;
     }
@@ -126,14 +183,17 @@ public class NxGestureHandler implements OnGestureListener, ActionReceiver {
 
     @Override
     public void onLongPress(MotionEvent e) {
-        mActionHandler.cancelAction(NxAction.EVENT_SINGLE_TAP);
-        mActionHandler.fireAction(NxAction.EVENT_LONG_PRESS);
+        boolean isRight = isRightSide(e.getX(), e.getY());
+        if (isRight) {
+            mReceiver.onLongRightPress();
+        } else {
+            mReceiver.onLongLeftPress();
+        }
     }
 
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
             float velocityY) {
-        mActionHandler.cancelAction(NxAction.EVENT_SINGLE_TAP);
 
         boolean isVertical = mVertical;
         boolean isLandscape = CFXUtils.isLandscape(mContext);
@@ -146,19 +206,31 @@ public class NxGestureHandler implements OnGestureListener, ActionReceiver {
 
         if (deltaParallel > 0) {
             if (isVertical) {
-                mActionHandler.fireAction(isLongSwipe ? NxAction.EVENT_FLING_LONG_LEFT
-                        : NxAction.EVENT_FLING_SHORT_LEFT);
+                if (isLongSwipe) {
+                    mReceiver.onLongLeftSwipe();
+                } else {
+                    mReceiver.onShortLeftSwipe();
+                }
             } else {
-                mActionHandler.fireAction(isLongSwipe ? NxAction.EVENT_FLING_LONG_RIGHT
-                        : NxAction.EVENT_FLING_SHORT_RIGHT);
+                if (isLongSwipe) {
+                    mReceiver.onLongRightSwipe();
+                } else {
+                    mReceiver.onShortRightSwipe();
+                }
             }
         } else {
             if (isVertical) {
-                mActionHandler.fireAction(isLongSwipe ? NxAction.EVENT_FLING_LONG_RIGHT
-                        : NxAction.EVENT_FLING_SHORT_RIGHT);
+                if (isLongSwipe) {
+                    mReceiver.onLongRightSwipe();
+                } else {
+                    mReceiver.onShortRightSwipe();
+                }
             } else {
-                mActionHandler.fireAction(isLongSwipe ? NxAction.EVENT_FLING_LONG_LEFT
-                        : NxAction.EVENT_FLING_SHORT_LEFT);
+                if (isLongSwipe) {
+                    mReceiver.onLongLeftSwipe();
+                } else {
+                    mReceiver.onShortLeftSwipe();
+                }
             }
         }
         return true;
@@ -176,6 +248,13 @@ public class NxGestureHandler implements OnGestureListener, ActionReceiver {
 
     public void unregister() {
         mObserver.unregister();
+    }
+
+    private boolean isRightSide(float x, float y) {
+        float length = mVertical ? mHost.getHeight() : mHost.getWidth();
+        float pos = mVertical ? y : x;
+        length /= 2;
+        return mVertical ? pos < length : pos > length;
     }
 
     private boolean isLongSwipe(float width, float height, float distance,
@@ -228,7 +307,7 @@ public class NxGestureHandler implements OnGestureListener, ActionReceiver {
         return Math.abs(distance) > (size * longPressThreshold);
     }
 
-    private void updateLPThreshold() {
+    private void updateSettings() {
         // get default swipe thresholds based on screensize
         float leftDefH;
         float rightDefH;
@@ -321,19 +400,7 @@ public class NxGestureHandler implements OnGestureListener, ActionReceiver {
         }
 
         public void onChange(boolean selfChange, Uri uri) {
-                updateLPThreshold();
-        }
-    }
-
-    @Override
-    public void onActionDispatched(NxAction actionEvent, String task) {
-        isDoubleTapPending = false;
-        if (actionEvent.isEnabled()) {
-            if (task.equals(ActionHandler.SYSTEMUI_TASK_SCREENOFF)) {
-                wasConsumed = false;
-            }
-            mHost.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
-            mHost.playSoundEffect(SoundEffectConstants.CLICK);
+                updateSettings();
         }
     }
 }

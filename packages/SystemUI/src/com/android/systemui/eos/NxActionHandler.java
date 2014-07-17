@@ -18,6 +18,9 @@
  * events. Also handles observing user changes to actions and a callback
  * that's called action pre-execution. Let's motion handler know if double
  * tap is enabled in case of different touch handling
+ * 
+ * Split bar actions: if only one side is enabled, the full bar executes the
+ * enabled side action
  *
  */
 
@@ -29,6 +32,7 @@ import java.util.Map;
 import org.codefirex.utils.ActionHandler;
 
 import com.android.systemui.eos.NxAction.ActionReceiver;
+import com.android.systemui.eos.NxGestureHandler.Swipeable;
 
 import android.content.Context;
 import android.database.ContentObserver;
@@ -36,20 +40,33 @@ import android.net.Uri;
 import android.os.Handler;
 import android.provider.Settings;
 import android.text.TextUtils;
-import android.view.ViewConfiguration;
+import android.view.HapticFeedbackConstants;
+import android.view.SoundEffectConstants;
+import android.view.View;
 
-public class NxActionHandler extends ActionHandler implements ActionReceiver {
+public class NxActionHandler extends ActionHandler implements ActionReceiver, Swipeable {
     final static String TAG = NxActionHandler.class.getSimpleName();
-    private static final int DT_TIMEOUT = ViewConfiguration.getDoubleTapTimeout() - 100;
+
+    static final int EVENT_SINGLE_LEFT_TAP = 1;
+    static final int EVENT_SINGLE_RIGHT_TAP = 2;
+    static final int EVENT_DOUBLE_LEFT_TAP = 3;
+    static final int EVENT_DOUBLE_RIGHT_TAP = 4;
+    static final int EVENT_LONG_LEFT_PRESS = 5;
+    static final int EVENT_LONG_RIGHT_PRESS = 6;
+    static final int EVENT_FLING_SHORT_LEFT = 7;
+    static final int EVENT_FLING_SHORT_RIGHT = 8;
+    static final int EVENT_FLING_LONG_LEFT = 9;
+    static final int EVENT_FLING_LONG_RIGHT = 10;
 
     private Map<Integer, NxAction> mActionMap = new HashMap<Integer, NxAction>();
     private ActionObserver mObserver;
-    private ActionReceiver mReceiver; // let anyone else we're getting ready to fire
+    private View mHost;
     private Handler H = new Handler();
     private boolean isDoubleTapEnabled;
 
-    public NxActionHandler(Context context) {
+    public NxActionHandler(Context context, View host) {
         super(context);
+        mHost = host;
         mActionMap = new HashMap<Integer, NxAction>();
         loadActionMap();
         mObserver = new ActionObserver(H);
@@ -60,52 +77,57 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver {
         mActionMap.clear();
 
         String action = "eos_nx_action_single_tap";
-        mActionMap.put(NxAction.EVENT_SINGLE_TAP, new NxAction(action, this,
-                H, getAction(action), DT_TIMEOUT));
+        mActionMap.put(EVENT_SINGLE_RIGHT_TAP, new NxAction(action, this,
+                H, getAction(action)));
+
+        action = "eos_nx_action_single_left_tap";
+        mActionMap.put(EVENT_SINGLE_LEFT_TAP, new NxAction(action, this,
+                H, getAction(action)));
 
         action = "eos_nx_action_double_tap";
-        mActionMap.put(NxAction.EVENT_DOUBLE_TAP, new NxAction(action, this,
-                H, getAction(action), 0));
+        mActionMap.put(EVENT_DOUBLE_RIGHT_TAP, new NxAction(action, this,
+                H, getAction(action)));
+
+        action = "eos_nx_action_double_left_tap";
+        mActionMap.put(EVENT_DOUBLE_LEFT_TAP, new NxAction(action, this,
+                H, getAction(action)));
 
         action = "eos_nx_action_long_press";
-        mActionMap.put(NxAction.EVENT_LONG_PRESS, new NxAction(action, this,
-                H, getAction(action), 0));
+        mActionMap.put(EVENT_LONG_RIGHT_PRESS, new NxAction(action, this,
+                H, getAction(action)));
+
+        action = "eos_nx_action_long_left_press";
+        mActionMap.put(EVENT_LONG_LEFT_PRESS, new NxAction(action, this,
+                H, getAction(action)));
 
         action = "eos_nx_action_fling_short_left";
-        mActionMap.put(NxAction.EVENT_FLING_SHORT_LEFT, new NxAction(action,
-                this, H, getAction(action), 0));
+        mActionMap.put(EVENT_FLING_SHORT_LEFT, new NxAction(action,
+                this, H, getAction(action)));
 
         action = "eos_nx_action_fling_short_right";
-        mActionMap.put(NxAction.EVENT_FLING_SHORT_RIGHT, new NxAction(action,
-                this, H, getAction(action), 0));
+        mActionMap.put(EVENT_FLING_SHORT_RIGHT, new NxAction(action,
+                this, H, getAction(action)));
 
         action = "eos_nx_action_fling_long_left";
-        mActionMap.put(NxAction.EVENT_FLING_LONG_LEFT, new NxAction(action,
-                this, H, getAction(action), 0));
+        mActionMap.put(EVENT_FLING_LONG_LEFT, new NxAction(action,
+                this, H, getAction(action)));
 
         action = "eos_nx_action_fling_long_right";
-        mActionMap.put(NxAction.EVENT_FLING_LONG_RIGHT, new NxAction(action,
-                this, H, getAction(action), 0));
+        mActionMap.put(EVENT_FLING_LONG_RIGHT, new NxAction(action,
+                this, H, getAction(action)));
 
-        isDoubleTapEnabled = ((NxAction) mActionMap.get(NxAction.EVENT_DOUBLE_TAP))
+        isDoubleTapEnabled = ((NxAction) mActionMap.get(EVENT_DOUBLE_RIGHT_TAP))
+                .isEnabled() || ((NxAction) mActionMap.get(EVENT_DOUBLE_LEFT_TAP))
                 .isEnabled();
     }
 
     private String getAction(String uri) {
         String action = Settings.System.getString(
                 mContext.getContentResolver(), uri);
-        if (TextUtils.isEmpty(action) || action.equals("empty")) {
-            action = "";
+        if (TextUtils.isEmpty(action) || action.equals("empty") || action.equals("")) {
+            action = ActionHandler.SYSTEMUI_TASK_NO_ACTION;
         }
         return action;
-    }
-
-    public void setActionReceiver(ActionReceiver receiver) {
-        mReceiver = receiver;
-    }
-
-    public boolean isDoubleTapEnabled() {
-        return isDoubleTapEnabled;
     }
 
     public void fireAction(int type) {
@@ -114,10 +136,6 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver {
 
     public void cancelAction(int type) {
         ((NxAction) mActionMap.get(type)).cancelAction();
-    }
-
-    public void queueAction(int type) {
-        ((NxAction) mActionMap.get(type)).queueAction();
     }
 
     public void unregister() {
@@ -157,9 +175,101 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver {
 
     @Override
     public void onActionDispatched(NxAction actionEvent, String task) {
-        if (mReceiver != null)
-            mReceiver.onActionDispatched(actionEvent, task);
-        if (actionEvent.isEnabled())
+        if (actionEvent.isEnabled()) {
+            mHost.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            mHost.playSoundEffect(SoundEffectConstants.CLICK);
             performTask(task);
+        }
+    }
+
+    @Override
+    public boolean onDoubleTapEnabled() {
+        return isDoubleTapEnabled;
+    }
+
+    @Override
+    public void onShortLeftSwipe() {
+        fireAction(EVENT_FLING_SHORT_LEFT);
+    }
+
+    @Override
+    public void onLongLeftSwipe() {
+        fireAction(EVENT_FLING_LONG_LEFT);
+    }
+
+    @Override
+    public void onShortRightSwipe() {
+        fireAction(EVENT_FLING_SHORT_RIGHT);
+    }
+
+    @Override
+    public void onLongRightSwipe() {
+        fireAction(EVENT_FLING_LONG_RIGHT);
+    }
+
+    @Override
+    public void onSingleLeftPress() {
+        boolean isEnabled = ((NxAction) mActionMap.get(EVENT_SINGLE_LEFT_TAP))
+                .isEnabled();
+        if (isEnabled) {
+            fireAction(EVENT_SINGLE_LEFT_TAP);
+        } else {
+            fireAction(EVENT_SINGLE_RIGHT_TAP);
+        }
+    }
+
+    @Override
+    public void onSingleRightPress() {
+        boolean isEnabled = ((NxAction) mActionMap.get(EVENT_SINGLE_RIGHT_TAP))
+                .isEnabled();
+        if (isEnabled) {
+            fireAction(EVENT_SINGLE_RIGHT_TAP);
+        } else {
+            fireAction(EVENT_SINGLE_LEFT_TAP);
+        }
+    }
+
+    @Override
+    public void onDoubleLeftTap() {
+        boolean isEnabled = ((NxAction) mActionMap.get(EVENT_DOUBLE_LEFT_TAP))
+                .isEnabled();
+        if (isEnabled) {
+            fireAction(EVENT_DOUBLE_LEFT_TAP);
+        } else {
+            fireAction(EVENT_DOUBLE_RIGHT_TAP);
+        }
+    }
+
+    @Override
+    public void onDoubleRightTap() {
+        boolean isEnabled = ((NxAction) mActionMap.get(EVENT_DOUBLE_RIGHT_TAP))
+                .isEnabled();
+        if (isEnabled) {
+            fireAction(EVENT_DOUBLE_RIGHT_TAP);
+        } else {
+            fireAction(EVENT_DOUBLE_LEFT_TAP);
+        }
+    }
+
+    @Override
+    public void onLongLeftPress() {
+        boolean isEnabled = ((NxAction) mActionMap.get(EVENT_LONG_LEFT_PRESS))
+                .isEnabled();
+        if (isEnabled) {
+            fireAction(EVENT_LONG_LEFT_PRESS);
+        } else {
+            fireAction(EVENT_LONG_RIGHT_PRESS);
+        }
+    }
+
+    @Override
+    public void onLongRightPress() {
+        boolean isEnabled = ((NxAction) mActionMap.get(EVENT_LONG_RIGHT_PRESS))
+                .isEnabled();
+        if (isEnabled) {
+            fireAction(EVENT_LONG_RIGHT_PRESS);
+        } else {
+            fireAction(EVENT_LONG_LEFT_PRESS);
+        }
     }
 }
