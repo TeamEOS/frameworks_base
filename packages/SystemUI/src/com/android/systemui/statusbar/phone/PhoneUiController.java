@@ -79,7 +79,11 @@ public class PhoneUiController extends BarUiController {
 
     @Override
     protected View getSoftkeyHolder() {
-        return mNavigator.getViewForWindowManager();
+        if (mNavigator != null) {
+            return mNavigator.getViewForWindowManager();
+        } else {
+            return null;
+        }
     }
 
     protected void onTearDown() {
