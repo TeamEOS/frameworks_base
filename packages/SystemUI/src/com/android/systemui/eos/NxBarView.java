@@ -35,6 +35,12 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
+import android.view.animation.AnimationSet;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
+import android.view.animation.ScaleAnimation;
 
 public class NxBarView extends BaseNavigationBar {
     final static String TAG = NxBarView.class.getSimpleName();
@@ -44,8 +50,11 @@ public class NxBarView extends BaseNavigationBar {
     private GestureDetector mGestureDetector;
     private final NxBarTransitions mBarTransitions;
     private NxBarObserver mObserver = new NxBarObserver(new Handler());
-
+    private AnimationSet mSpinOut;
+    private AnimationSet mSpinIn;
+    private boolean mIsAnimating;
     private boolean mLogoEnabled;
+    private boolean mLogoAnimates;
 
     private class NxBarObserver extends ContentObserver {
 
@@ -57,6 +66,9 @@ public class NxBarView extends BaseNavigationBar {
             mContext.getContentResolver().registerContentObserver(
                     Settings.System.getUriFor("nx_logo_visible"), false,
                     NxBarObserver.this);
+            mContext.getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor("nx_logo_animates"), false,
+                    NxBarObserver.this);
         }
 
         void unregister() {
@@ -65,9 +77,18 @@ public class NxBarView extends BaseNavigationBar {
         }
 
         public void onChange(boolean selfChange, Uri uri) {
+            boolean oldEnabled = mLogoEnabled;
             mLogoEnabled = Settings.System.getBoolean(mContext.getContentResolver(),
                     "nx_logo_visible", true);
-            setDisabledFlags(mDisabledFlags, true);
+            if (oldEnabled != mLogoEnabled) {
+                findViewById(R.id.rot0).findViewById(R.id.nx_stub_middle).setAlpha(
+                        mLogoEnabled ? 1.0f : 0.0f);
+                findViewById(R.id.rot90).findViewById(R.id.nx_stub_middle).setAlpha(
+                        mLogoEnabled ? 1.0f : 0.0f);
+                setDisabledFlags(mDisabledFlags, true);
+            }
+            mLogoAnimates = Settings.System.getBoolean(mContext.getContentResolver(),
+                    "nx_logo_animates", false);
         }
     }
 
@@ -75,8 +96,15 @@ public class NxBarView extends BaseNavigationBar {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
+            final int action = event.getAction();
             if (mUserAutoHideListener != null) {
                 mUserAutoHideListener.onTouch(NxBarView.this, event);
+            }
+            if (action == MotionEvent.ACTION_DOWN) {
+                if (!mIsAnimating)
+                    animateLogo(true);
+            } else if (action == MotionEvent.ACTION_UP) {
+                animateLogo(false);
             }
             return mGestureDetector.onTouchEvent(event);
         }
@@ -92,6 +120,10 @@ public class NxBarView extends BaseNavigationBar {
         mObserver.register();
         mLogoEnabled = Settings.System.getBoolean(mContext.getContentResolver(),
                 "nx_logo_visible", true);
+        mLogoAnimates = Settings.System.getBoolean(mContext.getContentResolver(),
+                "nx_logo_animates", true);
+        mSpinIn = getLogoAnimator(false);
+        mSpinOut = getLogoAnimator(true);
     }
 
     // total touch control, except on keyguard
@@ -128,7 +160,14 @@ public class NxBarView extends BaseNavigationBar {
     }
 
     private NxLogoView getNxLogo() {
-        return (NxLogoView)mCurrentView.findViewById(R.id.nx_stub_middle);
+        return (NxLogoView) mCurrentView.findViewById(R.id.nx_stub_middle);
+    }
+
+    private void animateLogo(boolean isDown) {
+        if (mLogoAnimates && mLogoEnabled) {
+            getNxLogo().animate().cancel();
+            getNxLogo().startAnimation(isDown ? mSpinOut : mSpinIn);
+        }
     }
 
     @Override
@@ -169,6 +208,7 @@ public class NxBarView extends BaseNavigationBar {
         getNxLogo().setVisibility(!isKeyguardShowing() && mLogoEnabled ? View.VISIBLE : View.INVISIBLE);
         setOnTouchListener(!isKeyguardShowing() ? mNxTouchListener : null);
         mBarTransitions.applyBackButtonQuiescentAlpha(mBarTransitions.getMode(), true /* animate */);
+        if (mLogoEnabled && isKeyguardShowing()) getNxLogo().setAlpha(0.0f);
     }
 
     @Override
@@ -196,5 +236,42 @@ public class NxBarView extends BaseNavigationBar {
     public void setNavigationIconHints(int hints) {
         // TODO Auto-generated method stub
 
+    }
+
+    private AnimationSet getLogoAnimator(boolean isDown) {
+        final float from = isDown ? 1.0f : 0.0f;
+        final float to = isDown ? 0.0f : 1.0f;
+        final float fromDeg = isDown ? 0.0f : 360.0f;
+        final float toDeg = isDown ? 360.0f : 0.0f;
+
+        Animation scale = new ScaleAnimation(from, to, from, to, Animation.RELATIVE_TO_SELF,
+                0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        RotateAnimation rotate = new RotateAnimation(fromDeg, toDeg, Animation.RELATIVE_TO_SELF,
+                0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+
+        AnimationSet animSet = new AnimationSet(true);
+        animSet.setInterpolator(new LinearInterpolator());
+        animSet.setDuration(150);
+        animSet.setFillAfter(true);
+        animSet.addAnimation(scale);
+        animSet.addAnimation(rotate);
+        animSet.setAnimationListener(new AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                mIsAnimating = true;
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                mIsAnimating = false;
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+                // TODO Auto-generated method stub
+            }
+
+        });
+        return animSet;
     }
 }
