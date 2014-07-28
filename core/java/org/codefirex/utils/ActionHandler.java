@@ -80,6 +80,7 @@ public abstract class ActionHandler {
     public static final String SYSTEMUI_TASK_NOTIFICATION_PANEL = "task_notification_panel";
     public static final String SYSTEMUI_TASK_SCREENSHOT = "task_screenshot";
     public static final String SYSTEMUI_TASK_SCREENRECORD = "task_screenrecord";
+    public static final String SYSTEMUI_TASK_AUDIORECORD = "task_audiorecord";
     public static final String SYSTEMUI_TASK_SCREENOFF = "task_screenoff";
     public static final String SYSTEMUI_TASK_KILL_PROCESS = "task_killcurrent";
     public static final String SYSTEMUI_TASK_ASSIST = "task_assist";
@@ -105,6 +106,7 @@ public abstract class ActionHandler {
         ActionMap.put(SYSTEMUI_TASK_NO_ACTION, new Pair<String, String>("ic_sysbar_null", "No action"));
         ActionMap.put(SYSTEMUI_TASK_SETTINGS_PANEL, new Pair<String, String>("ic_notify_quicksettings_normal", "Settings panel"));
         ActionMap.put(SYSTEMUI_TASK_NOTIFICATION_PANEL, new Pair<String, String>("ic_sysbar_notifications", "Notification panel"));
+        ActionMap.put(SYSTEMUI_TASK_AUDIORECORD, new Pair<String, String>("ic_sysbar_voiceassist", "Record audio"));
         ActionMap.put(SYSTEMUI_TASK_SCREENSHOT, new Pair<String, String>("ic_sysbar_screenshot", "Take screenshot"));
         ActionMap.put(SYSTEMUI_TASK_SCREENRECORD, new Pair<String, String>("ic_sysbar_screen_record", "Record screen"));
         ActionMap.put(SYSTEMUI_TASK_SCREENOFF, new Pair<String, String>("ic_qs_sleep", "Screen off"));
@@ -457,6 +459,8 @@ public abstract class ActionHandler {
             takeScreenshot();
         } else if (action.equals(SYSTEMUI_TASK_SCREENRECORD)) {
             takeScreenrecord();
+        } else if (action.equals(SYSTEMUI_TASK_AUDIORECORD)) {
+            takeAudiorecord();
         } else if (action.equals(SYSTEMUI_TASK_SCREENOFF)) {
             screenOff();
         } else if (action.equals(SYSTEMUI_TASK_ASSIST)) {
@@ -852,7 +856,7 @@ public abstract class ActionHandler {
     }
 
     final Object mScreenrecordLock = new Object();
-    ServiceConnection mScreenrecordConnection = null;
+    static ServiceConnection mScreenrecordConnection = null;
 
     final Runnable mScreenrecordTimeout = new Runnable() {
         @Override
@@ -966,6 +970,69 @@ public abstract class ActionHandler {
         } else {
             Log.d("ActionHandler", "Caller cannot kill processes, aborting");
             postActionEventHandled(false);
+        }
+    }
+
+    final Object mAudiorecordLock = new Object();
+    static ServiceConnection mAudiorecordConnection = null;
+
+    final Runnable mAudiorecordTimeout = new Runnable() {
+        @Override public void run() {
+            synchronized (mAudiorecordLock) {
+                if (mAudiorecordConnection != null) {
+                    mContext.unbindService(mAudiorecordConnection);
+                    mAudiorecordConnection = null;
+                }
+            }
+        }
+    };
+
+    // Assume this is called from the Handler thread.
+    private void takeAudiorecord() {
+        synchronized (mAudiorecordLock) {
+            if (mAudiorecordConnection != null) {
+                return;
+            }
+            ComponentName cn = new ComponentName("com.android.systemui",
+                    "com.android.systemui.eos.AudioRecordService");
+            Intent intent = new Intent();
+            intent.setComponent(cn);
+            ServiceConnection conn = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                    synchronized (mAudiorecordLock) {
+                        Messenger messenger = new Messenger(service);
+                        Message msg = Message.obtain(null, 1);
+                        final ServiceConnection myConn = this;
+                        Handler h = new Handler(H.getLooper()) {
+                            @Override
+                            public void handleMessage(Message msg) {
+                                synchronized (mAudiorecordLock) {
+                                    if (mAudiorecordConnection == myConn) {
+                                        mContext.unbindService(mAudiorecordConnection);
+                                        mAudiorecordConnection = null;
+                                        H.removeCallbacks(mAudiorecordTimeout);
+                                    }
+                                }
+                            }
+                        };
+                        msg.replyTo = new Messenger(h);
+                        msg.arg1 = msg.arg2 = 0;
+                        try {
+                            messenger.send(msg);
+                        } catch (RemoteException e) {
+                        }
+                    }
+                }
+                @Override
+                public void onServiceDisconnected(ComponentName name) {}
+            };
+            if (mContext.bindServiceAsUser(
+                    intent, conn, Context.BIND_AUTO_CREATE, UserHandle.CURRENT)) {
+                mAudiorecordConnection = conn;
+                // Set max to 2 hours, sounds reasonable
+                H.postDelayed(mAudiorecordTimeout, 120 * 60 * 1000);
+            }
         }
     }
 

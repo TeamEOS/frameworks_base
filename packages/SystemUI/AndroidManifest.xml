@@ -122,6 +122,12 @@
             android:process=":screenrecord"
             android:exported="false" />
 
+        <!-- started from PhoneWindowManager
+             TODO: Should have an android:permission attribute -->
+        <service android:name=".eos.AudioRecordService"
+            android:process=":audiorecord"
+            android:exported="false" />
+
         <service android:name=".LoadAverageService"
                 android:exported="true" />
 

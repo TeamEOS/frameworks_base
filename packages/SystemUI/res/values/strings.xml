@@ -595,6 +595,18 @@
     <!-- Screen record notification error title -->
     <string name="screenrecord_notif_error">Unable to record screen</string>
 
+    <!-- Audio record Notification Ticker -->
+    <string name="audiorecord_notif_ticker">Audio is being recorded</string>
+
+    <!-- Audio record notification title -->
+    <string name="audiorecord_notif_title">Recording audio</string>
+
+    <!-- Audio record notification action: Stop -->
+    <string name="audiorecord_notif_stop">Stop</string>
+
+    <!-- Audio record notification error title -->
+    <string name="audiorecord_notif_error">Unable to record audio</string>
+
     <!-- Eos dream title -->
     <string name="eos_dream_title">EOS</string>
     <!-- Eos dream settings title -->
