@@ -1873,4 +1873,9 @@
 
   <java-symbol type="bool" name="always_popup_usb_computer_connection" />
 
+  <!-- Proximity check on screen on -->
+  <java-symbol type="bool" name="config_proximityCheckOnWake" />
+
+  <!-- Proximity check timeout -->
+  <java-symbol type="integer" name="config_proximityCheckTimeout" />
 </resources>
