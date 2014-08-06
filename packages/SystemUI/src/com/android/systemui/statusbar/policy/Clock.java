@@ -33,7 +33,6 @@ import android.widget.TextView;
 import com.android.systemui.DemoMode;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -41,11 +40,10 @@ import java.util.TimeZone;
 import libcore.icu.LocaleData;
 
 import org.codefirex.utils.CFXConstants;
-import com.android.systemui.eos.EosObserver.FeatureListener;
 /**
  * Digital clock for the status bar.
  */
-public class Clock extends TextView implements DemoMode, FeatureListener {
+public class Clock extends TextView implements DemoMode {
     private boolean mAttached;
     private Calendar mCalendar;
     private String mClockFormatString;
@@ -65,7 +63,6 @@ public class Clock extends TextView implements DemoMode, FeatureListener {
     // set bools at init for easy management
     private boolean mIsSignalView = false;
     private boolean mIsCenterView = false;
-    private int MSG_CLOCK_AMPM_SETTINGS;
 
     public Clock(Context context) {
         this(context, null);
@@ -149,6 +146,11 @@ public class Clock extends TextView implements DemoMode, FeatureListener {
 
     final void updateClock() {
         if (mDemoMode) return;
+
+        // instantiate earlier as we're being called from onFinishInflate()
+        if (mCalendar == null) {
+            mCalendar = Calendar.getInstance(TimeZone.getDefault());
+        }
         mCalendar.setTimeInMillis(System.currentTimeMillis());
         setText(getSmallTime());
     }
@@ -256,32 +258,11 @@ public class Clock extends TextView implements DemoMode, FeatureListener {
         updateClock();
     }
 
-    private void updateAmPmStyle() {
+    public void updateAmPmStyle() {
         AM_PM_STYLE = Settings.System.getInt(mContext.getContentResolver(),
                 CFXConstants.SYSTEMUI_CLOCK_AMPM,
                 CFXConstants.SYSTEMUI_CLOCK_AMPM_DEF);
         updateAmPm();
-    }
-
-    @Override
-    public ArrayList<String> onRegisterClass() {
-        ArrayList<String> uris = new ArrayList<String>();
-        uris.add(CFXConstants.SYSTEMUI_CLOCK_AMPM);
-        return uris;
-    }
-
-    @Override
-    public void onSetMessage(String uri, int msg) {
-        if (uri.equals(CFXConstants.SYSTEMUI_CLOCK_AMPM)) {
-            MSG_CLOCK_AMPM_SETTINGS = msg;
-        }
-    }
-
-    @Override
-    public void onFeatureStateChanged(int msg) {
-        if (msg == MSG_CLOCK_AMPM_SETTINGS) {
-            updateAmPmStyle();
-        }
     }
 }
 

@@ -17,7 +17,6 @@
 package com.android.systemui.statusbar.policy;
 
 import android.animation.Animator;
-import java.util.ArrayList;
 
 import org.codefirex.utils.ActionHandler;
 import org.codefirex.utils.CFXUtils;
@@ -47,9 +46,8 @@ import android.view.accessibility.AccessibilityEvent;
 import android.widget.ImageView;
 
 import com.android.systemui.R;
-import com.android.systemui.eos.EosObserver.FeatureListener;
 
-public class KeyButtonView extends ImageView implements FeatureListener {
+public class KeyButtonView extends ImageView {
     private static final String TAG = "StatusBar.KeyButtonView";
     private static final boolean DEBUG = false;
     private static final String NO_LP = "empty";
@@ -182,7 +180,7 @@ public class KeyButtonView extends ImageView implements FeatureListener {
         }
     }
 
-    void updateLpAction() {
+    public void updateLpAction() {
         mLpAction = Settings.System.getString(getContext().getContentResolver(), mLpUri);
         if (TextUtils.isEmpty(mLpAction) || mLpAction.equals(NO_LP)) {
             setOnLongClickListener(null);
@@ -426,27 +424,6 @@ public class KeyButtonView extends ImageView implements FeatureListener {
                 InputDevice.SOURCE_KEYBOARD);
         InputManager.getInstance().injectInputEvent(ev,
                 InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
-    }
-
-    @Override
-    public ArrayList<String> onRegisterClass() {
-        ArrayList<String> uris = new ArrayList<String>();
-        uris.add(mLpUri);
-        return uris;
-    }
-
-    @Override
-    public void onSetMessage(String uri, int msg) {
-        if (uri.equals(mLpUri)) {
-            MSG_SOFTKEY_LP_ACTION_CHANGED = msg;
-        }
-    }
-
-    @Override
-    public void onFeatureStateChanged(int msg) {
-        if (msg == MSG_SOFTKEY_LP_ACTION_CHANGED) {
-            updateLpAction();
-        }
     }
 }
 

@@ -17,11 +17,14 @@
 package com.android.systemui.statusbar.phone;
 
 import org.codefirex.utils.ActionHandler;
+import org.codefirex.utils.CFXConstants;
 
 import android.app.ActivityManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
+import android.database.ContentObserver;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.EventLog;
@@ -30,11 +33,15 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.GestureDetector;
+import android.widget.TextView;
+import android.net.Uri;
+import android.os.Handler;
 import android.os.PowerManager;
 import android.provider.Settings;
 
 import com.android.systemui.EventLogTags;
 import com.android.systemui.R;
+import com.android.systemui.statusbar.policy.Clock;
 
 public class PhoneStatusBarView extends PanelBar {
     private static final String TAG = "PhoneStatusBarView";
@@ -54,6 +61,34 @@ public class PhoneStatusBarView extends PanelBar {
     private final PhoneStatusBarTransitions mBarTransitions;
     private GestureDetector mDoubleTapGesture;
     private TheActionHandler mAH;
+    private ClockObserver mObserver;
+    private View mCurrentClockView;
+    private boolean mIsClockVisible = true;
+
+    private class ClockObserver extends ContentObserver {
+        ClockObserver(Handler handler) {
+            super(handler);
+        }
+
+        void observe() {
+            final ContentResolver resolver = getContext().getContentResolver();
+            resolver.registerContentObserver(
+                    Settings.System.getUriFor(CFXConstants.SYSTEMUI_CLOCK_VISIBLE), false, this);
+            resolver.registerContentObserver(
+                    Settings.System.getUriFor(CFXConstants.SYSTEMUI_CLOCK_AMPM), false, this);
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            if (Settings.System.getUriFor(CFXConstants.SYSTEMUI_CLOCK_VISIBLE).equals(uri)) {
+                handleClockVisibility();
+                return;
+            } else if (Settings.System.getUriFor(CFXConstants.SYSTEMUI_CLOCK_AMPM).equals(uri)) {
+                handleClockAmPm();
+                return;
+            }
+        }
+    }
 
     private class TheActionHandler extends ActionHandler {
         private String theAction = "";
@@ -106,6 +141,9 @@ public class PhoneStatusBarView extends PanelBar {
                 return true;
             }
         });
+
+        mObserver = new ClockObserver(new Handler());
+        mObserver.observe();
     }
 
     public BarTransitions getBarTransitions() {
@@ -299,5 +337,65 @@ public class PhoneStatusBarView extends PanelBar {
         mBar.animateHeadsUp(mNotificationPanel == panel, mPanelExpandedFractionSum);
 
         mBar.updateCarrierLabelVisibility(false);
+    }
+
+    @Override
+    public void onFinishInflate() {
+        super.onFinishInflate();
+        handleClockVisibility();
+        handleClockAmPm();
+    }
+
+    void showClock(boolean show) {
+        final View clock = mCurrentClockView;
+        if (clock != null) {
+            if (mIsClockVisible) {
+                clock.setVisibility(show ? View.VISIBLE : View.GONE);
+            } else {
+                clock.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    private void handleClockAmPm() {
+        final Clock center = (Clock) findViewById(R.id.clock_center);
+        final Clock cluster = (Clock) findViewById(R.id.system_icon_area).findViewById(
+                R.id.clock);
+        center.updateAmPmStyle();
+        cluster.updateAmPmStyle();
+    }
+
+    private void handleClockVisibility() {
+        if (mCurrentClockView == null)
+            mCurrentClockView = findViewById(R.id.system_icon_area).findViewById(
+                    R.id.clock);
+
+        int clock_state = Settings.System.getInt(mContext.getContentResolver(),
+                CFXConstants.SYSTEMUI_CLOCK_VISIBLE,
+                CFXConstants.SYSTEMUI_CLOCK_CLUSTER);
+
+        switch (clock_state) {
+            case CFXConstants.SYSTEMUI_CLOCK_GONE:
+                mIsClockVisible = false;
+                findViewById(R.id.clock_center).setVisibility(View.GONE);
+                findViewById(R.id.system_icon_area).findViewById(R.id.clock)
+                        .setVisibility(View.GONE);
+                break;
+            case CFXConstants.SYSTEMUI_CLOCK_CLUSTER:
+                mIsClockVisible = true;
+                findViewById(R.id.clock_center).setVisibility(View.GONE);
+                findViewById(R.id.system_icon_area).findViewById(R.id.clock)
+                        .setVisibility(View.VISIBLE);
+                mCurrentClockView = findViewById(R.id.system_icon_area)
+                        .findViewById(R.id.clock);
+                break;
+            case CFXConstants.SYSTEMUI_CLOCK_CENTER:
+                mIsClockVisible = true;
+                findViewById(R.id.system_icon_area).findViewById(R.id.clock)
+                        .setVisibility(View.GONE);
+                findViewById(R.id.clock_center).setVisibility(View.VISIBLE);
+                mCurrentClockView = findViewById(R.id.clock_center);
+                break;
+        }
     }
 }

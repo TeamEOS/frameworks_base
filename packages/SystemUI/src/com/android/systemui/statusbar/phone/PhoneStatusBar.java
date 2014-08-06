@@ -231,7 +231,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     QuickSettingsContainerView mSettingsContainer;
     int mSettingsPanelGravity;
     private SettingsObserver mSettingsObserver;
-    private DevForceNavbarObserver mDevForceNavbarObserver;
 
     // top bar
     View mNotificationPanelHeader;
@@ -263,7 +262,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
     // Eos implementation of a navigation view
     private Navigator mNavigationBarView = null;
-    private BarHandler mBarHandler = new BarHandler();
     private int mNavigationBarWindowState = WINDOW_STATE_SHOWING;
 
     // the tracker view
@@ -374,29 +372,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 		}
 	}
 
-    class DevForceNavbarObserver extends ContentObserver {
-        DevForceNavbarObserver(Handler handler) {
-            super(handler);
-        }
-
-        void observe() {
-            ContentResolver resolver = mContext.getContentResolver();
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.DEV_FORCE_SHOW_NAVBAR), false, this);
-        }
-
-        @Override
-        public void onChange(boolean selfChange) {
-            boolean visible = Settings.System.getIntForUser(mContext.getContentResolver(),
-                    Settings.System.DEV_FORCE_SHOW_NAVBAR, 0, UserHandle.USER_CURRENT) == 1;
-            if (visible) {
-                forceAddNavigationBar();
-            } else {
-                removeNavigationBar();
-            }
-        }
-    }
-
     private void forceAddNavigationBar() {
         // If we have no Navbar view and we should have one, create it
         if (mNavigationBarView != null || mRecreating) {
@@ -408,20 +383,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         mNavigationBarView.setDisabledFlags(mDisabled);
         mNavigationBarView.setBar(this);
         addNavigationBar();
-    }
-
-    private static final int MSG_BAR_MODE_CHANGED = 14673;
-
-    private class BarHandler extends Handler {
-        public void handleMessage(Message m) {
-            super.handleMessage(m);
-            switch (m.what) {
-                case MSG_BAR_MODE_CHANGED:
-                    mHandler.post(mRemoveNavigationBar);
-                    mHandler.postDelayed(mAddNavigationBar, 500);
-                    break;
-            }
-        }
     }
 
     private final Runnable mRemoveNavigationBar = new Runnable() {
@@ -523,19 +484,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         addNavigationBar();
 
-        SettingsObserver observer = new SettingsObserver(mHandler);
-        observer.observe();
-
-        // Developer options - Force Navigation bar
-        try {
-            boolean needsNav = mWindowManagerService.needsNavigationBar();
-            if (!needsNav) {
-                mDevForceNavbarObserver = new DevForceNavbarObserver(mHandler);
-                mDevForceNavbarObserver.observe();
-            }
-        } catch (RemoteException ex) {
-            // no window manager? good luck with that
-        }
+        mSettingsObserver = new SettingsObserver(mHandler);
+        mSettingsObserver.observe();
 
         // Lastly, call to the icon policy to install/update all the icons.
         mIconPolicy = new PhoneStatusBarPolicy(mContext);
@@ -595,10 +545,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         mStatusBarView.setBar(this);
 
         if (!mRecreating) {
-            mPhoneController = new PhoneUiController(mContext, mBarHandler);
+            mPhoneController = new PhoneUiController(mContext, mAddNavigationBar,
+                    mRemoveNavigationBar);
         }
-
-        mPhoneController.registerBarView(mStatusBarView);
 
         PanelHolder holder;
         if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
@@ -1527,7 +1476,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     public void showClock(boolean show) {
         if (mStatusBarView == null)
             return;
-        mPhoneController.showClock(show);
+        mStatusBarView.showClock(show);
     }
 
     /**
@@ -3097,6 +3046,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
     private void recreateStatusBar() {
         mRecreating = true;
+        mPhoneController.setRecreating(true);
 
         removeHeadsUpView();
 
@@ -3149,6 +3099,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         updateExpandedViewPos(EXPANDED_LEAVE_ALONE);
         mRecreating = false;
+        mPhoneController.setRecreating(false);
     }
 
     private void removeAllViews(ViewGroup parent) {
