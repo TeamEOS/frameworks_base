@@ -38,7 +38,6 @@ import com.android.internal.app.ResolverActivity;
 import com.android.internal.content.NativeLibraryHelper;
 import com.android.internal.content.PackageHelper;
 import com.android.internal.util.FastPrintWriter;
-import com.android.internal.policy.impl.PhoneWindowManager;
 import com.android.internal.util.FastXmlSerializer;
 import com.android.internal.util.XmlUtils;
 import com.android.server.DeviceStorageMonitorService;
@@ -546,7 +545,6 @@ public class PackageManagerService extends IPackageManager.Stub {
     private HashSet<Integer> mDirtyUsers = new HashSet<Integer>();
 
     WindowManager mWindowManager;
-    private final WindowManagerPolicy mPolicy; // to set packageName
 
     final private DefaultContainerConnection mDefContainerConn =
             new DefaultContainerConnection();
@@ -1137,7 +1135,6 @@ public class PackageManagerService extends IPackageManager.Stub {
 
         mWindowManager = (WindowManager)context.getSystemService(Context.WINDOW_SERVICE);
         Display d = mWindowManager.getDefaultDisplay();
-        mPolicy = new PhoneWindowManager();
         d.getMetrics(mMetrics);
 
         synchronized (mInstallLock) {
@@ -3847,6 +3844,18 @@ public class PackageManagerService extends IPackageManager.Stub {
         }
     }
 
+    /**
+     * name of package currently being dex optimized
+     * as shown through this.showBootMessage(msg, always);
+     */
+    static String currentPackageName;
+    public void setPackageName(String pkgName) {
+        if (pkgName == null) {
+            pkgName = "stop.looking.at.me.swan";
+        }
+        this.currentPackageName = pkgName;
+    }
+
     public void performBootDexOpt() {
         HashSet<PackageParser.Package> pkgs = null;
         synchronized (mPackages) {
@@ -3867,11 +3876,21 @@ public class PackageManagerService extends IPackageManager.Stub {
                         } catch (Exception e) {
                             ai = null;
                         }
-                        mPolicy.setPackageName((String) (ai != null ? mContext.getPackageManager().getApplicationLabel(ai) : p.packageName));
+                        setPackageName((String) (ai != null ? mContext.getPackageManager().getApplicationLabel(ai) : p.packageName));
+                        if (currentPackageName != null) {
+                        ActivityManagerNative.getDefault().showBootMessage(
+                                currentPackageName + 
+                                mContext.getResources().getString(
+                                        com.android.internal.R.string.android_white_space) +
+                                mContext.getResources().getString(
+                                        com.android.internal.R.string.android_upgrading_apk,
+                                        i, pkgs.size()), true);
+                        } else {
                         ActivityManagerNative.getDefault().showBootMessage(
                                 mContext.getResources().getString(
                                         com.android.internal.R.string.android_upgrading_apk,
                                         i, pkgs.size()), true);
+                        }
                     } catch (RemoteException e) {
                     }
                 }

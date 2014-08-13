@@ -1124,6 +1124,7 @@
   <java-symbol type="drawable" name="cling_button" />
   <java-symbol type="drawable" name="cling_arrow_up" />
   <java-symbol type="drawable" name="cling_bg" />
+  <java-symbol type="drawable" name="welcome_to_eos" />
 
   <java-symbol type="layout" name="action_bar_home" />
   <java-symbol type="layout" name="action_bar_title_item" />
@@ -1553,6 +1554,7 @@
   <java-symbol type="string" name="aerr_process" />
   <java-symbol type="string" name="aerr_title" />
   <java-symbol type="string" name="android_upgrading_apk" />
+  <java-symbol type="string" name="android_white_space" />
   <java-symbol type="string" name="android_upgrading_complete" />
   <java-symbol type="string" name="android_upgrading_starting_apps" />
   <java-symbol type="string" name="anr_activity_application" />
