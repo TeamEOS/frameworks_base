@@ -63,6 +63,7 @@ public class Clock extends TextView implements DemoMode {
     // set bools at init for easy management
     private boolean mIsSignalView = false;
     private boolean mIsCenterView = false;
+    private boolean mScreenOn = true;
 
     public Clock(Context context) {
         this(context, null);
