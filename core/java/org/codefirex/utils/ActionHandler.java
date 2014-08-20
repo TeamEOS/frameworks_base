@@ -1,3 +1,4 @@
+
 package org.codefirex.utils;
 
 import android.app.ActivityManager;
@@ -71,26 +72,29 @@ public abstract class ActionHandler {
     public static final String SYSTEMUI_TASK_HOME = "task_home";
 
     public ActionHandler(Context context, ArrayList<String> actions) {
-        if (context == null) throw new IllegalArgumentException("Context cannot be null");
+        if (context == null)
+            throw new IllegalArgumentException("Context cannot be null");
         mContext = context;
         mActions = actions;
     }
 
     public ActionHandler(Context context, String actions) {
-        if (context == null) throw new IllegalArgumentException("Context cannot be null");
+        if (context == null)
+            throw new IllegalArgumentException("Context cannot be null");
         mContext = context;
         mActions = new ArrayList<String>();
         mActions.addAll(Arrays.asList(actions.split("\\|")));
     }
 
     public ActionHandler(Context context) {
-        if (context == null) throw new IllegalArgumentException("Context cannot be null");
+        if (context == null)
+            throw new IllegalArgumentException("Context cannot be null");
         mContext = context;
     }
 
     /**
      * Set the actions to perform.
-     *
+     * 
      * @param actions
      */
     public void setActions(List<String> actions) {
@@ -103,8 +107,9 @@ public abstract class ActionHandler {
     }
 
     /**
-     * Event handler. This method must be called when the event should be triggered.
-     *
+     * Event handler. This method must be called when the event should be
+     * triggered.
+     * 
      * @param location
      * @return
      */
@@ -189,26 +194,11 @@ public abstract class ActionHandler {
             activity = activity.substring(4);
         }
         ComponentName component = ComponentName.unflattenFromString(activity);
-
-        /* Try to launch the activity from history, if available. */
-        ActivityManager activityManager = (ActivityManager) mContext
-                .getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RecentTaskInfo task : activityManager.getRecentTasks(20,
-                ActivityManager.RECENT_IGNORE_UNAVAILABLE)) {
-            if (task != null && task.origActivity != null &&
-                    task.origActivity.equals(component)) {
-                activityManager.moveTaskToFront(task.id, ActivityManager.MOVE_TASK_WITH_HOME);
-                postActionEventHandled(true);
-                return;
-            }
-        }
-
         try {
             Intent intent = new Intent();
             intent.addCategory(Intent.CATEGORY_LAUNCHER);
             intent.setComponent(component);
-            intent.addFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY
-                    | Intent.FLAG_ACTIVITY_TASK_ON_HOME
+            intent.addFlags(Intent.FLAG_ACTIVITY_TASK_ON_HOME
                     | Intent.FLAG_ACTIVITY_NEW_TASK);
             mContext.startActivity(intent);
             postActionEventHandled(true);
@@ -293,9 +283,10 @@ public abstract class ActionHandler {
         Intent intent = new Intent(Intent.ACTION_SEARCH_LONG_PRESS);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
-            // TODO: This only stops the factory-installed search manager.  
+            // TODO: This only stops the factory-installed search manager.
             // Need to formalize an API to handle others
-            SearchManager searchManager = (SearchManager) mContext.getSystemService(Context.SEARCH_SERVICE);
+            SearchManager searchManager = (SearchManager) mContext
+                    .getSystemService(Context.SEARCH_SERVICE);
             if (searchManager != null) {
                 searchManager.stopSearch();
             }
@@ -485,7 +476,8 @@ public abstract class ActionHandler {
     ServiceConnection mScreenrecordConnection = null;
 
     final Runnable mScreenrecordTimeout = new Runnable() {
-        @Override public void run() {
+        @Override
+        public void run() {
             synchronized (mScreenrecordLock) {
                 if (mScreenrecordConnection != null) {
                     mContext.unbindService(mScreenrecordConnection);
@@ -532,68 +524,71 @@ public abstract class ActionHandler {
                         }
                     }
                 }
+
                 @Override
-                public void onServiceDisconnected(ComponentName name) {}
+                public void onServiceDisconnected(ComponentName name) {
+                }
             };
             if (mContext.bindServiceAsUser(
                     intent, conn, Context.BIND_AUTO_CREATE, UserHandle.CURRENT)) {
                 mScreenrecordConnection = conn;
-                // Screenrecord max duration is 30 minutes. Allow 31 minutes before killing
+                // Screenrecord max duration is 30 minutes. Allow 31 minutes
+                // before killing
                 // the service.
                 H.postDelayed(mScreenrecordTimeout, 31 * 60 * 1000);
             }
         }
     }
 
-	private void killProcess() {
-		if (mContext
-				.checkCallingOrSelfPermission(android.Manifest.permission.FORCE_STOP_PACKAGES) == PackageManager.PERMISSION_GRANTED) {
-			try {
-				final Intent intent = new Intent(Intent.ACTION_MAIN);
-				String defaultHomePackage = "com.android.launcher";
-				intent.addCategory(Intent.CATEGORY_HOME);
-				final ResolveInfo res = mContext.getPackageManager()
-						.resolveActivity(intent, 0);
-				if (res.activityInfo != null
-						&& !res.activityInfo.packageName.equals("android")) {
-					defaultHomePackage = res.activityInfo.packageName;
-				}
-				IActivityManager am = ActivityManagerNative.getDefault();
-				List<RunningAppProcessInfo> apps = am.getRunningAppProcesses();
-				for (RunningAppProcessInfo appInfo : apps) {
-					int uid = appInfo.uid;
-					// Make sure it's a foreground user application (not system,
-					// root, phone, etc.)
-					if (uid >= Process.FIRST_APPLICATION_UID
-							&& uid <= Process.LAST_APPLICATION_UID
-							&& appInfo.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
-						if (appInfo.pkgList != null
-								&& (appInfo.pkgList.length > 0)) {
-							for (String pkg : appInfo.pkgList) {
-								if (!pkg.equals("com.android.systemui")
-										&& !pkg.equals(defaultHomePackage)) {
-									am.forceStopPackage(pkg,
-											UserHandle.USER_CURRENT);
-									postActionEventHandled(true);
-									break;
-								}
-							}
-						} else {
-							Process.killProcess(appInfo.pid);
-							postActionEventHandled(true);
-							break;
-						}
-					}
-				}
-			} catch (RemoteException remoteException) {
-				Log.d("ActionHandler", "Caller cannot kill processes, aborting");
-				postActionEventHandled(false);
-			}
-		} else {
-			Log.d("ActionHandler", "Caller cannot kill processes, aborting");
-			postActionEventHandled(false);
-		}
-	}
+    private void killProcess() {
+        if (mContext
+                .checkCallingOrSelfPermission(android.Manifest.permission.FORCE_STOP_PACKAGES) == PackageManager.PERMISSION_GRANTED) {
+            try {
+                final Intent intent = new Intent(Intent.ACTION_MAIN);
+                String defaultHomePackage = "com.android.launcher";
+                intent.addCategory(Intent.CATEGORY_HOME);
+                final ResolveInfo res = mContext.getPackageManager()
+                        .resolveActivity(intent, 0);
+                if (res.activityInfo != null
+                        && !res.activityInfo.packageName.equals("android")) {
+                    defaultHomePackage = res.activityInfo.packageName;
+                }
+                IActivityManager am = ActivityManagerNative.getDefault();
+                List<RunningAppProcessInfo> apps = am.getRunningAppProcesses();
+                for (RunningAppProcessInfo appInfo : apps) {
+                    int uid = appInfo.uid;
+                    // Make sure it's a foreground user application (not system,
+                    // root, phone, etc.)
+                    if (uid >= Process.FIRST_APPLICATION_UID
+                            && uid <= Process.LAST_APPLICATION_UID
+                            && appInfo.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+                        if (appInfo.pkgList != null
+                                && (appInfo.pkgList.length > 0)) {
+                            for (String pkg : appInfo.pkgList) {
+                                if (!pkg.equals("com.android.systemui")
+                                        && !pkg.equals(defaultHomePackage)) {
+                                    am.forceStopPackage(pkg,
+                                            UserHandle.USER_CURRENT);
+                                    postActionEventHandled(true);
+                                    break;
+                                }
+                            }
+                        } else {
+                            Process.killProcess(appInfo.pid);
+                            postActionEventHandled(true);
+                            break;
+                        }
+                    }
+                }
+            } catch (RemoteException remoteException) {
+                Log.d("ActionHandler", "Caller cannot kill processes, aborting");
+                postActionEventHandled(false);
+            }
+        } else {
+            Log.d("ActionHandler", "Caller cannot kill processes, aborting");
+            postActionEventHandled(false);
+        }
+    }
 
     private void screenOff() {
         PowerManager pm = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
@@ -623,9 +618,9 @@ public abstract class ActionHandler {
     }
 
     /**
-     * This method is called after an action is performed. This is useful for subclasses to
-     * override, such as the one in the lock screen. As you need to unlock the device after
-     * performing an action.
+     * This method is called after an action is performed. This is useful for
+     * subclasses to override, such as the one in the lock screen. As you need
+     * to unlock the device after performing an action.
      * 
      * @param actionWasPerformed
      */
@@ -634,8 +629,9 @@ public abstract class ActionHandler {
     }
 
     /**
-     * This the the fall over method that is called if this base class cannot process an action. You
-     * do not need to manually call {@link postActionEventHandled}
+     * This the the fall over method that is called if this base class cannot
+     * process an action. You do not need to manually call
+     * {@link postActionEventHandled}
      * 
      * @param action
      * @return
