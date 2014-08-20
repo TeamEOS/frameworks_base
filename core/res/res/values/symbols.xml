@@ -1878,4 +1878,8 @@
 
   <!-- Proximity check timeout -->
   <java-symbol type="integer" name="config_proximityCheckTimeout" />
+
+  <!-- Action Handler -->
+  <java-symbol type="anim" name="last_app_in" />
+  <java-symbol type="anim" name="last_app_out" />
 </resources>

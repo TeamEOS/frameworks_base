@@ -2,6 +2,7 @@ package org.codefirex.utils;
 
 import android.app.ActivityManager;
 import android.app.ActivityManagerNative;
+import android.app.ActivityOptions;
 import android.app.IActivityManager;
 import android.app.SearchManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
@@ -62,6 +63,7 @@ public abstract class ActionHandler {
     public static final String SYSTEMUI_TASK_WIFI = "task_wifi";
     public static final String SYSTEMUI_TASK_WIFIAP = "task_wifiap";
     public static final String SYSTEMUI_TASK_RECENTS = "task_recents";
+    public static final String SYSTEMUI_TASK_LAST_APP = "task_last_app";
     public static final String SYSTEMUI_TASK_VOICE_SEARCH = "task_voice_search";
     public static final String SYSTEMUI_TASK_APP_SEARCH = "task_app_search";
     public static final String SYSTEMUI_TASK_MENU = "task_menu";
@@ -148,6 +150,8 @@ public abstract class ActionHandler {
             toggleBluetooth();
         } else if (action.equals(SYSTEMUI_TASK_RECENTS)) {
             callStatusbarStub(SYSTEMUI_TASK_RECENTS);
+        } else if (action.equals(SYSTEMUI_TASK_LAST_APP)) {
+            switchToLastApp();
         } else if (action.equals(SYSTEMUI_TASK_SETTINGS_PANEL)) {
             callStatusbarStub(SYSTEMUI_TASK_SETTINGS_PANEL);
         } else if (action.equals(SYSTEMUI_TASK_NOTIFICATION_PANEL)) {
@@ -213,6 +217,43 @@ public abstract class ActionHandler {
             postActionEventHandled(false);
             handleAction(activity);
         }
+    }
+
+    private void switchToLastApp() {
+        final ActivityManager am =
+                (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
+        ActivityManager.RunningTaskInfo lastTask = getLastTask(am);
+
+        if (lastTask != null) {
+            final ActivityOptions opts = ActivityOptions.makeCustomAnimation(mContext,
+                    com.android.internal.R.anim.last_app_in,
+                    com.android.internal.R.anim.last_app_out);
+            am.moveTaskToFront(lastTask.id, ActivityManager.MOVE_TASK_NO_USER_ACTION,
+                    opts.toBundle());
+        }
+    }
+
+    private ActivityManager.RunningTaskInfo getLastTask(final ActivityManager am) {
+        final String defaultHomePackage = resolveCurrentLauncherPackage();
+        List<ActivityManager.RunningTaskInfo> tasks = am.getRunningTasks(5);
+
+        for (int i = 1; i < tasks.size(); i++) {
+            String packageName = tasks.get(i).topActivity.getPackageName();
+            if (!packageName.equals(defaultHomePackage)
+                    && !packageName.equals(mContext.getPackageName())) {
+                return tasks.get(i);
+            }
+        }
+
+        return null;
+    }
+
+    private String resolveCurrentLauncherPackage() {
+        final Intent launcherIntent = new Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_HOME);
+        final PackageManager pm = mContext.getPackageManager();
+        final ResolveInfo launcherInfo = pm.resolveActivity(launcherIntent, 0);
+        return launcherInfo.activityInfo.packageName;
     }
 
     private boolean callStatusbarStub(String action) {
