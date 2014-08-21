@@ -14,8 +14,12 @@ import android.content.Context;
 import android.content.ComponentName;
 import android.content.ServiceConnection;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.hardware.input.InputManager;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
@@ -30,6 +34,7 @@ import android.os.IBinder;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
+import android.util.Pair;
 import android.util.Slog;
 import android.view.HapticFeedbackConstants;
 import android.view.IWindowManager;
@@ -39,7 +44,11 @@ import android.view.KeyEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.android.internal.statusbar.IStatusBarService;
 import com.android.internal.util.cm.TorchConstants;
@@ -48,6 +57,13 @@ public abstract class ActionHandler {
     protected ArrayList<String> mActions;
     protected Context mContext;
     static final String TAG = "ActionHandler";
+
+    public static final String SYSTEM_PREFIX = "task";
+    public static final String APP_PREFIX = "app:";
+    public static final String CALL_PREFIX = "call:";
+    public static final String TEXT_PREFIX = "text:";
+    public static final String EMAIL_PREFIX = "email:";
+    private static final String ICON_PACKAGE = "com.android.systemui";
 
     public static final String SYSTEMUI_TASK_NO_ACTION = "task_no_action";
     public static final String SYSTEMUI_TASK_SETTINGS_PANEL = "task_settings_panel";
@@ -70,6 +86,144 @@ public abstract class ActionHandler {
     public static final String SYSTEMUI_TASK_MENU = "task_menu";
     public static final String SYSTEMUI_TASK_BACK = "task_back";
     public static final String SYSTEMUI_TASK_HOME = "task_home";
+
+    public static final Map<String, Pair<String, String>> Actions;
+    private static final Map<String, Pair<String, String>> ActionMap = new HashMap<String, Pair<String, String>>();
+
+    static {
+        Actions = Collections.unmodifiableMap(ActionMap);
+        ActionMap.put(SYSTEMUI_TASK_NO_ACTION, new Pair<String, String>("ic_sysbar_null", "No action"));
+        ActionMap.put(SYSTEMUI_TASK_SETTINGS_PANEL, new Pair<String, String>("ic_notify_quicksettings_normal", "Settings panel"));
+        ActionMap.put(SYSTEMUI_TASK_NOTIFICATION_PANEL, new Pair<String, String>("ic_sysbar_notifications", "Notification panel"));
+        ActionMap.put(SYSTEMUI_TASK_SCREENSHOT, new Pair<String, String>("ic_sysbar_screenshot", "Take screenshot"));
+        ActionMap.put(SYSTEMUI_TASK_SCREENRECORD, new Pair<String, String>("ic_sysbar_screen_record", "Record screen"));
+        ActionMap.put(SYSTEMUI_TASK_SCREENOFF, new Pair<String, String>("ic_qs_sleep", "Screen off"));
+        ActionMap.put(SYSTEMUI_TASK_KILL_PROCESS, new Pair<String, String>("ic_sysbar_killtask", "Kill current app"));
+        ActionMap.put(SYSTEMUI_TASK_ASSIST, new Pair<String, String>("ic_sysbar_assist", "Search assist"));
+        ActionMap.put(SYSTEMUI_TASK_POWER_MENU, new Pair<String, String>("ic_sysbar_power", "Power menu"));
+        ActionMap.put(SYSTEMUI_TASK_TORCH, new Pair<String, String>("ic_sysbar_torch", "Torch"));
+        ActionMap.put(SYSTEMUI_TASK_CAMERA, new Pair<String, String>("ic_sysbar_camera", "Camera"));
+        ActionMap.put(SYSTEMUI_TASK_BT, new Pair<String, String>("ic_sysbar_bt", "Toggle bluetooth"));
+        ActionMap.put(SYSTEMUI_TASK_WIFI, new Pair<String, String>("ic_sysbar_wifi", "Toggle Wifi"));
+        ActionMap.put(SYSTEMUI_TASK_WIFIAP, new Pair<String, String>("ic_qs_wifi_ap_on", "Toggle Wifi AP"));
+        ActionMap.put(SYSTEMUI_TASK_RECENTS, new Pair<String, String>("ic_sysbar_recent", "Recent apps"));
+        ActionMap.put(SYSTEMUI_TASK_LAST_APP, new Pair<String, String>("ic_sysbar_lastapp", "Last app"));
+        ActionMap.put(SYSTEMUI_TASK_VOICE_SEARCH, new Pair<String, String>("ic_sysbar_voiceassist", "Voice search"));
+        ActionMap.put(SYSTEMUI_TASK_APP_SEARCH, new Pair<String, String>("ic_sysbar_search", "In-app search"));
+        ActionMap.put(SYSTEMUI_TASK_MENU, new Pair<String, String>("ic_sysbar_menu_big", "Menu"));
+        ActionMap.put(SYSTEMUI_TASK_BACK, new Pair<String, String>("ic_sysbar_back", "Back"));
+        ActionMap.put(SYSTEMUI_TASK_HOME, new Pair<String, String>("ic_sysbar_home", "Home"));
+    }
+
+    public static class ActionBundle implements Comparable<ActionBundle> {
+        public String action = "";
+        public String label = "";
+        public Drawable icon = null;
+
+        public ActionBundle(Context context, String _action) {
+            action = _action;
+            label = getLabelForAction(context, _action);
+            icon = getDrawableForAction(context, _action);
+        }
+
+        @Override
+        public int compareTo(ActionBundle another) {
+            int result = label.toString().compareToIgnoreCase(another.label.toString());
+            return result;
+        }
+    }
+
+    public static ArrayList<ActionBundle> getAllActions(Context context) {
+        ArrayList<ActionBundle> bundle = new ArrayList<ActionBundle>();
+        Set<String> keySet = ActionMap.keySet();
+        for (String key : keySet) {
+            ActionBundle a = new ActionBundle(context, key);
+            bundle.add(a);
+        }
+        Collections.sort(bundle);
+        return bundle;
+    }
+
+    public static Drawable getDrawableForAction(Context context, String action) {
+        Drawable d = null;
+        if (action.startsWith(APP_PREFIX)) {
+            d = getIconFromComponent(context.getPackageManager(), action);
+        } else if (action.startsWith(SYSTEM_PREFIX)) {
+            if (ActionMap.containsKey(action)) {
+                Pair<String, String> p = ActionMap.get(action);
+                d = getIconFromResources(context, ICON_PACKAGE, p.first);
+            }
+        }
+        return d;
+    }
+
+    public static String getLabelForAction(Context context, String action) {
+        String label = "";
+        if (action.startsWith(APP_PREFIX)) {
+            label = getLabelFromComponent(context.getPackageManager(), action);
+        } else if (action.startsWith(SYSTEM_PREFIX)) {
+            if (ActionMap.containsKey(action)) {
+                Pair<String, String> p = ActionMap.get(action);
+                label = p.second;
+            }
+        }
+        return label;
+    }
+
+    public static String getLabelFromComponent(PackageManager pm, String component) {
+        if (component.startsWith(APP_PREFIX)) {
+            component = component.substring(APP_PREFIX.length());
+        }
+        ComponentName componentName = ComponentName.unflattenFromString(component);
+        ActivityInfo activityInfo = null;
+        boolean noError = false;
+        try {
+            activityInfo = pm.getActivityInfo(componentName, PackageManager.GET_RECEIVERS);
+            noError = true;
+        } catch (NameNotFoundException e) {
+            e.printStackTrace();
+            // i'm not sure if "noError = true" gets called before error is
+            // thrown
+            noError = false;
+        }
+        if (noError) {
+            return activityInfo.loadLabel(pm).toString();
+        }
+        return null;
+    }
+
+    public static Drawable getIconFromComponent(PackageManager pm, String component) {
+        if (component.startsWith(APP_PREFIX)) {
+            component = component.substring(APP_PREFIX.length());
+        }
+        ComponentName componentName = ComponentName.unflattenFromString(component);
+        ActivityInfo activityInfo = null;
+        boolean noError = false;
+        try {
+            activityInfo = pm.getActivityInfo(componentName, PackageManager.GET_RECEIVERS);
+            noError = true;
+        } catch (NameNotFoundException e) {
+            e.printStackTrace();
+            // i'm not sure if "noError = true" gets called before error is
+            // thrown
+            noError = false;
+        }
+        if (noError) {
+            return activityInfo.loadIcon(pm);
+        }
+        return null;
+    }
+
+    public static Drawable getIconFromResources(Context context, String pack, String icon_name) {
+        try {
+            Resources res = context.getPackageManager().getResourcesForApplication(pack);
+            Drawable icon = res.getDrawable(res.getIdentifier(icon_name, "drawable", pack));
+            return icon;
+        } catch (NameNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     public ActionHandler(Context context, ArrayList<String> actions) {
         if (context == null)
@@ -128,6 +282,10 @@ public abstract class ActionHandler {
         }
     }
 
+    public void performTask(ActionBundle bundle) {
+        performTask(bundle.action);
+    }
+
     public void performTask(String action) {
         if (action.equals(SYSTEMUI_TASK_NO_ACTION)) {
             return;
@@ -171,7 +329,7 @@ public abstract class ActionHandler {
             triggerVirtualKeypress(KeyEvent.KEYCODE_BACK);
         } else if (action.equals(SYSTEMUI_TASK_HOME)) {
             triggerVirtualKeypress(KeyEvent.KEYCODE_HOME);
-        } else if (action.startsWith("app:")) {
+        } else if (action.startsWith(APP_PREFIX)) {
             launchActivity(action);
         }
     }
@@ -190,8 +348,8 @@ public abstract class ActionHandler {
 
     private void launchActivity(String action) {
         String activity = action;
-        if (activity.startsWith("app:")) {
-            activity = activity.substring(4);
+        if (activity.startsWith(APP_PREFIX)) {
+            activity = activity.substring(APP_PREFIX.length());
         }
         ComponentName component = ComponentName.unflattenFromString(activity);
         try {
