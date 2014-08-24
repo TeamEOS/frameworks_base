@@ -280,8 +280,8 @@ public class NavigationBarView extends BaseNavigationBar {
                 userAutoHideListener);
 
         setOnTouchListener(mUserAutoHideListener);
-        getRecentsButton().setOnClickListener(mRecentsClickListener);
-        getRecentsButton().setOnTouchListener(mRecentsPreloadOnTouchListener);
+        //getRecentsButton().setOnClickListener(mRecentsClickListener);
+        //getRecentsButton().setOnTouchListener(mRecentsPreloadOnTouchListener);
         ((KeyButtonView) getHomeButton()).setHomeSearchActionListener(mHomeSearchActionListener);
     }
 }

@@ -27,9 +27,7 @@
 package com.android.systemui.statusbar.phone;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.codefirex.utils.CFXConstants;
 import org.codefirex.utils.CFXUtils;
@@ -44,13 +42,10 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.UserHandle;
 import android.provider.Settings;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 
 import com.android.systemui.eos.Navigator;
-import com.android.systemui.statusbar.policy.KeyButtonView;
 
 public class PhoneUiController {
     private static final String TAG = PhoneUiController.class.getSimpleName();
@@ -82,10 +77,6 @@ public class PhoneUiController {
     // we monitor softkeys, hardkeys, and NX here
     private PackageReceiver mPackageReceiver;
 
-    // temporary: map softkey ID to it's long press action uri
-    // softkey uris are passed to instances as xml attributes
-    // so we have to to inflate first to get the uri
-    private Map<Integer, Uri> mSoftkeyMap = new HashMap<Integer, Uri>();
     private boolean mHasHardkeys;
     private List<String> mHardkeyActions;
     private List<String> mNxActions = new ArrayList<String>();
@@ -93,6 +84,7 @@ public class PhoneUiController {
     private ContentResolver mResolver;
     private Context mContext;
     private Handler mHandler = new Handler();
+    private SoftkeyActionHandler mSoftkeyHandler;
 
     public PhoneUiController(Context context, Runnable forceAddNavbar, Runnable removeNavbar) {
         mContext = context;
@@ -143,19 +135,15 @@ public class PhoneUiController {
         mCurrentNavLayout = isNxEnabled ? NX_LAYOUT : NAVBAR_LAYOUT;
         mNavigator = (Navigator) View.inflate(mContext, mCurrentNavLayout, null);
 
+        if(mSoftkeyHandler != null) {
+            mSoftkeyHandler.onTearDown();
+            mSoftkeyHandler = null;
+        }
+
         if (!isNxEnabled) {
             // register softkey observers
-            mSoftkeyMap.clear();
-            for (View v : getAllChildren(mNavigator.getViewForWindowManager())) {
-                if (v instanceof KeyButtonView) {
-                    String uriString = ((KeyButtonView) v).getLpUri();
-                    if (uriString != null) {
-                        mSoftkeyMap.put(Integer.valueOf(v.getId()),
-                                Settings.System.getUriFor(uriString));
-                    }
-                }
-            }
-            mNavbarObserver.observeSoftkeys();
+            mSoftkeyHandler = new SoftkeyActionHandler(mContext, mHandler);
+            mSoftkeyHandler.setNavigationBarView((NavigationBarView)mNavigator.getViewForWindowManager());
         }
 
         mNavbarObserver.observeBarMode();
@@ -168,6 +156,9 @@ public class PhoneUiController {
     // hook theme change from PhoneStatusBar
     public void setRecreating(boolean recreating) {
         mRecreating = recreating;
+        if (mSoftkeyHandler != null) {
+            mSoftkeyHandler.setIsRecreating(recreating);
+        }
     }
 
     // for now, it makes sense to let PhoneStatusBar add/remove navbar view
@@ -176,12 +167,6 @@ public class PhoneUiController {
     class NavbarObserver extends ContentObserver {
         NavbarObserver(Handler handler) {
             super(handler);
-        }
-
-        void observeSoftkeys() {
-            for (Uri uri : mSoftkeyMap.values()) {
-                mResolver.registerContentObserver(uri, false, this);
-            }
         }
 
         void observeBarMode() {
@@ -218,24 +203,8 @@ public class PhoneUiController {
                 }
                 mNavbarObserver.observeForceBar();
                 return;
-            } else if (uri.toString().contains("systemui_softkey_lp")) {
-                if (mNavigator != null) {
-                    for (Map.Entry<Integer, Uri> entry : mSoftkeyMap.entrySet()) {
-                        Uri val = entry.getValue();
-                        if (uri.equals(val)) {
-                            View holder = mNavigator.getViewForWindowManager();
-                            for (View v : getAllChildren(holder)) {
-                                if (v instanceof KeyButtonView) {
-                                    if (Integer.valueOf(v.getId()).equals(entry.getKey())) {
-                                        ((KeyButtonView) v).updateLpAction();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                return;
             }
+            return;
         }
     }
 
@@ -281,17 +250,8 @@ public class PhoneUiController {
             holder = mNavigator.getViewForWindowManager();
         }
         if (holder != null) {
-            for (View v : getAllChildren(holder)) {
-                if (v instanceof KeyButtonView) {
-                    String uri = ((KeyButtonView) v).getLpUri();
-                    if (uri != null && !TextUtils.isEmpty(uri)) {
-                        String action = Settings.System.getString(mResolver,
-                                uri);
-                        if (action != null) {
-                            ((KeyButtonView) v).checkLpAction();
-                        }
-                    }
-                }
+            if (mSoftkeyHandler != null) {
+                mSoftkeyHandler.onHandlePackageChanged();
             }
         }
         // now the hardkeys, if we have them
@@ -314,30 +274,5 @@ public class PhoneUiController {
                 }
             }
         }
-    }
-
-    /* utility to iterate a viewgroup and return a list of child views */
-    public static ArrayList<View> getAllChildren(View v) {
-
-        if (!(v instanceof ViewGroup)) {
-            ArrayList<View> viewArrayList = new ArrayList<View>();
-            viewArrayList.add(v);
-            return viewArrayList;
-        }
-
-        ArrayList<View> result = new ArrayList<View>();
-
-        ViewGroup vg = (ViewGroup) v;
-        for (int i = 0; i < vg.getChildCount(); i++) {
-
-            View child = vg.getChildAt(i);
-
-            ArrayList<View> viewArrayList = new ArrayList<View>();
-            viewArrayList.add(v);
-            viewArrayList.addAll(getAllChildren(child));
-
-            result.addAll(viewArrayList);
-        }
-        return result;
     }
 }

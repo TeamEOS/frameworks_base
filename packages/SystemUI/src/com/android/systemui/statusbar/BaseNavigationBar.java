@@ -151,6 +151,10 @@ public abstract class BaseNavigationBar extends LinearLayout implements Navigato
         return mCurrentView.findViewById(R.id.camera_button);
     }
 
+    public View.OnTouchListener getHomeSearchActionListener() {
+        return mHomeSearchActionListener;
+    }
+
     @Override
     public void setDisabledFlags(int disabledFlags) {
         setDisabledFlags(disabledFlags, false);
