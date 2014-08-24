@@ -10,6 +10,7 @@ import android.app.ActivityManager.RunningAppProcessInfo;
 import android.bluetooth.BluetoothAdapter;
 import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.ComponentName;
 import android.content.ServiceConnection;
@@ -19,8 +20,13 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.hardware.input.InputManager;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -32,7 +38,9 @@ import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.os.IBinder;
 import android.os.UserHandle;
+import android.provider.ContactsContract;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Slog;
@@ -42,6 +50,8 @@ import android.view.InputDevice;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -120,6 +130,8 @@ public abstract class ActionHandler {
         public String label = "";
         public Drawable icon = null;
 
+        public ActionBundle() {}
+
         public ActionBundle(Context context, String _action) {
             action = _action;
             label = getLabelForAction(context, _action);
@@ -130,6 +142,35 @@ public abstract class ActionHandler {
         public int compareTo(ActionBundle another) {
             int result = label.toString().compareToIgnoreCase(another.label.toString());
             return result;
+        }
+    }
+
+    private static String parseContactActionForUri(String action) {
+        String[] parts = action.split("\\|");
+        return parts[1];
+    }
+
+    private static String parseContactActionForIntent(String action) {
+        String[] parts = action.split("\\|");
+        return parts[0];
+    }
+
+    private static boolean isContactAction(String action) {
+        return action.startsWith(CALL_PREFIX)
+                || action.startsWith(TEXT_PREFIX)
+                || action.startsWith(EMAIL_PREFIX);
+    }
+
+    private static String getPrefixAsLabel(String action) {
+        String label = "";
+        if (action.startsWith(CALL_PREFIX)) {
+            return "Call";
+        } else if (action.startsWith(TEXT_PREFIX)) {
+            return "Text";
+        } else if (action.startsWith(EMAIL_PREFIX)) {
+            return "Email";
+        } else {
+            return label;
         }
     }
 
@@ -153,6 +194,9 @@ public abstract class ActionHandler {
                 Pair<String, String> p = ActionMap.get(action);
                 d = getIconFromResources(context, ICON_PACKAGE, p.first);
             }
+        } else if (isContactAction(action)) {
+                Uri contact = Uri.parse(parseContactActionForUri(action));
+                d = getIconFromContacts(context, contact);
         }
         return d;
     }
@@ -166,6 +210,13 @@ public abstract class ActionHandler {
                 Pair<String, String> p = ActionMap.get(action);
                 label = p.second;
             }
+        } else if (isContactAction(action)) {
+                Uri contact = Uri.parse(parseContactActionForUri(action));
+                StringBuilder b = new StringBuilder();
+                b.append(getPrefixAsLabel(action))
+                        .append(" ")
+                        .append(getContactName(context.getContentResolver(), contact));
+                label = b.toString();
         }
         return label;
     }
@@ -223,6 +274,117 @@ public abstract class ActionHandler {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public static Drawable getIconFromContacts(Context ctx, Uri contactUri) {
+        if (TextUtils.isEmpty(contactUri.toString())) return null;
+
+        ContentResolver cr = ctx.getContentResolver();
+        Cursor cursor = cr.query(ContactsContract.Contacts.getLookupUri(cr, contactUri), null,
+                null, null, null);
+        Drawable d = null;
+        if (cursor != null && cursor.moveToFirst()) {
+            try {
+                String contactId = cursor.getString(cursor
+                        .getColumnIndex(ContactsContract.Contacts._ID));
+                InputStream inputStream = ContactsContract.Contacts.openContactPhotoInputStream(cr,
+                        ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, new Long(
+                                contactId)));
+                if (inputStream != null) {
+                    Bitmap photo = null;
+                    photo = BitmapFactory.decodeStream(inputStream);
+                    d = new BitmapDrawable(ctx.getResources(), photo);
+                    inputStream.close();
+                } else {
+                    // no pic set, they get to be an Android
+                    d = ctx.getResources().getDrawable(com.android.internal.R.drawable.sym_def_app_icon);
+                }
+                cursor.close();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return d;
+    }
+
+    public static String getContactName(ContentResolver cr, Uri contactUri) {
+        if (TextUtils.isEmpty(contactUri.toString())) return null;
+
+        String contactName = "";
+        Cursor cursor = cr.query(contactUri, null, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            contactName = cursor.getString(cursor
+                    .getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+            cursor.close();
+        }
+        return contactName;
+    }
+
+    public static ArrayList<Pair<String, String>> getAllContactNumbers(Context ctx, Uri contactUri) {
+        ArrayList<Pair<String, String>> numbers = new ArrayList<Pair<String, String>>();
+        ContentResolver cr = ctx.getContentResolver();
+        Cursor cursor = cr.query(ContactsContract.Contacts.getLookupUri(cr, contactUri), null,
+                null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            String contactId = cursor.getString(cursor
+                    .getColumnIndex(ContactsContract.Contacts._ID));
+            if (Integer.parseInt(cursor.getString(cursor
+                    .getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER))) > 0) {
+                Cursor pCur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                        null,
+                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[] {
+                            contactId
+                        }, null);
+
+                while (pCur.moveToNext()) {
+                    String phone = pCur.getString(pCur
+                            .getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                    String type = pCur.getString(pCur
+                            .getColumnIndex(ContactsContract.CommonDataKinds.Phone.TYPE));
+                    String s = (String) ContactsContract.CommonDataKinds.Phone.getTypeLabel(
+                            ctx.getResources(), Integer.parseInt(type), "");
+                    Pair<String, String> pair = new Pair<String, String>(s, phone);
+                    numbers.add(pair);
+                }
+                pCur.close();
+                cursor.close();
+
+            }
+        }
+        return numbers;
+    }
+
+    public static ArrayList<Pair<String, String>> getAllContactEmails(Context ctx, Uri contactUri) {
+        ArrayList<Pair<String, String>> emails = new ArrayList<Pair<String, String>>();
+        ContentResolver cr = ctx.getContentResolver();
+        Cursor cursor = cr.query(ContactsContract.Contacts.getLookupUri(cr, contactUri), null,
+                null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            String contactId = cursor.getString(cursor
+                    .getColumnIndex(ContactsContract.Contacts._ID));
+                Cursor emailCursor = cr.query(ContactsContract.CommonDataKinds.Email.CONTENT_URI,
+                        null,
+                        ContactsContract.CommonDataKinds.Email.CONTACT_ID + " = ?", new String[] {
+                            contactId
+                        }, null);
+
+                while (emailCursor.moveToNext()) {
+                    String email = emailCursor.getString(emailCursor
+                            .getColumnIndex(ContactsContract.CommonDataKinds.Email.DATA));
+                    int type = emailCursor.getInt(emailCursor
+                            .getColumnIndex(ContactsContract.CommonDataKinds.Email.TYPE));
+                    String s = (String) ContactsContract.CommonDataKinds.Email.getTypeLabel(
+                            ctx.getResources(), type, "");
+                    Pair<String, String> pair = new Pair<String, String>(s, email);
+                    emails.add(pair);
+                }
+                emailCursor.close();
+                cursor.close();
+
+        }
+        return emails;
     }
 
     public ActionHandler(Context context, ArrayList<String> actions) {
@@ -331,6 +493,12 @@ public abstract class ActionHandler {
             triggerVirtualKeypress(KeyEvent.KEYCODE_HOME);
         } else if (action.startsWith(APP_PREFIX)) {
             launchActivity(action);
+        } else if (action.startsWith(CALL_PREFIX)) {
+            launchPhoneCall(action);
+        } else if (action.startsWith(TEXT_PREFIX)) {
+            launchTextMessage(action);
+        } else if (action.startsWith(EMAIL_PREFIX)) {
+            launchEmail(action);
         }
     }
 
@@ -365,6 +533,59 @@ public abstract class ActionHandler {
             postActionEventHandled(false);
             handleAction(activity);
         }
+    }
+
+    private void launchPhoneCall(String action) {
+        String call = parseContactActionForIntent(action);
+        if (call == null) return;
+        if (call.startsWith(CALL_PREFIX)) {
+            call = call.substring(APP_PREFIX.length());
+        } else {
+            return;
+        }
+        try {
+            Intent intent = new Intent(Intent.ACTION_CALL);
+            intent.setData(Uri.parse("tel:" + call));
+            intent.addFlags(Intent.FLAG_ACTIVITY_TASK_ON_HOME
+                    | Intent.FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(intent);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to invoke call", e);
+        }
+    }
+
+    private void launchTextMessage(String action) {
+        String sms = parseContactActionForIntent(action);
+        if (sms == null) return;
+        if (sms.startsWith(TEXT_PREFIX)) {
+            sms = sms.substring(TEXT_PREFIX.length());
+        } else {
+            return;
+        }
+        Intent smsIntent = new Intent(Intent.ACTION_VIEW);
+        smsIntent.setData(Uri.parse("smsto:"));
+        smsIntent.setType("vnd.android-dir/mms-sms");
+        smsIntent.putExtra("address", sms);
+        smsIntent.addFlags(Intent.FLAG_ACTIVITY_TASK_ON_HOME
+                | Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(smsIntent);
+    }
+
+    private void launchEmail(String action) {
+        String email = parseContactActionForIntent(action);
+        if (email == null) return;
+        if (email.startsWith(EMAIL_PREFIX)) {
+            email = email.substring(EMAIL_PREFIX.length());
+        } else {
+            return;
+        }
+        Intent emailIntent = new Intent(Intent.ACTION_SEND);
+        emailIntent.putExtra(Intent.EXTRA_EMAIL, new String[] {
+            email
+        });
+        emailIntent.addFlags(Intent.FLAG_ACTIVITY_TASK_ON_HOME
+                | Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(emailIntent);
     }
 
     private void switchToLastApp() {
