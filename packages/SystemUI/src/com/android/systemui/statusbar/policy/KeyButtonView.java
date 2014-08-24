@@ -50,7 +50,6 @@ import com.android.systemui.R;
 public class KeyButtonView extends ImageView {
     private static final String TAG = "StatusBar.KeyButtonView";
     private static final boolean DEBUG = false;
-    private static final String NO_LP = "empty";
 
     final float GLOW_MAX_SCALE_FACTOR = 1.8f;
     public static final float DEFAULT_QUIESCENT_ALPHA = 0.70f;
@@ -72,22 +71,23 @@ public class KeyButtonView extends ImageView {
     boolean mIsLongPressing = false;
     boolean mSupportsLpOrig;
     View.OnTouchListener mHomeSearchActionListener;
-    int mPos;
-    int MSG_SOFTKEY_LP_ACTION_CHANGED;
-    String mLpUri;
-    String mLpAction;
+
+    private String mLpUri = "";
+    private String mLpAction = ActionHandler.SYSTEMUI_TASK_NO_ACTION;
+    private String mDtUri = "";
+    private String mDtAction = ActionHandler.SYSTEMUI_TASK_NO_ACTION;
 
     Runnable mCheckLongPress = new Runnable() {
         public void run() {
             if (isPressed()) {
                 // Slog.d("KeyButtonView", "longpressed: " + this);
-                if (mCode != 0 && (mLpAction == null || mLpAction.equals(NO_LP))) {
+                if (mCode != 0 && mLpAction.equals(ActionHandler.SYSTEMUI_TASK_NO_ACTION)) {
                     sendEvent(KeyEvent.ACTION_DOWN, KeyEvent.FLAG_LONG_PRESS);
                     sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
                 } else {
                     // Just an old-fashioned ImageView
                     if (mLpAction != null
-                            && !mLpAction.equals(NO_LP)
+                            && !mLpAction.equals(ActionHandler.SYSTEMUI_TASK_NO_ACTION)
                             && !CFXUtils.isKeyguardRestricted(mContext)) {
                         mIsLongPressing = true;
                         performLongClick();
@@ -120,19 +120,15 @@ public class KeyButtonView extends ImageView {
             mGlowWidth = mGlowBG.getIntrinsicWidth();
             mGlowHeight = mGlowBG.getIntrinsicHeight();
         }
-        mPos = a.getInteger(R.styleable.KeyButtonView_position, 1);
-        mLpUri = a.getString(R.styleable.KeyButtonView_featureUrl);
+
+        mLpUri = a.getString(R.styleable.KeyButtonView_longPressUri);
+        mDtUri = a.getString(R.styleable.KeyButtonView_doubleTapUri);
+
+        if (mLpUri == null) mLpUri = "empty";
+        if (mDtUri == null) mDtUri = "empty";
 
         a.recycle();
         setClickable(true);
-
-        if (TextUtils.isEmpty(mLpUri)) {
-            mLpUri = NO_LP;
-        }
-
-        if (TextUtils.isEmpty(mLpAction)) {
-            mLpAction = NO_LP;
-        }
 
         updateLpAction();
 
@@ -170,19 +166,20 @@ public class KeyButtonView extends ImageView {
     public void checkLpAction() {
         if (!CFXUtils.isComponentResolved(getContext().getPackageManager(), mLpAction)) {
             Settings.System.putString(getContext().getContentResolver(), mLpUri,
-                    NO_LP);
+                    ActionHandler.SYSTEMUI_TASK_NO_ACTION);
             setOnLongClickListener(null);
             if (this.getId() == R.id.home && mHomeSearchActionListener != null) {
                 setOnTouchListener(mHomeSearchActionListener);
             }
             mSupportsLongpress = mSupportsLpOrig;
-            mLpAction = NO_LP;
+            mLpAction = ActionHandler.SYSTEMUI_TASK_NO_ACTION;
         }
     }
 
     public void updateLpAction() {
         mLpAction = Settings.System.getString(getContext().getContentResolver(), mLpUri);
-        if (TextUtils.isEmpty(mLpAction) || mLpAction.equals(NO_LP)) {
+        if (mLpAction == null) mLpAction = ActionHandler.SYSTEMUI_TASK_NO_ACTION;
+        if (mLpAction.equals(ActionHandler.SYSTEMUI_TASK_NO_ACTION)) {
             setOnLongClickListener(null);
             if (this.getId() == R.id.home && mHomeSearchActionListener != null) {
                 setOnTouchListener(mHomeSearchActionListener);
@@ -202,7 +199,8 @@ public class KeyButtonView extends ImageView {
             if (mHomeSearchActionListener == null) {
                 mHomeSearchActionListener = homeListener;
             }
-            if (TextUtils.isEmpty(mLpAction) || mLpAction.equals(NO_LP)) {
+            if (mLpAction == null) mLpAction = ActionHandler.SYSTEMUI_TASK_NO_ACTION;
+            if (mLpAction.equals(ActionHandler.SYSTEMUI_TASK_NO_ACTION)) {
                 setOnTouchListener(homeListener);
             } else {
                 setOnTouchListener(null);

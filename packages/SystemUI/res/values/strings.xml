@@ -570,25 +570,15 @@
     <string name="cfx_statusbar_clock_signal_cluster_tag">cfx_systemui_clock_cluster_tag</string>
     <string name="cfx_statusbar_clock_center_tag">cfx_systemui_clock_center_tag</string>
 
-    <!-- Softkey feature uri's -->
-    <string name="feature_uri_back">systemui_softkey_lp_back</string>
-    <string name="feature_uri_home">systemui_softkey_lp_home</string>
-    <string name="feature_uri_recent">systemui_softkey_lp_recent</string>
-    <string name="feature_uri_menu">systemui_softkey_lp_menu</string>
-    <string name="feature_uri_extra1">systemui_softkey_lp_extra1</string>
-    <string name="feature_uri_extra2">systemui_softkey_lp_extra2</string>
-    <string name="keyColor_uri_back">systemui_softkey_color_back</string>
-    <string name="keyColor_uri_home">systemui_softkey_color_home</string>
-    <string name="keyColor_uri_recent">systemui_softkey_color_recent</string>
-    <string name="keyColor_uri_menu">systemui_softkey_color_menu</string>
-    <string name="keyColor_uri_extra1">systemui_softkey_color_extra1</string>
-    <string name="keyColor_uri_extra2">systemui_softkey_color_extra2</string>
-    <string name="glowColor_uri_back">systemui_softkey_glowColor_back</string>
-    <string name="glowColor_uri_home">systemui_softkey_glowColor_home</string>
-    <string name="glowColor_uri_recent">systemui_softkey_glowColor_recent</string>
-    <string name="glowColor_uri_menu">systemui_softkey_glowColor_menu</string>
-    <string name="glowColor_uri_extra1">systemui_softkey_glowColor_extra1</string>
-    <string name="glowColor_uri_extra2">systemui_softkey_glowColor_extra2</string>
+    <!-- Softkey action uri's -->
+    <string name="longpress_uri_back">systemui_softkey_lp_back</string>
+    <string name="longpress_uri_home">systemui_softkey_lp_home</string>
+    <string name="longpress_uri_recent">systemui_softkey_lp_recent</string>
+    <string name="longpress_uri_menu">systemui_softkey_lp_menu</string>
+    <string name="doubletap_uri_back">systemui_softkey_dt_back</string>
+    <string name="doubletap_uri_home">systemui_softkey_dt_home</string>
+    <string name="doubletap_uri_recent">systemui_softkey_dt_recent</string>
+    <string name="doubletap_uri_menu">systemui_softkey_dt_menu</string>
 
     <!-- Screenrecord Notification Ticker -->
     <string name="screenrecord_notif_ticker">Screen is being recorded</string>
