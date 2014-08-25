@@ -2038,7 +2038,14 @@ public final class ActiveServices {
             }
         }
 
-        // First clear app state from services.
+        // Clean up any connections this application has to other services.
+        for (int i=app.connections.size()-1; i>=0; i--) {
+            ConnectionRecord r = app.connections.valueAt(i);
+            removeConnectionLocked(r, app, null);
+        }
+        app.connections.clear();
+
+        // Clear app state from services.
         for (int i=app.services.size()-1; i>=0; i--) {
             ServiceRecord sr = app.services.valueAt(i);
             synchronized (sr.stats.getBatteryStats()) {
@@ -2064,13 +2071,6 @@ public final class ActiveServices {
                 b.requested = b.received = b.hasBound = false;
             }
         }
-
-        // Clean up any connections this application has to other services.
-        for (int i=app.connections.size()-1; i>=0; i--) {
-            ConnectionRecord r = app.connections.valueAt(i);
-            removeConnectionLocked(r, app, null);
-        }
-        app.connections.clear();
 
         ServiceMap smap = getServiceMap(app.userId);
 
