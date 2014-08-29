@@ -56,9 +56,7 @@ public class NxAction {
     }
 
     private boolean isActionEmpty(String action) {
-        if (TextUtils.isEmpty(action)
-                || action.startsWith("empty")
-                || "".equals(action)) {
+        if (TextUtils.isEmpty(action)) {
             action = ActionHandler.SYSTEMUI_TASK_NO_ACTION;
         }
         return ActionHandler.SYSTEMUI_TASK_NO_ACTION.equals(action);

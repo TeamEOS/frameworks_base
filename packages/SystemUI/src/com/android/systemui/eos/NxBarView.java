@@ -121,7 +121,7 @@ public class NxBarView extends BaseNavigationBar {
         mLogoEnabled = Settings.System.getBoolean(mContext.getContentResolver(),
                 "nx_logo_visible", true);
         mLogoAnimates = Settings.System.getBoolean(mContext.getContentResolver(),
-                "nx_logo_animates", true);
+                "nx_logo_animates", false);
         mSpinIn = getLogoAnimator(false);
         mSpinOut = getLogoAnimator(true);
     }

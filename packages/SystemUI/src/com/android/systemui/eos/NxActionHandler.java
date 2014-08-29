@@ -78,54 +78,58 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver, Sw
 
         String action = "eos_nx_action_single_tap";
         mActionMap.put(EVENT_SINGLE_RIGHT_TAP, new NxAction(action, this,
-                H, getAction(action)));
+                H, getAction(action, ActionHandler.SYSTEMUI_TASK_HOME)));
 
         action = "eos_nx_action_single_left_tap";
         mActionMap.put(EVENT_SINGLE_LEFT_TAP, new NxAction(action, this,
-                H, getAction(action)));
+                H, getAction(action, null)));
 
         action = "eos_nx_action_double_tap";
         mActionMap.put(EVENT_DOUBLE_RIGHT_TAP, new NxAction(action, this,
-                H, getAction(action)));
+                H, getAction(action, null)));
 
         action = "eos_nx_action_double_left_tap";
         mActionMap.put(EVENT_DOUBLE_LEFT_TAP, new NxAction(action, this,
-                H, getAction(action)));
+                H, getAction(action, null)));
 
         action = "eos_nx_action_long_press";
         mActionMap.put(EVENT_LONG_RIGHT_PRESS, new NxAction(action, this,
-                H, getAction(action)));
+                H, getAction(action, ActionHandler.SYSTEMUI_TASK_MENU)));
 
         action = "eos_nx_action_long_left_press";
         mActionMap.put(EVENT_LONG_LEFT_PRESS, new NxAction(action, this,
-                H, getAction(action)));
+                H, getAction(action, null)));
 
         action = "eos_nx_action_fling_short_left";
         mActionMap.put(EVENT_FLING_SHORT_LEFT, new NxAction(action,
-                this, H, getAction(action)));
+                this, H, getAction(action, ActionHandler.SYSTEMUI_TASK_BACK)));
 
         action = "eos_nx_action_fling_short_right";
         mActionMap.put(EVENT_FLING_SHORT_RIGHT, new NxAction(action,
-                this, H, getAction(action)));
+                this, H, getAction(action, ActionHandler.SYSTEMUI_TASK_RECENTS)));
 
         action = "eos_nx_action_fling_long_left";
         mActionMap.put(EVENT_FLING_LONG_LEFT, new NxAction(action,
-                this, H, getAction(action)));
+                this, H, getAction(action, null)));
 
         action = "eos_nx_action_fling_long_right";
         mActionMap.put(EVENT_FLING_LONG_RIGHT, new NxAction(action,
-                this, H, getAction(action)));
+                this, H, getAction(action, ActionHandler.SYSTEMUI_TASK_ASSIST)));
 
         isDoubleTapEnabled = ((NxAction) mActionMap.get(EVENT_DOUBLE_RIGHT_TAP))
                 .isEnabled() || ((NxAction) mActionMap.get(EVENT_DOUBLE_LEFT_TAP))
                 .isEnabled();
     }
 
-    private String getAction(String uri) {
+    private String getAction(String uri, String defAction) {
         String action = Settings.System.getString(
                 mContext.getContentResolver(), uri);
-        if (TextUtils.isEmpty(action) || action.equals("empty") || action.equals("")) {
-            action = ActionHandler.SYSTEMUI_TASK_NO_ACTION;
+        if (TextUtils.isEmpty(action)) {
+            if (defAction == null) {
+                action = ActionHandler.SYSTEMUI_TASK_NO_ACTION;
+            } else {
+                action = defAction;
+            }
         }
         return action;
     }
