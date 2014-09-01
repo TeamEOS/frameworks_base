@@ -440,6 +440,34 @@ public class GestureDetector {
     }
 
     /**
+     * @override to set custom longpress timeout
+     */
+    protected int getLongPressTimeout() {
+        return LONGPRESS_TIMEOUT;
+    }
+
+    /**
+     * @override to set custom doubletap timeout
+     */
+    protected int getDoubleTapTimeout() {
+        return DOUBLE_TAP_TIMEOUT;
+    }
+
+    /**
+     * @override to set custom tap timeout
+     */
+    protected int getTapTimeout() {
+        return TAP_TIMEOUT;
+    }
+
+    /**
+     * @override to set custom doubletap minimum time
+     */
+    protected int getDoubleTapMinTime() {
+        return DOUBLE_TAP_MIN_TIME;
+    }
+
+    /**
      * Analyzes the given motion event and if applicable triggers the
      * appropriate callbacks on the {@link OnGestureListener} supplied.
      *
@@ -525,7 +553,7 @@ public class GestureDetector {
                     handled |= mDoubleTapListener.onDoubleTapEvent(ev);
                 } else {
                     // This is a first tap
-                    mHandler.sendEmptyMessageDelayed(TAP, DOUBLE_TAP_TIMEOUT);
+                    mHandler.sendEmptyMessageDelayed(TAP, getDoubleTapTimeout());
                 }
             }
 
@@ -544,9 +572,9 @@ public class GestureDetector {
             if (mIsLongpressEnabled) {
                 mHandler.removeMessages(LONG_PRESS);
                 mHandler.sendEmptyMessageAtTime(LONG_PRESS, mCurrentDownEvent.getDownTime()
-                        + TAP_TIMEOUT + LONGPRESS_TIMEOUT);
+                        + getTapTimeout() + getLongPressTimeout());
             }
-            mHandler.sendEmptyMessageAtTime(SHOW_PRESS, mCurrentDownEvent.getDownTime() + TAP_TIMEOUT);
+            mHandler.sendEmptyMessageAtTime(SHOW_PRESS, mCurrentDownEvent.getDownTime() + getTapTimeout());
             handled |= mListener.onDown(ev);
             break;
 
@@ -674,7 +702,7 @@ public class GestureDetector {
         }
 
         final long deltaTime = secondDown.getEventTime() - firstUp.getEventTime();
-        if (deltaTime > DOUBLE_TAP_TIMEOUT || deltaTime < DOUBLE_TAP_MIN_TIME) {
+        if (deltaTime > getDoubleTapTimeout() || deltaTime < getDoubleTapMinTime()) {
             return false;
         }
 
