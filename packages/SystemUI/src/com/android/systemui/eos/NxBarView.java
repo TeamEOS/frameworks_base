@@ -31,9 +31,11 @@ import android.net.Uri;
 import android.os.Handler;
 import android.provider.Settings;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
@@ -47,7 +49,7 @@ public class NxBarView extends BaseNavigationBar {
 
     private NxActionHandler mActionHandler;
     private NxGestureHandler mGestureHandler;
-    private GestureDetector mGestureDetector;
+    private NxGestureDetector mGestureDetector;
     private final NxBarTransitions mBarTransitions;
     private NxBarObserver mObserver = new NxBarObserver(new Handler());
     private AnimationSet mSpinOut;
@@ -55,6 +57,35 @@ public class NxBarView extends BaseNavigationBar {
     private boolean mIsAnimating;
     private boolean mLogoEnabled;
     private boolean mLogoAnimates;
+
+    private final class NxGestureDetector extends GestureDetector {
+        final int LP_TIMEOUT = ViewConfiguration.getLongPressTimeout();
+        // no more than default timeout
+        final int LP_TIMEOUT_MAX = LP_TIMEOUT;
+        // no less than 25ms longer than single tap timeout
+        final int LP_TIMEOUT_MIN = 25;
+        private int mLongPressTimeout = LP_TIMEOUT;
+
+        public NxGestureDetector(Context context, OnGestureListener listener) {
+            super(context, listener);
+            // TODO Auto-generated constructor stub
+        }
+
+        @Override
+        protected int getLongPressTimeout() {
+            Log.i(TAG, "LongPress timeout = " + String.valueOf(mLongPressTimeout));
+            return mLongPressTimeout;
+        }
+
+        void setLongPressTimeout(int timeoutFactor) {
+            if (timeoutFactor > LP_TIMEOUT_MAX) {
+                timeoutFactor = LP_TIMEOUT_MAX;
+            } else if (timeoutFactor < LP_TIMEOUT_MIN) {
+                timeoutFactor = LP_TIMEOUT_MIN;
+            }
+            mLongPressTimeout = timeoutFactor;
+        }
+    }
 
     private class NxBarObserver extends ContentObserver {
 
@@ -68,6 +99,9 @@ public class NxBarView extends BaseNavigationBar {
                     NxBarObserver.this);
             mContext.getContentResolver().registerContentObserver(
                     Settings.System.getUriFor("nx_logo_animates"), false,
+                    NxBarObserver.this);
+            mContext.getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor("eos_nx_long_press_timeout"), false,
                     NxBarObserver.this);
         }
 
@@ -89,6 +123,9 @@ public class NxBarView extends BaseNavigationBar {
             }
             mLogoAnimates = Settings.System.getBoolean(mContext.getContentResolver(),
                     "nx_logo_animates", false);
+            int lpTimeout = Settings.System.getInt(mContext.getContentResolver(),
+                    "eos_nx_long_press_timeout", mGestureDetector.LP_TIMEOUT_MAX);
+            mGestureDetector.setLongPressTimeout(lpTimeout);
         }
     }
 
@@ -115,13 +152,16 @@ public class NxBarView extends BaseNavigationBar {
         mBarTransitions = new NxBarTransitions(this);
         mActionHandler = new NxActionHandler(context, this);
         mGestureHandler = new NxGestureHandler(context, mActionHandler, this);
-        mGestureDetector = new GestureDetector(context, mGestureHandler);
+        mGestureDetector = new NxGestureDetector(context, mGestureHandler);
         mObserver = new NxBarObserver(new Handler());
         mObserver.register();
         mLogoEnabled = Settings.System.getBoolean(mContext.getContentResolver(),
                 "nx_logo_visible", true);
         mLogoAnimates = Settings.System.getBoolean(mContext.getContentResolver(),
                 "nx_logo_animates", false);
+        int lpTimeout = Settings.System.getInt(mContext.getContentResolver(),
+                "eos_nx_long_press_timeout", mGestureDetector.LP_TIMEOUT_MAX);
+        mGestureDetector.setLongPressTimeout(lpTimeout);
         mSpinIn = getLogoAnimator(false);
         mSpinOut = getLogoAnimator(true);
     }
