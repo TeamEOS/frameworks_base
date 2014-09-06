@@ -47,6 +47,7 @@ import android.graphics.Rect;
 import android.os.Handler;
 import android.os.Message;
 import android.os.RemoteException;
+import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Display;
@@ -70,6 +71,9 @@ public abstract class BaseNavigationBar extends LinearLayout implements Navigato
     // workaround for LayoutTransitions leaving the nav buttons in a weird state (bug 5549288)
     final static boolean WORKAROUND_INVALID_LAYOUT = true;
     final static int MSG_CHECK_INVALID_LAYOUT = 8686;
+
+    private static final String URI_HIDE_CAMERA = "eos_navbar_lockscreen_hide_camera";
+    private static final String URI_HIDE_SEARCH = "eos_navbar_lockscreen_hide_search";
 
     protected final Display mDisplay;
 
@@ -282,8 +286,12 @@ public abstract class BaseNavigationBar extends LinearLayout implements Navigato
         final boolean showSearch = disableHome && !disableSearch;
         final boolean showCamera = showSearch && !mCameraDisabledByDpm;
         mIsKeyguardShowing = showSearch || showCamera;
-        setVisibleOrGone(getSearchLight(), showSearch);
-        setVisibleOrGone(getCameraButton(), showCamera);
+
+        final boolean shouldShowSearch = showSearch && !isButtonHiddenByUser(URI_HIDE_SEARCH);
+        final boolean shouldShowCamera = showCamera && !isButtonHiddenByUser(URI_HIDE_CAMERA);
+
+        setVisibleOrGone(getSearchLight(), shouldShowSearch);
+        setVisibleOrGone(getCameraButton(), shouldShowCamera);
     }
 
     protected void setVisibleOrGone(View view, boolean visible) {
@@ -294,6 +302,10 @@ public abstract class BaseNavigationBar extends LinearLayout implements Navigato
 
     protected boolean isKeyguardShowing() {
         return mIsKeyguardShowing;
+    }
+
+    private boolean isButtonHiddenByUser(String uri) {
+        return Settings.System.getInt(mContext.getContentResolver(), uri, 0) == 1;
     }
 
     // simplified click handler to be used when device is in accessibility mode
