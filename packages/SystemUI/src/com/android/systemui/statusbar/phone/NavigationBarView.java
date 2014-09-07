@@ -30,7 +30,11 @@ import android.animation.ValueAnimator;
 import android.app.StatusBarManager;
 import android.content.Context;
 import android.content.res.Resources;
+import android.database.ContentObserver;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
+import android.os.Handler;
+import android.provider.Settings;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,6 +49,7 @@ import java.io.PrintWriter;
 
 public class NavigationBarView extends BaseNavigationBar {
     final static String TAG = "PhoneStatusBar/NavigationBarView";
+    private static final String URI_FORCE_SHOW_MENU = "eos_navbar_force_show_menu_button";
 
     private Drawable mBackIcon, mBackLandIcon, mBackAltIcon, mBackAltLandIcon;
     private Drawable mRecentIcon;
@@ -56,6 +61,36 @@ public class NavigationBarView extends BaseNavigationBar {
     private final NavTransitionListener mTransitionListener = new NavTransitionListener();
 
     private boolean mShowMenu;
+    private boolean mForceShowMenuFromUser;
+    private NavbarObserver mObserver;
+
+    private class NavbarObserver extends ContentObserver {
+
+        public NavbarObserver(Handler handler) {
+            super(handler);
+            // TODO Auto-generated constructor stub
+        }
+
+        void observe() {
+            mContext.getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor(URI_FORCE_SHOW_MENU), false, this);
+        }
+
+        void unobserve() {
+            mContext.getContentResolver().unregisterContentObserver(this);
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            Uri showMenuUri = Settings.System.getUriFor(URI_FORCE_SHOW_MENU);
+            if (showMenuUri != null && uri.equals(showMenuUri)) {
+                mForceShowMenuFromUser = Settings.System.getInt(mContext.getContentResolver(),
+                        URI_FORCE_SHOW_MENU, 0) == 1;
+                final boolean hideOverride = shouldForceShowMenu();
+                setMenuVisibility(hideOverride, true);
+            }
+        }
+    };
 
     private class NavTransitionListener implements TransitionListener {
         private boolean mBackTransitioning;
@@ -108,6 +143,10 @@ public class NavigationBarView extends BaseNavigationBar {
         mShowMenu = false;
         getIcons(res);
         mBarTransitions = new NavigationBarTransitions(this);
+        mForceShowMenuFromUser = Settings.System.getInt(context.getContentResolver(),
+                URI_FORCE_SHOW_MENU, 0) == 1;
+        mObserver = new NavbarObserver(new Handler());
+        mObserver.observe();
     }
 
     public BarTransitions getBarTransitions() {
@@ -223,10 +262,24 @@ public class NavigationBarView extends BaseNavigationBar {
         setMenuVisibility(show, false);
     }
 
+    private boolean shouldForceShowMenu() {
+        return mForceShowMenuFromUser && !isKeyguardShowing();
+    }
+
     public void setMenuVisibility(final boolean show, final boolean force) {
-        if (!force && mShowMenu == show) return;
-        mShowMenu = show;
-        getMenuButton().setVisibility(mShowMenu ? View.VISIBLE : View.INVISIBLE);
+        boolean showOverride = shouldForceShowMenu();
+        if (showOverride) {
+            if (!(getMenuButton().getVisibility() == View.VISIBLE)) {
+                mShowMenu = true;
+                getMenuButton().setVisibility(View.VISIBLE);
+                return;
+            }
+        } else {
+            if (!force && mShowMenu == show)
+                return;
+            mShowMenu = show;
+            getMenuButton().setVisibility(mShowMenu ? View.VISIBLE : View.INVISIBLE);
+        }
     }
 
     @Override
