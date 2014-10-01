@@ -421,4 +421,7 @@ interface IPackageManager {
 
     boolean setApplicationBlockedSettingAsUser(String packageName, boolean blocked, int userId);
     boolean getApplicationBlockedSettingAsUser(String packageName, int userId);
+
+    void addPreLaunchCheckPackage(String packageName);
+    void removePreLaunchCheckPackage(String packageName);
 }
