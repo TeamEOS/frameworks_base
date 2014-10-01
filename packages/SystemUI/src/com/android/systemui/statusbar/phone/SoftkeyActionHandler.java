@@ -224,39 +224,7 @@ public class SoftkeyActionHandler extends ActionHandler {
                 return;
             }
 
-            for (Map.Entry<Integer, ButtonInfo> entry : mSoftkeyMap.entrySet()) {
-                ButtonInfo info = entry.getValue();
-                Uri lpUri = Settings.System.getUriFor(info.lpUri);
-                Uri dtUri = Settings.System.getUriFor(info.dtUri);
-
-                if (lpUri != null && lpUri.equals(uri)) {
-                    for (View v : getAllChildren(mNavigationBarView)) {
-                        if (v instanceof KeyButtonView) {
-                            if (Integer.valueOf(v.getId()).equals(entry.getKey())) {
-                                mSoftkeyMap.remove(entry.getKey());
-                                ButtonInfo newInfo = getSoftkeyButtonInfo(((KeyButtonView) v));
-                                mSoftkeyMap.put(v.getId(), newInfo);
-                                ((KeyButtonView) v).setButtonActions(newInfo);
-                                return;
-                            }
-                        }
-                    }
-                }
-
-                if (dtUri != null && dtUri.equals(uri)) {
-                    for (View v : getAllChildren(mNavigationBarView)) {
-                        if (v instanceof KeyButtonView) {
-                            if (Integer.valueOf(v.getId()).equals(entry.getKey())) {
-                                mSoftkeyMap.remove(entry.getKey());
-                                ButtonInfo newInfo = getSoftkeyButtonInfo(((KeyButtonView) v));
-                                mSoftkeyMap.put(v.getId(), newInfo);
-                                ((KeyButtonView) v).setButtonActions(newInfo);
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
+            loadButtonActions();
         }
 
         void observe() {
