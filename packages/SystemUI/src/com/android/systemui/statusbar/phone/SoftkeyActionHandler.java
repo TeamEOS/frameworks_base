@@ -94,16 +94,14 @@ public class SoftkeyActionHandler extends ActionHandler {
             return;
         mSoftkeyMap.clear();
         int lpTimeout = getLongPressTimeout();
-        for (View v : getAllChildren(mNavigationBarView)) {
-            if (v instanceof KeyButtonView) {
-                KeyButtonView button = ((KeyButtonView) v);
-                button.setActionHandler(this);
-                ButtonInfo info = getSoftkeyButtonInfo(button);
-                mSoftkeyMap.put(button.getId(), info);
-                button.setButtonActions(info);
-                button.setLongPressTimeout(lpTimeout);
-                button.setDoubleTapTimeout(DT_TIMEOUT);
-            }
+        for (KeyButtonView v : CFXUtils.getAllChildren(mNavigationBarView, KeyButtonView.class)) {
+            KeyButtonView button = ((KeyButtonView) v);
+            button.setActionHandler(this);
+            ButtonInfo info = getSoftkeyButtonInfo(button);
+            mSoftkeyMap.put(button.getId(), info);
+            button.setButtonActions(info);
+            button.setLongPressTimeout(lpTimeout);
+            button.setDoubleTapTimeout(DT_TIMEOUT);
         }
     }
 
@@ -120,11 +118,9 @@ public class SoftkeyActionHandler extends ActionHandler {
 
     private void setLongPressTimeout() {
         int lpTimeout = getLongPressTimeout();
-        for (View v : getAllChildren(mNavigationBarView)) {
-            if (v instanceof KeyButtonView) {
-                KeyButtonView button = ((KeyButtonView) v);
-                button.setLongPressTimeout(lpTimeout);
-            }
+        for (KeyButtonView v : CFXUtils.getAllChildren(mNavigationBarView, KeyButtonView.class)) {
+            KeyButtonView button = ((KeyButtonView) v);
+            button.setLongPressTimeout(lpTimeout);
         }
     }
 
@@ -155,13 +151,12 @@ public class SoftkeyActionHandler extends ActionHandler {
 
     public void onHandlePackageChanged() {
         if (mNavigationBarView != null) {
-            for (View v : getAllChildren(mNavigationBarView)) {
-                if (v instanceof KeyButtonView) {
-                    KeyButtonView button = ((KeyButtonView) v);
-                    ButtonInfo info = mSoftkeyMap.get(button.getId());
-                    if (info == null) continue;
-                    resolveOrClearActions(button);
-                }
+            for (KeyButtonView v : CFXUtils.getAllChildren(mNavigationBarView, KeyButtonView.class)) {
+                KeyButtonView button = ((KeyButtonView) v);
+                ButtonInfo info = mSoftkeyMap.get(button.getId());
+                if (info == null)
+                    continue;
+                resolveOrClearActions(button);
             }
         }
     }
@@ -246,30 +241,4 @@ public class SoftkeyActionHandler extends ActionHandler {
             mResolver.unregisterContentObserver(SoftkeyActionObserver.this);
         }
     }
-
-    /* utility to iterate a viewgroup and return a list of child views */
-    public static ArrayList<View> getAllChildren(View v) {
-
-        if (!(v instanceof ViewGroup)) {
-            ArrayList<View> viewArrayList = new ArrayList<View>();
-            viewArrayList.add(v);
-            return viewArrayList;
-        }
-
-        ArrayList<View> result = new ArrayList<View>();
-
-        ViewGroup vg = (ViewGroup) v;
-        for (int i = 0; i < vg.getChildCount(); i++) {
-
-            View child = vg.getChildAt(i);
-
-            ArrayList<View> viewArrayList = new ArrayList<View>();
-            viewArrayList.add(v);
-            viewArrayList.addAll(getAllChildren(child));
-
-            result.addAll(viewArrayList);
-        }
-        return result;
-    }
-
 }

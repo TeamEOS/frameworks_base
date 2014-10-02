@@ -22,6 +22,8 @@ import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.IWindowManager;
+import android.view.View;
+import android.view.ViewGroup;
 
 import com.android.internal.telephony.RILConstants;
 
@@ -32,6 +34,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 
 public final class CFXUtils {
@@ -304,5 +307,57 @@ public final class CFXUtils {
         } catch (Exception e) {
             return "error getting device name";
         }
+    }
+
+    /* utility to iterate a viewgroup and return a list of child views */
+    public static ArrayList<View> getAllChildren(View v) {
+
+        if (!(v instanceof ViewGroup)) {
+            ArrayList<View> viewArrayList = new ArrayList<View>();
+            viewArrayList.add(v);
+            return viewArrayList;
+        }
+
+        ArrayList<View> result = new ArrayList<View>();
+
+        ViewGroup vg = (ViewGroup) v;
+        for (int i = 0; i < vg.getChildCount(); i++) {
+
+            View child = vg.getChildAt(i);
+
+            ArrayList<View> viewArrayList = new ArrayList<View>();
+            viewArrayList.add(v);
+            viewArrayList.addAll(getAllChildren(child));
+
+            result.addAll(viewArrayList);
+        }
+        return result;
+    }
+
+    /* utility to iterate a viewgroup and return a list of child views of type */
+    public static <T extends View> ArrayList<T> getAllChildren(View root, Class<T> returnType) {
+        if (!(root instanceof ViewGroup)) {
+            ArrayList<T> viewArrayList = new ArrayList<T>();
+            try {
+                viewArrayList.add(returnType.cast(root));
+            } catch (Exception e) {
+                // handle all exceptions the same and silently fail
+            }
+            return viewArrayList;
+        }
+        ArrayList<T> result = new ArrayList<T>();
+        ViewGroup vg = (ViewGroup) root;
+        for (int i = 0; i < vg.getChildCount(); i++) {
+            View child = vg.getChildAt(i);
+            ArrayList<T> viewArrayList = new ArrayList<T>();
+            try {
+                viewArrayList.add(returnType.cast(root));
+            } catch (Exception e) {
+                // handle all exceptions the same and silently fail
+            }
+            viewArrayList.addAll(getAllChildren(child, returnType));
+            result.addAll(viewArrayList);
+        }
+        return result;
     }
 }
