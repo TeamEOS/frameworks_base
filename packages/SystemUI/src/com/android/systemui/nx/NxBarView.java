@@ -18,15 +18,19 @@
  *
  */
 
-package com.android.systemui.eos;
+package com.android.systemui.nx;
 
 import com.android.systemui.R;
+import com.android.systemui.nx.eyecandy.NxMediaController;
+import com.android.systemui.nx.eyecandy.NxSurface;
 import com.android.systemui.statusbar.BaseNavigationBar;
 import com.android.systemui.statusbar.phone.BarTransitions;
 
 import android.animation.LayoutTransition;
 import android.content.Context;
 import android.database.ContentObserver;
+import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Handler;
 import android.provider.Settings;
@@ -44,7 +48,7 @@ import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.view.animation.ScaleAnimation;
 
-public class NxBarView extends BaseNavigationBar {
+public class NxBarView extends BaseNavigationBar implements NxSurface {
     final static String TAG = NxBarView.class.getSimpleName();
 
     private NxActionHandler mActionHandler;
@@ -57,6 +61,7 @@ public class NxBarView extends BaseNavigationBar {
     private boolean mIsAnimating;
     private boolean mLogoEnabled;
     private boolean mLogoAnimates;
+    private NxMediaController mMC;
 
     private final class NxGestureDetector extends GestureDetector {
         final int LP_TIMEOUT = ViewConfiguration.getLongPressTimeout();
@@ -101,6 +106,9 @@ public class NxBarView extends BaseNavigationBar {
                     Settings.System.getUriFor("nx_logo_animates"), false,
                     NxBarObserver.this);
             mContext.getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor("eos_nx_pulse"), false,
+                    NxBarObserver.this);
+            mContext.getContentResolver().registerContentObserver(
                     Settings.System.getUriFor("eos_nx_long_press_timeout"), false,
                     NxBarObserver.this);
         }
@@ -126,6 +134,11 @@ public class NxBarView extends BaseNavigationBar {
             int lpTimeout = Settings.System.getInt(mContext.getContentResolver(),
                     "eos_nx_long_press_timeout", mGestureDetector.LP_TIMEOUT_MAX);
             mGestureDetector.setLongPressTimeout(lpTimeout);
+            boolean doPulse = Settings.System.getBoolean(mContext.getContentResolver(),
+                    "eos_nx_pulse", false);
+            if (doPulse != mMC.isPulseEnabled()) {
+                mMC.setPulseEnabled(doPulse);
+            }
         }
     }
 
@@ -164,6 +177,11 @@ public class NxBarView extends BaseNavigationBar {
         mGestureDetector.setLongPressTimeout(lpTimeout);
         mSpinIn = getLogoAnimator(false);
         mSpinOut = getLogoAnimator(true);
+        mMC = new NxMediaController(context);
+        boolean doPulse = Settings.System.getBoolean(mContext.getContentResolver(),
+                "eos_nx_pulse", false);
+        mMC.setPulseEnabled(doPulse);
+        mMC.onSetNxSurface(this);
     }
 
     // total touch control, except on keyguard
@@ -245,10 +263,10 @@ public class NxBarView extends BaseNavigationBar {
         }
 
         mGestureHandler.onScreenStateChanged(mScreenOn);
-        getNxLogo().setVisibility(!isKeyguardShowing() && mLogoEnabled ? View.VISIBLE : View.INVISIBLE);
+        getNxLogo().setVisibility(!isKeyguardShowing() && mLogoEnabled && !mMC.shouldDrawPulse() ? View.VISIBLE : View.INVISIBLE);
         setOnTouchListener(!isKeyguardShowing() ? mNxTouchListener : null);
         mBarTransitions.applyBackButtonQuiescentAlpha(mBarTransitions.getMode(), true /* animate */);
-        if (mLogoEnabled && isKeyguardShowing()) getNxLogo().setAlpha(0.0f);
+        if (mLogoEnabled && (isKeyguardShowing() || mMC.shouldDrawPulse())) getNxLogo().setAlpha(0.0f);
     }
 
     @Override
@@ -270,6 +288,12 @@ public class NxBarView extends BaseNavigationBar {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
         mDelegateHelper.setInitialTouchRegion(getNxLogo(), getLeftStub(), getRightStub());
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        mMC.onSizeChanged();
     }
 
     @Override
@@ -313,5 +337,25 @@ public class NxBarView extends BaseNavigationBar {
 
         });
         return animSet;
+    }
+
+    @Override
+    public Rect onGetSurfaceDimens() {
+        Rect rect = new Rect();
+        rect.set(0, 0, getWidth(), getHeight());
+        return rect;
+    }
+
+    @Override
+    public void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        if (mMC.shouldDrawPulse() && !isKeyguardShowing()) {
+            mMC.onDrawNx(canvas);
+        }
+    }
+
+    @Override
+    public void updateBar() {
+        setDisabledFlags(mDisabledFlags, true /* force */);
     }
 }

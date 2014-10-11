@@ -100,7 +100,6 @@ import com.android.systemui.DemoMode;
 import com.android.systemui.BatteryMeterView;
 import com.android.systemui.EventLogTags;
 import com.android.systemui.R;
-import com.android.systemui.eos.Navigator;
 import com.android.systemui.statusbar.BaseStatusBar;
 import com.android.systemui.statusbar.CommandQueue;
 import com.android.systemui.statusbar.GestureRecorder;

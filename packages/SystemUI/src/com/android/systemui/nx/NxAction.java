@@ -1,5 +1,5 @@
 
-package com.android.systemui.eos;
+package com.android.systemui.nx;
 
 import org.codefirex.utils.ActionHandler;
 

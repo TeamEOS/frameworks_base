@@ -28,8 +28,8 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 
 import com.android.systemui.R;
-import com.android.systemui.eos.Navigator;
 import com.android.systemui.statusbar.phone.KeyguardTouchDelegate;
+import com.android.systemui.statusbar.phone.Navigator;
 import com.android.systemui.statusbar.phone.PhoneStatusBar;
 import com.android.systemui.statusbar.policy.DeadZone;
 import com.android.systemui.statusbar.policy.KeyButtonView;

@@ -1,4 +1,4 @@
-package com.android.systemui.eos;
+package com.android.systemui.nx.eyecandy;
 
 import java.util.*;
 

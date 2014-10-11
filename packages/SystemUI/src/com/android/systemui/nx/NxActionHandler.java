@@ -24,15 +24,15 @@
  *
  */
 
-package com.android.systemui.eos;
+package com.android.systemui.nx;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.codefirex.utils.ActionHandler;
 
-import com.android.systemui.eos.NxAction.ActionReceiver;
-import com.android.systemui.eos.NxGestureHandler.Swipeable;
+import com.android.systemui.nx.NxAction.ActionReceiver;
+import com.android.systemui.nx.NxGestureHandler.Swipeable;
 
 import android.content.Context;
 import android.database.ContentObserver;

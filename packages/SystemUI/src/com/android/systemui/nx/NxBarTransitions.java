@@ -1,4 +1,4 @@
-package com.android.systemui.eos;
+package com.android.systemui.nx;
 
 /*
  * Copyright (C) 2013 The Android Open Source Project

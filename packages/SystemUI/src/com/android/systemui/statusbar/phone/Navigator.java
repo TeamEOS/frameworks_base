@@ -20,13 +20,12 @@
  * 
  */
 
-package com.android.systemui.eos;
+package com.android.systemui.statusbar.phone;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 
 import com.android.systemui.statusbar.BaseStatusBar;
-import com.android.systemui.statusbar.phone.BarTransitions;
 
 import android.view.View;
 

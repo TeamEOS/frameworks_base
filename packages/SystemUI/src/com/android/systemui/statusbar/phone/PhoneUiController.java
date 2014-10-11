@@ -45,7 +45,6 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 
-import com.android.systemui.eos.Navigator;
 
 public class PhoneUiController {
     private static final String TAG = PhoneUiController.class.getSimpleName();
