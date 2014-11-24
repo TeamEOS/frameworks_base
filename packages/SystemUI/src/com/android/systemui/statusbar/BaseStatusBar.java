@@ -181,7 +181,7 @@ public abstract class BaseStatusBar extends SystemUI implements
     protected AccessibilityManager mAccessibilityManager;
 
     // on-screen navigation buttons
-    protected NavigationBarView mNavigationBarView = null;
+    protected BaseNavigationBar mNavigationBarView = null;
     private Locale mLocale;
     private float mFontScale;
 

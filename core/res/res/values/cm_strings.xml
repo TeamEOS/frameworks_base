@@ -104,9 +104,6 @@
     <!-- Reboot Progress Dialog. This is shown if the user chooses to reboot the phone. -->
     <string name="reboot_progress">Rebooting\u2026</string>
 
-    <!-- Long-press back kill application -->
-    <string name="app_killed_message">Application killed</string>
-
     <!-- ADB over network notification -->
     <string name="adb_net_active_notification_title">ADB over network enabled</string>
     <!-- ADB over USB and network notification -->

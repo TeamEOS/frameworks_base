@@ -92,6 +92,23 @@ public class FlashlightController {
         }
     }
 
+    public boolean getFlashlightEnabled() {
+        boolean enabled;
+        synchronized (this) {
+            enabled = mFlashlightEnabled;
+        }
+        return enabled;
+    }
+
+    public void toggleFlashlight() {
+        boolean enabled;
+        synchronized (this) {
+            enabled = !mFlashlightEnabled;
+            mFlashlightEnabled = enabled;
+        }
+        postUpdateFlashlight();
+    }
+
     public void killFlashlight() {
         boolean enabled;
         synchronized (this) {

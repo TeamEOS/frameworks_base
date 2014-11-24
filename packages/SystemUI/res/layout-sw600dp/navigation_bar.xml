@@ -57,18 +57,19 @@
                 android:layout_width="128dp" android:paddingStart="25dp" android:paddingEnd="25dp"
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_sysbar_back"
-                systemui:keyCode="4"
                 android:layout_weight="0"
                 android:contentDescription="@string/accessibility_back"
+                systemui:longPressUri="@string/longpress_uri_back"
+                systemui:doubleTapUri="@string/doubletap_uri_back"
                 />
             <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/home"
                 android:layout_width="128dp" android:paddingStart="25dp" android:paddingEnd="25dp"
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_sysbar_home"
-                systemui:keyCode="3"
-                systemui:keyRepeat="true"
                 android:layout_weight="0"
                 android:contentDescription="@string/accessibility_home"
+                systemui:longPressUri="@string/longpress_uri_home"
+                systemui:doubleTapUri="@string/doubletap_uri_home"
                 />
             <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/recent_apps"
                 android:layout_width="128dp" android:paddingStart="25dp" android:paddingEnd="25dp"
@@ -76,6 +77,8 @@
                 android:src="@drawable/ic_sysbar_recent"
                 android:layout_weight="0"
                 android:contentDescription="@string/accessibility_recent"
+                systemui:longPressUri="@string/longpress_uri_recent"
+                systemui:doubleTapUri="@string/doubletap_uri_recent"
                 />
             <Space 
                 android:layout_width="match_parent"
@@ -92,9 +95,10 @@
                     android:layout_height="match_parent"
                     android:src="@drawable/ic_sysbar_menu"
                     android:layout_marginEnd="2dp"
-                    systemui:keyCode="82"
                     android:visibility="invisible"
                     android:contentDescription="@string/accessibility_menu"
+                    systemui:longPressUri="@string/longpress_uri_menu"
+                    systemui:doubleTapUri="@string/doubletap_uri_menu"
                     />
                 <com.android.systemui.statusbar.policy.KeyButtonView
                     android:id="@+id/ime_switcher"
@@ -198,18 +202,19 @@
                 android:layout_width="162dp" android:paddingStart="42dp" android:paddingEnd="42dp"
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_sysbar_back"
-                systemui:keyCode="4"
                 android:layout_weight="0"
                 android:contentDescription="@string/accessibility_back"
+                systemui:longPressUri="@string/longpress_uri_back"
+                systemui:doubleTapUri="@string/doubletap_uri_back"
                 />
             <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/home"
                 android:layout_width="162dp" android:paddingStart="42dp" android:paddingEnd="42dp"
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_sysbar_home"
-                systemui:keyCode="3"
-                systemui:keyRepeat="true"
                 android:layout_weight="0"
                 android:contentDescription="@string/accessibility_home"
+                systemui:longPressUri="@string/longpress_uri_home"
+                systemui:doubleTapUri="@string/doubletap_uri_home"
                 />
             <com.android.systemui.statusbar.policy.KeyButtonView android:id="@+id/recent_apps"
                 android:layout_width="162dp" android:paddingStart="42dp" android:paddingEnd="42dp"
@@ -217,6 +222,8 @@
                 android:src="@drawable/ic_sysbar_recent"
                 android:layout_weight="0"
                 android:contentDescription="@string/accessibility_recent"
+                systemui:longPressUri="@string/longpress_uri_recent"
+                systemui:doubleTapUri="@string/doubletap_uri_recent"
                 />
             <Space 
                 android:layout_width="match_parent"
@@ -233,9 +240,10 @@
                     android:layout_height="match_parent"
                     android:layout_marginEnd="2dp"
                     android:src="@drawable/ic_sysbar_menu"
-                    systemui:keyCode="82"
                     android:visibility="invisible"
-                    android:contentDescription="@string/accessibility_menu" />
+                    android:contentDescription="@string/accessibility_menu"
+		            systemui:longPressUri="@string/longpress_uri_menu"
+                    systemui:doubleTapUri="@string/doubletap_uri_menu" />
                 <com.android.systemui.statusbar.policy.KeyButtonView
                     android:id="@+id/ime_switcher"
                     android:layout_width="@dimen/navigation_extra_key_width"

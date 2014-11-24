@@ -65,6 +65,13 @@ public class BarTransitions {
         }
     }
 
+    // restore mode the navbar was in before bar change
+    public void setMode(int mode) {
+        if (mMode != mode) {
+            mMode = mode;
+        }
+    }
+
     public int getMode() {
         return mMode;
     }

@@ -911,4 +911,14 @@
 
     <!-- Accessibility string for current zen mode and selected exit condition. A template that simply concatenates existing mode string and the current condition description. [CHAR LIMIT=20] -->
     <string name="zen_mode_and_condition"><xliff:g id="zen_mode" example="Priority interruptions only">%1$s</xliff:g>. <xliff:g id="exit_condition" example="For one hour">%2$s</xliff:g></string>
+
+    <!-- Softkey action uri's -->
+    <string name="longpress_uri_back">systemui_softkey_lp_back</string>
+    <string name="longpress_uri_home">systemui_softkey_lp_home</string>
+    <string name="longpress_uri_recent">systemui_softkey_lp_recent</string>
+    <string name="longpress_uri_menu">systemui_softkey_lp_menu</string>
+    <string name="doubletap_uri_back">systemui_softkey_dt_back</string>
+    <string name="doubletap_uri_home">systemui_softkey_dt_home</string>
+    <string name="doubletap_uri_recent">systemui_softkey_dt_recent</string>
+    <string name="doubletap_uri_menu">systemui_softkey_dt_menu</string>
 </resources>
