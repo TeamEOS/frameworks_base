@@ -805,6 +805,7 @@
   <java-symbol type="string" name="reboot_safemode_confirm" />
   <java-symbol type="string" name="reboot_safemode_title" />
   <java-symbol type="string" name="reboot_title" />
+  <java-symbol type="string" name="reboot_progress" />
   <java-symbol type="string" name="relationTypeAssistant" />
   <java-symbol type="string" name="relationTypeBrother" />
   <java-symbol type="string" name="relationTypeChild" />
@@ -2208,5 +2209,13 @@
 
   <!-- Config.xml entries -->
   <java-symbol type="integer" name="config_backKillTimeout" />
+
+  <!-- Notification and battery light -->
+  <java-symbol type="bool" name="config_intrusiveNotificationLed" />
+  <java-symbol type="bool" name="config_multiColorNotificationLed" />
+  <java-symbol type="bool" name="config_intrusiveBatteryLed" />
+  <java-symbol type="bool" name="config_multiColorBatteryLed" />
+  <java-symbol type="array" name="notification_light_package_mapping" />
+  <java-symbol type="array" name="config_notificationNoAlertsVibePattern" />
 
 </resources>
