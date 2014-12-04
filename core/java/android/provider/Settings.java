@@ -2043,6 +2043,12 @@ public final class Settings {
         public static final String STATUS_BAR_BRIGHTNESS_CONTROL = "status_bar_brightness_control";
 
         /**
+         * Whether to show the IME switcher in the status bar
+         * @hide
+         */
+        public static final String STATUS_BAR_IME_SWITCHER = "status_bar_ime_switcher";
+
+        /**
          * The keyboard brightness to be used while the screen is on.
          * Valid value range is between 0 and {@link PowerManager#getMaximumKeyboardBrightness()}
          * @hide
@@ -3074,6 +3080,15 @@ public final class Settings {
         public static final String DOUBLE_TAP_SLEEP_GESTURE = "double_tap_sleep_gesture";
 
         /**
+          * Volume keys control cursor in text fields (default is 0)
+          * 0 - Disabled
+          * 1 - Volume up/down moves cursor left/right
+          * 2 - Volume up/down moves cursor right/left
+          * @hide
+          */
+         public static final String VOLUME_KEY_CURSOR_CONTROL = "volume_key_cursor_control";
+
+        /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
          *
@@ -3938,6 +3953,12 @@ public final class Settings {
          * @hide
          */
         public static final String ADB_NOTIFY = "adb_notify";
+
+        /**
+         * The TCP/IP port to run ADB on, or -1 for USB
+         * @hide
+         */
+        public static final String ADB_PORT = "adb_port";
 
         /**
          * The hostname for this device
@@ -5320,6 +5341,14 @@ public final class Settings {
         public static final String ADVANCED_REBOOT = "advanced_reboot";
 
         /**
+         * Whether to display a menu containing 'Wipe data', 'Force close' and other options
+         * in the notification area and in the recent app list
+         * @hide
+         */
+        public static final String DEVELOPMENT_SHORTCUT = "development_shortcut";
+
+
+        /**
          * This are the settings to be backed up.
          *
          * NOTE: Settings are backed up and restored in the order they appear
@@ -5371,7 +5400,8 @@ public final class Settings {
             UI_NIGHT_MODE,
             SLEEP_TIMEOUT,
             PRIVACY_GUARD_DEFAULT,
-            ADVANCED_REBOOT
+            ADVANCED_REBOOT,
+            DEVELOPMENT_SHORTCUT
         };
 
         /**
@@ -5743,6 +5773,13 @@ public final class Settings {
          * @hide
          */
         public static final String BUGREPORT_IN_POWER_MENU = "bugreport_in_power_menu";
+
+        /**
+         * Whether to wake the display when plugging or unplugging the charger
+         *
+         * @hide
+         */
+        public static final String WAKE_WHEN_PLUGGED_OR_UNPLUGGED = "wake_when_plugged_or_unplugged";
 
         /**
          * Whether ADB is enabled.
@@ -7110,6 +7147,7 @@ public final class Settings {
         public static final String[] SETTINGS_TO_BACKUP = {
             BUGREPORT_IN_POWER_MENU,
             STAY_ON_WHILE_PLUGGED_IN,
+            WAKE_WHEN_PLUGGED_OR_UNPLUGGED,
             AUTO_TIME,
             AUTO_TIME_ZONE,
             POWER_SOUNDS_ENABLED,
