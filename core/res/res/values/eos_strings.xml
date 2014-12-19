@@ -35,4 +35,6 @@
     <string name="reboot_soft">Soft reboot</string>
     <!-- label for item that reboots the phone in phone options dialog -->
     <string name="global_action_reboot">Reboot</string>
+    <!-- label for item that screenshots in phone options dialog -->
+    <string name="global_action_screenshot">Screenshot</string>
 </resources>
