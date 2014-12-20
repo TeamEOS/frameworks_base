@@ -2997,14 +2997,14 @@
     <string name="permdesc_writeHistoryBookmarks" product="tablet">Allows the
         app to modify the Browser\'s history or bookmarks stored on your tablet.
         This may allow the app to erase or modify Browser data.  Note: this
-        permission may note be enforced by third-party browsers or other
+        permission may not be enforced by third-party browsers or other
         applications with web browsing capabilities.</string>
     <!-- Description of an application permission, listed so the user can choose whether
         they want to allow the application to do this. -->
     <string name="permdesc_writeHistoryBookmarks" product="default">Allows the
         app to modify the Browser\'s history or bookmarks stored on your phone.
         This may allow the app to erase or modify Browser data.  Note:
-        this permission may note be enforced by third-party browsers or other
+        this permission may not be enforced by third-party browsers or other
         applications with web browsing capabilities.</string>
 
     <!-- Title of an application permission, listed so the user can choose whether
@@ -3508,6 +3508,9 @@
     <!-- [CHAR LIMIT=40] Title of dialog that is shown when performing a system upgrade. -->
     <string name="android_upgrading_title">Android is upgrading\u2026</string>
 
+    <!-- [CHAR LIMIT=NONE] Message shown in upgrading dialog when doing an fstrim. -->
+    <string name="android_upgrading_fstrim">Optimizing storage.</string>
+
     <!-- [CHAR LIMIT=NONE] Message shown in upgrading dialog for each .apk that is optimized. -->
     <string name="android_upgrading_apk">Optimizing app
         <xliff:g id="number" example="123">%1$d</xliff:g> of
@@ -3876,12 +3879,12 @@
     <!-- Title of an application permission that lets an application access keyguard secure storage. -->
     <string name="permlab_access_keyguard_secure_storage">Access keyguard secure storage</string>
     <!-- Description of an application permission that lets an application access keyguard secure storage. -->
-    <string name="permdesc_access_keyguard_secure_storage">Allows an application to access keguard secure storage.</string>
+    <string name="permdesc_access_keyguard_secure_storage">Allows an application to access keyguard secure storage.</string>
 
     <!-- Title of an application permission that lets it control keyguard. -->
     <string name="permlab_control_keyguard">Control displaying and hiding keyguard</string>
     <!-- Description of an application permission that lets it control keyguard. -->
-    <string name="permdesc_control_keyguard">Allows an application to control keguard.</string>
+    <string name="permdesc_control_keyguard">Allows an application to control keyguard.</string>
 
     <!-- Title of an application permission that lets it listen to trust state changes. -->
     <string name="permlab_trust_listener">Listen to trust state changes.</string>

@@ -306,6 +306,7 @@
   <java-symbol type="bool" name="config_wifi_only_link_same_credential_configurations" />
   <java-symbol type="bool" name="config_wifi_enable_disconnection_debounce" />
   <java-symbol type="bool" name="config_wifi_enable_5GHz_preference" />
+  <java-symbol type="bool" name="config_forceDisableHardwareKeyboard" />
   <java-symbol type="integer" name="config_wifi_framework_5GHz_preference_boost_threshold" />
   <java-symbol type="integer" name="config_wifi_framework_5GHz_preference_boost_factor" />
   <java-symbol type="integer" name="config_wifi_framework_5GHz_preference_penalty_threshold" />
@@ -1696,6 +1697,7 @@
   <java-symbol type="string" name="aerr_application" />
   <java-symbol type="string" name="aerr_process" />
   <java-symbol type="string" name="aerr_title" />
+  <java-symbol type="string" name="android_upgrading_fstrim" />
   <java-symbol type="string" name="android_upgrading_apk" />
   <java-symbol type="string" name="android_upgrading_complete" />
   <java-symbol type="string" name="android_upgrading_starting_apps" />
@@ -2208,6 +2210,7 @@
   <java-symbol type="integer" name="config_proximityCheckTimeout" />
 
   <java-symbol type="bool" name="config_show_cmIMESwitcher"/>
+  <java-symbol type="bool" name="config_samsung_stk" />
 
   <!-- Action Handler -->
   <java-symbol type="anim" name="last_app_in" />
