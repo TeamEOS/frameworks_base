@@ -412,6 +412,18 @@ public class NetworkManagementService extends INetworkManagementService.Stub
     private void notifyInterfaceClassActivity(int type, int powerState, long tsNanos,
             boolean fromRadio) {
         final boolean isMobile = ConnectivityManager.isNetworkTypeMobile(type);
+
+        if ("1".equals(SystemProperties.get("ro.sony.ril", "0"))) {
+            // Some parts of the android framework like to send fake network-state events.
+            // this might cause androids automagic-logic to think, that our RIL acutally supports
+            // sending such events while it clearly does not. Accepting such an event would mess up
+            // the battery stats badly, so we are 'correcting' the fake events here:
+            if (isMobile && fromRadio) {
+                Slog.e(TAG, "pabx: notifyInterfaceClassActivity received FAKE event claiming to be from radio - squashing it.");
+                fromRadio = false;
+            }
+        }
+
         if (isMobile) {
             if (!fromRadio) {
                 if (mMobileActivityFromRadio) {
