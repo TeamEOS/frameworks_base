@@ -96,6 +96,9 @@ public class StatusBarKeyguardViewManager {
     public void show(Bundle options) {
         mShowing = true;
         mStatusBarWindowManager.setKeyguardShowing(true);
+        if (mPhoneStatusBar.getNavigationBarView() != null) {
+            mPhoneStatusBar.getNavigationBarView().setKeyguardShowing(true);
+        }
         reset();
     }
 
@@ -242,6 +245,9 @@ public class StatusBarKeyguardViewManager {
                 @Override
                 public void run() {
                     mStatusBarWindowManager.setKeyguardShowing(false);
+                    if (mPhoneStatusBar.getNavigationBarView() != null) {
+                        mPhoneStatusBar.getNavigationBarView().setKeyguardShowing(false);
+                    }
                     mStatusBarWindowManager.setKeyguardFadingAway(true);
                     mBouncer.hide(true /* destroyView */);
                     updateStates();
@@ -275,6 +281,9 @@ public class StatusBarKeyguardViewManager {
                 mPhoneStatusBar.finishKeyguardFadingAway();
             }
             mStatusBarWindowManager.setKeyguardShowing(false);
+            if (mPhoneStatusBar.getNavigationBarView() != null) {
+                mPhoneStatusBar.getNavigationBarView().setKeyguardShowing(false);
+            }
             mBouncer.hide(true /* destroyView */);
             mViewMediatorCallback.keyguardGone();
             executeAfterKeyguardGoneAction();

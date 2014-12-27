@@ -120,6 +120,7 @@ public abstract class BaseNavigationBar extends LinearLayout {
     public void setNavigationIconHints(int hints) {}
     public void setNavigationIconHints(int hints, boolean force) {}
     public void onHandlePackageChanged(){}
+    public void setKeyguardShowing(boolean showing){}
 
     /*
      * compatibility shim for handleLongPressBackRecents accessibility method

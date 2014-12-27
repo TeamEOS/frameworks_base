@@ -41,18 +41,11 @@
             android:orientation="horizontal" >
 
             <View
-                android:id="@+id/nx_stub_left"
-                android:layout_width="80dp"
-                android:layout_height="match_parent"
-                android:layout_weight="0"
-                android:visibility="invisible"
-                />
-            <View
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:visibility="invisible"
-                />
+                android:visibility="invisible" />
+
             <com.android.systemui.nx.NxLogoView
                 android:id="@+id/nx_stub_middle"
                 android:layout_width="wrap_content"
@@ -61,19 +54,12 @@
                 android:layout_weight="0"
                 android:visibility="invisible"
                 android:src="@drawable/ic_eos_nx" />
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:visibility="invisible"
-                />
-             <View
-                android:id="@+id/nx_stub_right"
-                android:layout_width="80dp"
-                android:layout_height="match_parent"
-                android:layout_weight="0"
-                android:visibility="invisible"
-                />
+                android:visibility="invisible" />
         </LinearLayout>
 
         <!-- NX lights out layout -->
@@ -134,40 +120,28 @@
             android:clipChildren="false"
             android:clipToPadding="false"
             android:orientation="vertical" >
-            <View
-                android:id="@+id/nx_stub_left"
-                android:layout_width="match_parent"
-                android:layout_height="80dp"
-                android:layout_weight="0"
-                android:visibility="invisible"
-                />
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:visibility="invisible"
-                />
+                android:visibility="invisible" />
+
             <com.android.systemui.nx.NxLogoView
                 android:id="@+id/nx_stub_middle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="0"
                 android:layout_gravity="center"
+                android:layout_weight="0"
                 android:visibility="invisible"
                 android:src="@drawable/ic_eos_nx" />
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:visibility="invisible"
-                />
-             <View
-                android:id="@+id/nx_stub_right"
-                android:layout_width="match_parent"
-                android:layout_height="80dp"
-                android:layout_weight="0"
-                android:visibility="invisible"
-                />
+                android:visibility="invisible" />
+
         </LinearLayout>
 
         <!-- NX lights out layout -->

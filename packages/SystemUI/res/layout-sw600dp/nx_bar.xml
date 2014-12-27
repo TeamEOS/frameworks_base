@@ -39,38 +39,25 @@
             android:clipToPadding="false"
             android:orientation="horizontal" >
 
-            <!-- navigation controls -->
-            <View
-                android:id="@+id/nx_stub_left"
-                android:layout_width="48dp"
-                android:layout_height="match_parent"
-                android:layout_weight="0"
-                android:visibility="invisible"
-                />
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
-                />
+                android:layout_weight="1"/>
+
+            <!-- navigation controls -->
             <com.android.systemui.nx.NxLogoView
                 android:id="@+id/nx_stub_middle"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:layout_weight="0"
                 android:visibility="invisible"
+                android:layout_weight="0"
                 android:src="@drawable/ic_eos_nx" />
+
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
-                />
-             <View
-                android:id="@+id/nx_stub_right"
-                android:layout_width="48dp"
-                android:layout_height="match_parent"
-                android:layout_weight="0"
-                android:visibility="invisible"
-                />
+                android:layout_weight="1"/>
+
         </LinearLayout>
 
         <!-- lights out layout to match exactly -->
@@ -126,38 +113,25 @@
             android:animateLayoutChanges="true"
             >
 
-            <!-- navigation controls -->
-            <View
-                android:id="@+id/nx_stub_left"
-                android:layout_width="48dp"
-                android:layout_height="match_parent"
-                android:layout_weight="0"
-                android:visibility="invisible"
-                />
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
-                />
+                android:layout_weight="1"/>
+
+            <!-- navigation controls -->
             <com.android.systemui.nx.NxLogoView
                 android:id="@+id/nx_stub_middle"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:layout_weight="0"
                 android:visibility="invisible"
+                android:layout_weight="0"
                 android:src="@drawable/ic_eos_nx" />
+
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
-                />
-            <View
-                android:id="@+id/nx_stub_right"
-                android:layout_width="48dp"
-                android:layout_height="match_parent"
-                android:layout_weight="0"
-                android:visibility="invisible"
-                />
+                android:layout_weight="1"/>
+
         </LinearLayout>
 
         <!-- lights out layout to match exactly -->

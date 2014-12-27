@@ -32,6 +32,7 @@ public class NxMediaController implements NxRenderer {
     private NxPulse mPulse;
     private NxSurface mSurface;
     private int mCurrentPlayState;
+    private boolean mKeyguardShowing;
     private AudioManager mAudioManager;
     private RemoteController mRemoteController;
     private RemoteController.OnClientUpdateListener mRCClientUpdateListener =
@@ -119,6 +120,10 @@ public class NxMediaController implements NxRenderer {
         mSurface.updateBar();
     }
 
+    public void setKeyguardShowing(boolean showing) {
+        mKeyguardShowing = showing;
+    }
+
     /*
      * we don't need to pass new size as args here
      * we'll capture fresh dimens on callback
@@ -150,7 +155,8 @@ public class NxMediaController implements NxRenderer {
     }
 
     public boolean shouldDrawPulse() {
-        return mPulseEnabled && (mCurrentPlayState == RemoteControlClient.PLAYSTATE_PLAYING);
+        return mPulseEnabled && (mCurrentPlayState == RemoteControlClient.PLAYSTATE_PLAYING)
+                && !mKeyguardShowing;
     }
 
     @Override

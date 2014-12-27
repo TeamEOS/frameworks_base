@@ -64,6 +64,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     private boolean mIsAnimating;
     private boolean mLogoEnabled;
     private boolean mLogoAnimates;
+    private boolean mKeyguardShowing;
     private NxMediaController mMC;
     private PowerManager mPm;
 
@@ -167,9 +168,11 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     public NxBarView(Context context, AttributeSet attrs) {
         super(context, attrs);
         mBarTransitions = new NxBarTransitions(this);
+        mDelegateHelper.setForceDisabled(true);
         mActionHandler = new NxActionHandler(context, this);
         mGestureHandler = new NxGestureHandler(context, mActionHandler, this);
         mGestureDetector = new NxGestureDetector(context, mGestureHandler);
+        this.setOnTouchListener(mNxTouchListener);
         mObserver = new NxBarObserver(new Handler());
         mObserver.register();
         mLogoEnabled = Settings.System.getInt(mContext.getContentResolver(),
@@ -198,17 +201,18 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         return mCurrentView.findViewById(R.id.nav_buttons);
     }
 
-    // stub views used to initialize DelegateHelper
-    private View getLeftStub() {
-        return mCurrentView.findViewById(R.id.nx_stub_left);
-    }
-
-    private View getRightStub() {
-        return mCurrentView.findViewById(R.id.nx_stub_right);
-    }
-
     public NxLogoView getNxLogo() {
         return (NxLogoView) mCurrentView.findViewById(R.id.nx_stub_middle);
+    }
+
+    @Override
+    public void setKeyguardShowing(boolean showing) {
+        if (mKeyguardShowing != showing) {
+            mKeyguardShowing = showing;
+            mMC.setKeyguardShowing(showing);
+            setDisabledFlags(mDisabledFlags, true /* force */);
+            invalidate();
+        }
     }
 
     private void animateLogo(boolean isDown) {
@@ -251,13 +255,6 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         mBarTransitions.init(mVertical);
         mGestureHandler.setIsVertical(mVertical);
         setDisabledFlags(mDisabledFlags, true /* force */);
-    }
-
-    @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        super.onLayout(changed, l, t, r, b);
-        setOnTouchListener(mNxTouchListener);
-        mDelegateHelper.setInitialTouchRegion(getNxLogo(), getLeftStub(), getRightStub());
     }
 
     @Override
