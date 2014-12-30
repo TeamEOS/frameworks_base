@@ -160,7 +160,7 @@ static void nativeSendPowerHint(JNIEnv *env, jclass clazz, jint hintId, jint dat
 static void nativeCpuBoost(JNIEnv *env, jobject clazz, intptr_t duration) {
     // Tell the Power HAL to boost the CPU
     if (gPowerModule && gPowerModule->powerHint) {
-        gPowerModule->powerHint(gPowerModule, POWER_HINT_CPU_BOOST, (void *) duration);
+        gPowerModule->powerHint(gPowerModule, POWER_HINT_CPU_BOOST, (void *)(static_cast<int64_t>(duration)));
     }
 }
 

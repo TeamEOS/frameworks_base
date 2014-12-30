@@ -386,7 +386,7 @@ public class MSimNetworkControllerImpl extends NetworkControllerImpl {
                     mPlmn[phoneId], phoneId);
             updateCarrierText(phoneId);
             refreshViews(phoneId);
-        } else if (action.equals(ConnectivityManager.CONNECTIVITY_ACTION) ||
+        } else if (action.equals(ConnectivityManager.CONNECTIVITY_ACTION_IMMEDIATE) ||
                  action.equals(ConnectivityManager.INET_CONDITION_ACTION)) {
             updateConnectivity(intent);
             refreshViews(mDefaultPhoneId);
@@ -426,12 +426,26 @@ public class MSimNetworkControllerImpl extends NetworkControllerImpl {
                 registerPhoneStateListener(mContext);
                 mDefaultPhoneId = getDefaultPhoneId();
                 for (int i=0 ; i < mPhoneCount ; i++) {
+                    updateIconSet(i);
                     updateCarrierText(i);
                     updateTelephonySignalStrength(i);
                     updateDataNetType(i);
                     updateDataIcon(i);
                     refreshViews(i);
                 }
+        } else if (action.equals(TelephonyIntents.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED)) {
+            // Update data in QS
+            long subId = intent.getLongExtra(PhoneConstants.SUBSCRIPTION_KEY, -1);
+
+            if (subId == -1) {
+                Slog.e(TAG, "No subId in ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED");
+                return;
+            }
+
+            int phoneId = getPhoneId(subId);
+            updateTelephonySignalStrength(phoneId);
+            updateDataNetType(phoneId);
+            refreshViews(phoneId);
         }
     }
 
@@ -775,7 +789,7 @@ public class MSimNetworkControllerImpl extends NetworkControllerImpl {
 
     private boolean isRoaming(int phoneId) {
         return (isCdma(phoneId) ? isCdmaEri(phoneId)
-                : mPhone.isNetworkRoaming(phoneId));
+                : mMSimServiceState[phoneId] != null && mMSimServiceState[phoneId].getRoaming());
     }
 
     private final void updateDataNetType(int phoneId) {
@@ -800,9 +814,9 @@ public class MSimNetworkControllerImpl extends NetworkControllerImpl {
                 mMSimDataTypeIconId[phoneId] =
                         TelephonyIcons.getDataTypeIcon(phoneId);
                 mMSimContentDescriptionDataType[phoneId] =
-                        TelephonyIcons.getDataTypeDesc();
+                        TelephonyIcons.getDataTypeDesc(phoneId);
                 mQSDataTypeIconId =
-                        TelephonyIcons.getQSDataTypeIcon();
+                        TelephonyIcons.getQSDataTypeIcon(phoneId);
             }
         }
 
@@ -815,7 +829,7 @@ public class MSimNetworkControllerImpl extends NetworkControllerImpl {
                     mQSDataTypeIconId = R.drawable.stat_sys_data_fully_connected_roam;
                 }
             }
-        } else if (mPhone.isNetworkRoaming(phoneId)) {
+        } else if (isRoaming(phoneId)) {
             mMSimDataTypeIconId[phoneId] = R.drawable.stat_sys_data_fully_connected_roam;
             setQSDataTypeIcon = true;
             if (phoneId == dataSub) {
@@ -870,8 +884,9 @@ public class MSimNetworkControllerImpl extends NetworkControllerImpl {
             + " hspapDistinguishable=" + "false"
             + " showAtLeastThreeGees=" + String.valueOf(mShowAtLeastThreeGees));
 
+        int inetCondition = inetConditionForNetwork(ConnectivityManager.TYPE_MOBILE);
         TelephonyIcons.updateDataType(phoneId, chosenNetworkType, mShowAtLeastThreeGees,
-            mShow4GforLTE, mHspaDataDistinguishable, mInetCondition);
+            mShow4GforLTE, mHspaDataDistinguishable, inetCondition);
     }
 
     private final void updateDataIcon(int phoneId) {
@@ -1015,6 +1030,7 @@ public class MSimNetworkControllerImpl extends NetworkControllerImpl {
         // We want to update all the icons, all at once, for any condition change
         updateWimaxIcons();
         for (int sub = 0; sub < TelephonyManager.getDefault().getPhoneCount(); sub++) {
+            updateIconSet(sub);
             updateDataNetType(sub);
             updateDataIcon(sub);
             updateTelephonySignalStrength(sub);
@@ -1202,7 +1218,7 @@ public class MSimNetworkControllerImpl extends NetworkControllerImpl {
                         mQSDataTypeIconId = R.drawable.stat_sys_data_fully_connected_roam;
                     }
                 }
-            } else if (mPhone.isNetworkRoaming(phoneId)) {
+            } else if (isRoaming(phoneId)) {
                 mMSimDataTypeIconId[phoneId] = R.drawable.stat_sys_data_fully_connected_roam;
                 if (phoneId == dataSub) {
                     mQSDataTypeIconId = R.drawable.stat_sys_data_fully_connected_roam;

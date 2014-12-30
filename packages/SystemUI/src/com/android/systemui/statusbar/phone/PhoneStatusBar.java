@@ -487,6 +487,12 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             mAutomaticBrightness = mode != Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL;
             mBrightnessControl = Settings.System.getInt(
                     resolver, Settings.System.STATUS_BAR_BRIGHTNESS_CONTROL, 0) == 1;
+
+            if (mNavigationBarView != null) {
+                boolean navLeftInLandscape = Settings.System.getInt(resolver,
+                        Settings.System.NAVBAR_LEFT_IN_LANDSCAPE, 0) == 1;
+                mNavigationBarView.setLeftInLandscape(navLeftInLandscape);
+            }
 /*
             boolean showInsidePercent = Settings.System.getIntForUser(resolver,
                     Settings.System.STATUS_BAR_SHOW_BATTERY_PERCENT, 0, mCurrentUserId) == 1;
@@ -1917,6 +1923,13 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                     - mCarrierLabelHeight - mStatusBarHeaderHeight)
             && mStackScroller.getVisibility() == View.VISIBLE
             && mState != StatusBarState.KEYGUARD;
+
+            if (mState == StatusBarState.KEYGUARD) {
+                // The subs are already displayed on the top bar
+                mSubsLabel.setVisibility(View.INVISIBLE);
+            } else {
+                mSubsLabel.setVisibility(View.VISIBLE);
+            }
         } else {
             makeVisible =
             !(emergencyCallsShownElsewhere && mNetworkController.isEmergencyOnly())
@@ -2763,7 +2776,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                     AsyncTask.execute(new Runnable() {
                         @Override
                         public void run() {
-                            Settings.System.putFloatForUser(mContext.getContentResolver(),
+                            Settings.System.putIntForUser(mContext.getContentResolver(),
                                     Settings.System.SCREEN_BRIGHTNESS, val,
                                     UserHandle.USER_CURRENT);
                         }
