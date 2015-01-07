@@ -48,6 +48,7 @@ import android.widget.LinearLayout;
 import com.android.systemui.R;
 import com.android.systemui.statusbar.BaseNavigationBar;
 import com.android.systemui.statusbar.BaseStatusBar;
+import com.android.systemui.statusbar.policy.DeadZone;
 import com.android.systemui.statusbar.policy.KeyButtonView;
 
 import java.io.FileDescriptor;
@@ -64,6 +65,7 @@ public class NavigationBarView extends BaseNavigationBar {
     private BackButtonDrawable mBackIcon, mBackLandIcon;
     private Drawable mRecentIcon;
     private Drawable mRecentLandIcon;
+    private DeadZone mDeadZone;
 
     private NavigationBarViewTaskSwitchHelper mTaskSwitchHelper;
     private final NavigationBarTransitions mBarTransitions;
@@ -74,6 +76,7 @@ public class NavigationBarView extends BaseNavigationBar {
     private boolean mIsLayoutRtl;
     private boolean mForceShowMenuFromUser;
     private boolean mDelegateIntercepted;
+    private boolean mLeftInLandscape;
     private SoftkeyActionHandler mSoftkeyHandler;
     private NavbarObserver mObserver;
 
@@ -232,6 +235,12 @@ public class NavigationBarView extends BaseNavigationBar {
     }
 
     @Override
+    public void setLeftInLandscape(boolean leftInLandscape) {
+        mLeftInLandscape = leftInLandscape;
+        mDeadZone.setStartFromRight(leftInLandscape);
+    }
+
+    @Override
     public boolean isRecentsButtonPressed() {
         return getRecentsButton().isPressed();
     }
@@ -378,6 +387,9 @@ public class NavigationBarView extends BaseNavigationBar {
         super.reorient();
 
         getImeSwitchButton().setOnClickListener(mImeSwitcherClickListener);
+
+        mDeadZone = (DeadZone) mCurrentView.findViewById(R.id.deadzone);
+        mDeadZone.setStartFromRight(mLeftInLandscape);
 
         // force the low profile & disabled states into compliance
         mBarTransitions.init(mVertical);

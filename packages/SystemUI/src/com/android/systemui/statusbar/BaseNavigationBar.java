@@ -29,7 +29,6 @@ import java.io.PrintWriter;
 import com.android.systemui.R;
 import com.android.systemui.statusbar.phone.BarTransitions;
 import com.android.systemui.statusbar.phone.PhoneStatusBar;
-import com.android.systemui.statusbar.policy.DeadZone;
 import com.android.systemui.statusbar.policy.KeyButtonView;
 
 import android.app.StatusBarManager;
@@ -72,7 +71,6 @@ public abstract class BaseNavigationBar extends LinearLayout {
     protected boolean mVertical;
     protected boolean mScreenOn;
     protected OnVerticalChangedListener mOnVerticalChangedListener;
-    protected DeadZone mDeadZone;
 
     // listeners from PhoneStatusBar
     protected View.OnClickListener mRecentsClickListener;
@@ -121,6 +119,7 @@ public abstract class BaseNavigationBar extends LinearLayout {
     public void setNavigationIconHints(int hints, boolean force) {}
     public void onHandlePackageChanged(){}
     public void setKeyguardShowing(boolean showing){}
+    public void setLeftInLandscape(boolean leftInLandscape) {}
 
     /*
      * compatibility shim for handleLongPressBackRecents accessibility method
@@ -200,8 +199,6 @@ public abstract class BaseNavigationBar extends LinearLayout {
         }
         mCurrentView = mRotatedViews[rot];
         mCurrentView.setVisibility(View.VISIBLE);
-
-        mDeadZone = (DeadZone) mCurrentView.findViewById(R.id.deadzone);
 
         if (DEBUG) {
             Log.d(TAG, "reorient(): rot=" + mDisplay.getRotation());
