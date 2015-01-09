@@ -227,6 +227,8 @@
     <!-- Power menu -->
     <java-symbol type="drawable" name="ic_lock_screenshot" />
     <java-symbol type="string" name="global_action_screenshot" />
+    <java-symbol type="string" name="powermenu_screenrecord" />
+    <java-symbol type="drawable" name="ic_lock_power_screenrecord" />
     <java-symbol type="drawable" name="ic_lock_settings" />
     <java-symbol type="drawable" name="ic_lock_user" />
     <java-symbol type="string" name="global_action_current_user" />

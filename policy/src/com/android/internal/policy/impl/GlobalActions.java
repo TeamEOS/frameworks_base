@@ -17,6 +17,7 @@
 
 package com.android.internal.policy.impl;
 
+import com.android.internal.actions.ActionHandler;
 import com.android.internal.app.AlertController;
 import com.android.internal.app.AlertController.AlertParams;
 import com.android.internal.telephony.TelephonyIntents;
@@ -317,6 +318,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                 mItems.add(new RebootAction());
             } else if (GLOBAL_ACTION_KEY_SCREENSHOT.equals(actionKey)) {
                 mItems.add(getScreenshotAction());
+            } else if (GLOBAL_ACTION_KEY_SCREENRECORD.equals(actionKey)) {
+                mItems.add(getScreenrecordAction());
             } else if (GLOBAL_ACTION_KEY_AIRPLANE.equals(actionKey)) {
                 mItems.add(mAirplaneModeOn);
             } else if (GLOBAL_ACTION_KEY_BUGREPORT.equals(actionKey)) {
@@ -455,6 +458,25 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
             public boolean showBeforeProvisioning() {
                 return true;
+            }
+        };
+    }
+
+    private Action getScreenrecordAction() {
+        return new SinglePressAction(com.android.internal.R.drawable.ic_lock_power_screenrecord,
+                R.string.powermenu_screenrecord) {
+
+            public void onPress() {
+                final Context ctx = mContext;
+                ActionHandler.performTask(ctx, ActionHandler.SYSTEMUI_TASK_SCREENRECORD);
+            }
+
+            public boolean showDuringKeyguard() {
+                return true;
+            }
+
+            public boolean showBeforeProvisioning() {
+                return false;
             }
         };
     }
