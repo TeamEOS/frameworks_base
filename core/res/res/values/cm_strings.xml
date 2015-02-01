@@ -53,7 +53,7 @@
     <!-- Title of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
     <string name="permlab_modifyProtectedSmsList">modify protected SMS list</string>
     <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
-    <string name="permdesc_modifyProtectedSmsList">Allows the app to modify the protected sms address list.</string>
+    <string name="permdesc_modifyProtectedSmsList">Allows the app to modify the protected SMS address list.</string>
 
     <!-- Title of a category of application permissions, listed so the user can choose whether they want to allow the application to do this. -->
     <string name="permgrouplab_security">Security</string>
@@ -229,8 +229,7 @@
     <string name="China_Telecom">China Telecom</string>
 
     <!-- Text of the checkbox for the permission confirmation dialog to remember the user's choice. [CHAR LIMIT=40] -->
-    <string name="permission_remember_choice">Remember</string>
-    <string name="permission">Permission</string>
+    <string name="permission_remember_choice">Remember my choice</string>
 
     <!-- Default wi-fi hotspot ssid -->
     <string name="def_wifi_wifihotspot_ssid" translatable="false"></string>
@@ -261,7 +260,5 @@
 
     <string name="permlab_interceptSmsSent">intercept outgoing SMS</string>
     <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
-    <string name="permdesc_interceptSmsSent">Allows the app to
-        intercept an outgoing SMS.
-        Malicious apps may use this to prevent outgoing SMS messages.</string>
+    <string name="permdesc_interceptSmsSent">Allows the app to intercept an outgoing SMS. Malicious apps may use this to prevent outgoing SMS messages.</string>
 </resources>
