@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 The TeamEos Project
+ * Copyright (C) 2015 The TeamEos Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Launches actions assigned to widgets. Creates bundles of state based
+ * on the type of action passed.
+ *
  */
 
 package org.teameos.utils;
@@ -25,7 +29,6 @@ import android.app.ActivityManager.RunningAppProcessInfo;
 import android.bluetooth.BluetoothAdapter;
 import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
-import android.content.ContentUris;
 import android.content.Context;
 import android.content.ComponentName;
 import android.content.ServiceConnection;
@@ -33,15 +36,9 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
-import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.hardware.input.InputManager;
-import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -53,50 +50,41 @@ import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.os.IBinder;
 import android.os.UserHandle;
-import android.provider.ContactsContract;
 import android.provider.Settings;
-import android.text.TextUtils;
 import android.util.Log;
-import android.util.Pair;
 import android.util.Slog;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import com.android.internal.statusbar.IStatusBarService;
 
 public abstract class ActionHandler {
     protected ArrayList<String> mActions;
     protected Context mContext;
-    static final String TAG = "ActionHandler";
+    protected static String TAG = ActionHandler.class.getSimpleName();
 
-    public static final String SYSTEM_PREFIX = "task";
-    public static final String APP_PREFIX = "app:";
-    public static final String CALL_PREFIX = "call:";
-    public static final String TEXT_PREFIX = "text:";
-    public static final String EMAIL_PREFIX = "email:";
-    private static final String ICON_PACKAGE = "com.android.systemui";
+    private static final String SYSTEM_PREFIX = "task";
+    private static final String SYSTEMUI = "com.android.systemui";
 
     public static final String SYSTEMUI_TASK_NO_ACTION = "task_no_action";
     public static final String SYSTEMUI_TASK_SETTINGS_PANEL = "task_settings_panel";
     public static final String SYSTEMUI_TASK_NOTIFICATION_PANEL = "task_notification_panel";
     public static final String SYSTEMUI_TASK_SCREENSHOT = "task_screenshot";
-    //public static final String SYSTEMUI_TASK_SCREENRECORD = "task_screenrecord";
-    //public static final String SYSTEMUI_TASK_AUDIORECORD = "task_audiorecord";
+    // public static final String SYSTEMUI_TASK_SCREENRECORD =
+    // "task_screenrecord";
+    // public static final String SYSTEMUI_TASK_AUDIORECORD =
+    // "task_audiorecord";
     public static final String SYSTEMUI_TASK_SCREENOFF = "task_screenoff";
     public static final String SYSTEMUI_TASK_KILL_PROCESS = "task_killcurrent";
     public static final String SYSTEMUI_TASK_ASSIST = "task_assist";
-    //public static final String SYSTEMUI_TASK_POWER_MENU = "task_powermenu";
+    // public static final String SYSTEMUI_TASK_POWER_MENU = "task_powermenu";
     public static final String SYSTEMUI_TASK_TORCH = "task_torch";
     public static final String SYSTEMUI_TASK_CAMERA = "task_camera";
     public static final String SYSTEMUI_TASK_BT = "task_bt";
@@ -112,33 +100,76 @@ public abstract class ActionHandler {
 
     public static final String ACTION_TOGGLE_FLASHLIGHT = "toggle_flashlight";
 
-    public static final Map<String, Pair<String, String>> Actions;
-    private static final Map<String, Pair<String, String>> ActionMap = new HashMap<String, Pair<String, String>>();
+    private static enum SystemAction {
+        NoAction(SYSTEMUI_TASK_NO_ACTION, "No Action", SYSTEMUI, "ic_sysbar_null"),
+        SettingsPanel(SYSTEMUI_TASK_SETTINGS_PANEL, "Settings Panel", SYSTEMUI, "ic_notify_quicksettings_normal"),
+        NotificationPanel(SYSTEMUI_TASK_NOTIFICATION_PANEL, "Notification Panel", SYSTEMUI, "ic_sysbar_notifications"),
+        Screenshot(SYSTEMUI_TASK_SCREENSHOT, "Take screenshot", SYSTEMUI, "ic_sysbar_screenshot"),
+        ScreenOff(SYSTEMUI_TASK_SCREENOFF, "Screen off", SYSTEMUI, "ic_qs_sleep"),
+        KillApp(SYSTEMUI_TASK_KILL_PROCESS, "Close app", SYSTEMUI, "ic_sysbar_killtask"),
+        Assistant(SYSTEMUI_TASK_ASSIST, "Google Now", SYSTEMUI, "ic_sysbar_assist"),
+        Flashlight(SYSTEMUI_TASK_TORCH, "Flashlight", SYSTEMUI, "ic_sysbar_torch"),
+        Bluetooth(SYSTEMUI_TASK_BT, "Bluetooth toggle", SYSTEMUI, "ic_sysbar_bt"),
+        WiFi(SYSTEMUI_TASK_WIFI, "WiFi toggle", SYSTEMUI, "ic_sysbar_wifi"),
+        Hotspot(SYSTEMUI_TASK_WIFIAP, "Hotspot toggle", SYSTEMUI, "ic_qs_wifi_ap_on"),
+        LastApp(SYSTEMUI_TASK_LAST_APP, "Last app", SYSTEMUI, "ic_sysbar_lastapp"),
+        Overview(SYSTEMUI_TASK_RECENTS, "Overview", SYSTEMUI, "ic_sysbar_recent"),
+        Menu(SYSTEMUI_TASK_MENU, "Menu", SYSTEMUI, "ic_sysbar_menu_big"),
+        Back(SYSTEMUI_TASK_BACK, "Back", SYSTEMUI, "ic_sysbar_back"),
+        Home(SYSTEMUI_TASK_HOME, "Home", SYSTEMUI, "ic_sysbar_home");
 
-    static {
-        Actions = Collections.unmodifiableMap(ActionMap);
-        ActionMap.put(SYSTEMUI_TASK_NO_ACTION, new Pair<String, String>("ic_sysbar_null", "No action"));
-        ActionMap.put(SYSTEMUI_TASK_SETTINGS_PANEL, new Pair<String, String>("ic_notify_quicksettings_normal", "Settings panel"));
-        ActionMap.put(SYSTEMUI_TASK_NOTIFICATION_PANEL, new Pair<String, String>("ic_sysbar_notifications", "Notification panel"));
-        //ActionMap.put(SYSTEMUI_TASK_AUDIORECORD, new Pair<String, String>("ic_sysbar_voiceassist", "Record audio"));
-        ActionMap.put(SYSTEMUI_TASK_SCREENSHOT, new Pair<String, String>("ic_sysbar_screenshot", "Take screenshot"));
-        //ActionMap.put(SYSTEMUI_TASK_SCREENRECORD, new Pair<String, String>("ic_sysbar_screen_record", "Record screen"));
-        ActionMap.put(SYSTEMUI_TASK_SCREENOFF, new Pair<String, String>("ic_qs_sleep", "Screen off"));
-        ActionMap.put(SYSTEMUI_TASK_KILL_PROCESS, new Pair<String, String>("ic_sysbar_killtask", "Kill current app"));
-        ActionMap.put(SYSTEMUI_TASK_ASSIST, new Pair<String, String>("ic_sysbar_assist", "Search assist"));
-        //ActionMap.put(SYSTEMUI_TASK_POWER_MENU, new Pair<String, String>("ic_sysbar_power", "Power menu"));
-        ActionMap.put(SYSTEMUI_TASK_TORCH, new Pair<String, String>("ic_sysbar_torch", "Torch"));
-        ActionMap.put(SYSTEMUI_TASK_CAMERA, new Pair<String, String>("ic_sysbar_camera", "Camera"));
-        ActionMap.put(SYSTEMUI_TASK_BT, new Pair<String, String>("ic_sysbar_bt", "Toggle bluetooth"));
-        ActionMap.put(SYSTEMUI_TASK_WIFI, new Pair<String, String>("ic_sysbar_wifi", "Toggle Wifi"));
-        ActionMap.put(SYSTEMUI_TASK_WIFIAP, new Pair<String, String>("ic_qs_wifi_ap_on", "Toggle Wifi AP"));
-        ActionMap.put(SYSTEMUI_TASK_RECENTS, new Pair<String, String>("ic_sysbar_recent", "Recent apps"));
-        ActionMap.put(SYSTEMUI_TASK_LAST_APP, new Pair<String, String>("ic_sysbar_lastapp", "Last app"));
-        ActionMap.put(SYSTEMUI_TASK_VOICE_SEARCH, new Pair<String, String>("ic_sysbar_voiceassist", "Voice search"));
-        ActionMap.put(SYSTEMUI_TASK_APP_SEARCH, new Pair<String, String>("ic_sysbar_search", "In-app search"));
-        ActionMap.put(SYSTEMUI_TASK_MENU, new Pair<String, String>("ic_sysbar_menu_big", "Menu"));
-        ActionMap.put(SYSTEMUI_TASK_BACK, new Pair<String, String>("ic_sysbar_back", "Back"));
-        ActionMap.put(SYSTEMUI_TASK_HOME, new Pair<String, String>("ic_sysbar_home", "Home"));
+        private String mAction;
+        private String mLabel;
+        private String mIconPackage;
+        private String mIconName;
+
+        private SystemAction(String action, String label, String iconPackage, String iconName) {
+            mAction = action;
+            mLabel = label;
+            mIconPackage = iconPackage;
+            mIconName = iconName;
+        }
+
+        private ActionBundle create(Context ctx) {
+            ActionBundle a = new ActionBundle();
+            a.action = mAction;
+            a.label = mLabel;
+            a.icon = getDrawableFromResources(ctx);
+            return a;
+        }
+
+        private Drawable getDrawableFromResources(Context context) {
+            try {
+                Resources res = context.getPackageManager()
+                        .getResourcesForApplication(mIconPackage);
+                Drawable icon = res.getDrawable(res.getIdentifier(mIconName, "drawable",
+                        mIconPackage));
+                return icon;
+            } catch (Exception e) {
+                return context.getResources().getDrawable(
+                        com.android.internal.R.drawable.sym_def_app_icon);
+            }
+        }
+    }
+
+    private static SystemAction[] systemActions = new SystemAction[] {
+            SystemAction.NoAction, SystemAction.SettingsPanel,
+            SystemAction.NotificationPanel, SystemAction.Screenshot,
+            SystemAction.ScreenOff, SystemAction.KillApp,
+            SystemAction.Assistant, SystemAction.Flashlight,
+            SystemAction.Bluetooth, SystemAction.WiFi,
+            SystemAction.Hotspot, SystemAction.LastApp,
+            SystemAction.Overview, SystemAction.Menu,
+            SystemAction.Back, SystemAction.Home
+    };
+
+    public static ArrayList<ActionBundle> getSystemActions(Context context) {
+        ArrayList<ActionBundle> bundle = new ArrayList<ActionBundle>();
+        for (int i = 0; i < systemActions.length; i++) {
+            bundle.add(systemActions[i].create(context));
+        }
+        Collections.sort(bundle);
+        return bundle;
     }
 
     public static class ActionBundle implements Comparable<ActionBundle> {
@@ -146,11 +177,12 @@ public abstract class ActionHandler {
         public String label = "";
         public Drawable icon = null;
 
-        public ActionBundle() {}
+        public ActionBundle() {
+        }
 
         public ActionBundle(Context context, String _action) {
             action = _action;
-            label = getLabelForAction(context, _action);
+            label = getFriendlyNameForUri(context.getPackageManager(), _action);
             icon = getDrawableForAction(context, _action);
         }
 
@@ -159,248 +191,100 @@ public abstract class ActionHandler {
             int result = label.toString().compareToIgnoreCase(another.label.toString());
             return result;
         }
-    }
 
-    private static String parseContactActionForUri(String action) {
-        String[] parts = action.split("\\|");
-        return parts[1];
-    }
-
-    private static String parseContactActionForIntent(String action) {
-        String[] parts = action.split("\\|");
-        return parts[0];
-    }
-
-    private static boolean isContactAction(String action) {
-        return action.startsWith(CALL_PREFIX)
-                || action.startsWith(TEXT_PREFIX)
-                || action.startsWith(EMAIL_PREFIX);
-    }
-
-    private static String getPrefixAsLabel(String action) {
-        String label = "";
-        if (action.startsWith(CALL_PREFIX)) {
-            return "Call";
-        } else if (action.startsWith(TEXT_PREFIX)) {
-            return "Text";
-        } else if (action.startsWith(EMAIL_PREFIX)) {
-            return "Email";
-        } else {
-            return label;
-        }
-    }
-
-    public static ArrayList<ActionBundle> getAllActions(Context context) {
-        ArrayList<ActionBundle> bundle = new ArrayList<ActionBundle>();
-        Set<String> keySet = ActionMap.keySet();
-        for (String key : keySet) {
-            ActionBundle a = new ActionBundle(context, key);
-            bundle.add(a);
-        }
-        Collections.sort(bundle);
-        return bundle;
-    }
-
-    public static Drawable getDrawableForAction(Context context, String action) {
-        Drawable d = null;
-        if (action.startsWith(APP_PREFIX)) {
-            d = getIconFromComponent(context.getPackageManager(), action);
-        } else if (action.startsWith(SYSTEM_PREFIX)) {
-            if (ActionMap.containsKey(action)) {
-                Pair<String, String> p = ActionMap.get(action);
-                d = getIconFromResources(context, ICON_PACKAGE, p.first);
+        public static Intent getIntent(String uri) {
+            if (uri == null || uri.startsWith(SYSTEM_PREFIX)) {
+                return null;
             }
-        } else if (isContactAction(action)) {
-                Uri contact = Uri.parse(parseContactActionForUri(action));
-                d = getIconFromContacts(context, contact);
-        }
-        return d;
-    }
 
-    public static String getLabelForAction(Context context, String action) {
-        String label = "";
-        if (action.startsWith(APP_PREFIX)) {
-            label = getLabelFromComponent(context.getPackageManager(), action);
-        } else if (action.startsWith(SYSTEM_PREFIX)) {
-            if (ActionMap.containsKey(action)) {
-                Pair<String, String> p = ActionMap.get(action);
-                label = p.second;
-            }
-        } else if (isContactAction(action)) {
-                Uri contact = Uri.parse(parseContactActionForUri(action));
-                StringBuilder b = new StringBuilder();
-                b.append(getPrefixAsLabel(action))
-                        .append(" ")
-                        .append(getContactName(context.getContentResolver(), contact));
-                label = b.toString();
-        }
-        return label;
-    }
-
-    public static String getLabelFromComponent(PackageManager pm, String component) {
-        if (component.startsWith(APP_PREFIX)) {
-            component = component.substring(APP_PREFIX.length());
-        }
-        ComponentName componentName = ComponentName.unflattenFromString(component);
-        ActivityInfo activityInfo = null;
-        boolean noError = false;
-        try {
-            activityInfo = pm.getActivityInfo(componentName, PackageManager.GET_RECEIVERS);
-            noError = true;
-        } catch (NameNotFoundException e) {
-            e.printStackTrace();
-            // i'm not sure if "noError = true" gets called before error is
-            // thrown
-            noError = false;
-        }
-        if (noError) {
-            return activityInfo.loadLabel(pm).toString();
-        }
-        return null;
-    }
-
-    public static Drawable getIconFromComponent(PackageManager pm, String component) {
-        if (component.startsWith(APP_PREFIX)) {
-            component = component.substring(APP_PREFIX.length());
-        }
-        ComponentName componentName = ComponentName.unflattenFromString(component);
-        ActivityInfo activityInfo = null;
-        boolean noError = false;
-        try {
-            activityInfo = pm.getActivityInfo(componentName, PackageManager.GET_RECEIVERS);
-            noError = true;
-        } catch (NameNotFoundException e) {
-            e.printStackTrace();
-            // i'm not sure if "noError = true" gets called before error is
-            // thrown
-            noError = false;
-        }
-        if (noError) {
-            return activityInfo.loadIcon(pm);
-        }
-        return null;
-    }
-
-    public static Drawable getIconFromResources(Context context, String pack, String icon_name) {
-        try {
-            Resources res = context.getPackageManager().getResourcesForApplication(pack);
-            Drawable icon = res.getDrawable(res.getIdentifier(icon_name, "drawable", pack));
-            return icon;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return context.getResources().getDrawable(com.android.internal.R.drawable.sym_def_app_icon);
-        }
-    }
-
-    public static Drawable getIconFromContacts(Context ctx, Uri contactUri) {
-        if (TextUtils.isEmpty(contactUri.toString())) return null;
-
-        ContentResolver cr = ctx.getContentResolver();
-        Cursor cursor = cr.query(ContactsContract.Contacts.getLookupUri(cr, contactUri), null,
-                null, null, null);
-        Drawable d = null;
-        if (cursor != null && cursor.moveToFirst()) {
+            Intent intent = null;
             try {
-                String contactId = cursor.getString(cursor
-                        .getColumnIndex(ContactsContract.Contacts._ID));
-                InputStream inputStream = ContactsContract.Contacts.openContactPhotoInputStream(cr,
-                        ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, new Long(
-                                contactId)));
-                if (inputStream != null) {
-                    Bitmap photo = null;
-                    photo = BitmapFactory.decodeStream(inputStream);
-                    d = new BitmapDrawable(ctx.getResources(), photo);
-                    inputStream.close();
-                } else {
-                    // no pic set, they get to be an Android
-                    d = ctx.getResources().getDrawable(com.android.internal.R.drawable.sym_def_app_icon);
-                }
-                cursor.close();
-
-            } catch (IOException e) {
+                intent = Intent.parseUri(uri, 0);
+            } catch (URISyntaxException e) {
                 e.printStackTrace();
             }
+            return intent;
         }
 
-        return d;
-    }
+        private static Drawable getDrawableForAction(Context context, String action) {
+            Drawable d = null;
 
-    public static String getContactName(ContentResolver cr, Uri contactUri) {
-        if (TextUtils.isEmpty(contactUri.toString())) return null;
-
-        String contactName = "";
-        Cursor cursor = cr.query(contactUri, null, null, null, null);
-        if (cursor != null && cursor.moveToFirst()) {
-            contactName = cursor.getString(cursor
-                    .getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-            cursor.close();
-        }
-        return contactName;
-    }
-
-    public static ArrayList<Pair<String, String>> getAllContactNumbers(Context ctx, Uri contactUri) {
-        ArrayList<Pair<String, String>> numbers = new ArrayList<Pair<String, String>>();
-        ContentResolver cr = ctx.getContentResolver();
-        Cursor cursor = cr.query(ContactsContract.Contacts.getLookupUri(cr, contactUri), null,
-                null, null, null);
-        if (cursor != null && cursor.moveToFirst()) {
-            String contactId = cursor.getString(cursor
-                    .getColumnIndex(ContactsContract.Contacts._ID));
-            if (Integer.parseInt(cursor.getString(cursor
-                    .getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER))) > 0) {
-                Cursor pCur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                        null,
-                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[] {
-                            contactId
-                        }, null);
-
-                while (pCur.moveToNext()) {
-                    String phone = pCur.getString(pCur
-                            .getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                    String type = pCur.getString(pCur
-                            .getColumnIndex(ContactsContract.CommonDataKinds.Phone.TYPE));
-                    String s = (String) ContactsContract.CommonDataKinds.Phone.getTypeLabel(
-                            ctx.getResources(), Integer.parseInt(type), "");
-                    Pair<String, String> pair = new Pair<String, String>(s, phone);
-                    numbers.add(pair);
-                }
-                pCur.close();
-                cursor.close();
-
+            // this null check is probably no-op but let's be safe anyways
+            if (action == null || context == null) {
+                return d;
             }
-        }
-        return numbers;
-    }
-
-    public static ArrayList<Pair<String, String>> getAllContactEmails(Context ctx, Uri contactUri) {
-        ArrayList<Pair<String, String>> emails = new ArrayList<Pair<String, String>>();
-        ContentResolver cr = ctx.getContentResolver();
-        Cursor cursor = cr.query(ContactsContract.Contacts.getLookupUri(cr, contactUri), null,
-                null, null, null);
-        if (cursor != null && cursor.moveToFirst()) {
-            String contactId = cursor.getString(cursor
-                    .getColumnIndex(ContactsContract.Contacts._ID));
-                Cursor emailCursor = cr.query(ContactsContract.CommonDataKinds.Email.CONTENT_URI,
-                        null,
-                        ContactsContract.CommonDataKinds.Email.CONTACT_ID + " = ?", new String[] {
-                            contactId
-                        }, null);
-
-                while (emailCursor.moveToNext()) {
-                    String email = emailCursor.getString(emailCursor
-                            .getColumnIndex(ContactsContract.CommonDataKinds.Email.DATA));
-                    int type = emailCursor.getInt(emailCursor
-                            .getColumnIndex(ContactsContract.CommonDataKinds.Email.TYPE));
-                    String s = (String) ContactsContract.CommonDataKinds.Email.getTypeLabel(
-                            ctx.getResources(), type, "");
-                    Pair<String, String> pair = new Pair<String, String>(s, email);
-                    emails.add(pair);
+            if (action.startsWith(SYSTEM_PREFIX)) {
+                for (int i = 0; i < systemActions.length; i++) {
+                    if (systemActions[i].mAction.equals(action)) {
+                        d = systemActions[i].getDrawableFromResources(context);
+                    }
                 }
-                emailCursor.close();
-                cursor.close();
-
+            } else {
+                d = getDrawableFromComponent(context.getPackageManager(), action);
+            }
+            return d;
         }
-        return emails;
+
+        private static Drawable getDrawableFromComponent(PackageManager pm, String activity) {
+            Drawable d = null;
+            try {
+                Intent intent = Intent.parseUri(activity, 0);
+                ActivityInfo info = intent.resolveActivityInfo(pm,
+                        PackageManager.GET_ACTIVITIES);
+                if (info != null) {
+                    d = info.loadIcon(pm);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return d;
+        }
+
+        private static String getFriendlyActivityName(PackageManager pm, Intent intent,
+                boolean labelOnly) {
+            ActivityInfo ai = intent.resolveActivityInfo(pm, PackageManager.GET_ACTIVITIES);
+            String friendlyName = null;
+            if (ai != null) {
+                friendlyName = ai.loadLabel(pm).toString();
+                if (friendlyName == null && !labelOnly) {
+                    friendlyName = ai.name;
+                }
+            }
+            return friendlyName != null || labelOnly ? friendlyName : intent.toUri(0);
+        }
+
+        private static String getFriendlyShortcutName(PackageManager pm, Intent intent) {
+            String activityName = getFriendlyActivityName(pm, intent, true);
+            String name = intent.getStringExtra(Intent.EXTRA_SHORTCUT_NAME);
+
+            if (activityName != null && name != null) {
+                return activityName + ": " + name;
+            }
+            return name != null ? name : intent.toUri(0);
+        }
+
+        private static String getFriendlyNameForUri(PackageManager pm, String uri) {
+            if (uri == null) {
+                return null;
+            }
+            if (uri.startsWith(SYSTEM_PREFIX)) {
+                for (int i = 0; i < systemActions.length; i++) {
+                    if (systemActions[i].mAction.equals(uri)) {
+                        return systemActions[i].mLabel;
+                    }
+                }
+            } else {
+                try {
+                    Intent intent = Intent.parseUri(uri, 0);
+                    if (Intent.ACTION_MAIN.equals(intent.getAction())) {
+                        return getFriendlyActivityName(pm, intent, false);
+                    }
+                    return getFriendlyShortcutName(pm, intent);
+                } catch (URISyntaxException e) {
+                }
+            }
+            return uri;
+        }
     }
 
     public ActionHandler(Context context, ArrayList<String> actions) {
@@ -465,22 +349,33 @@ public abstract class ActionHandler {
     }
 
     public void performTask(String action) {
-        if (action.equals(SYSTEMUI_TASK_NO_ACTION)) {
+        // null: throw it out
+        if (action == null) {
+            return;
+        }
+        // not a system action, should be intent
+        if(!action.startsWith(SYSTEM_PREFIX)) {
+            Intent intent = ActionBundle.getIntent(action);
+            if (intent == null) {
+                return;
+            }
+            launchActivity(intent);
+        } else if (action.equals(SYSTEMUI_TASK_NO_ACTION)) {
             return;
         } else if (action.equals(SYSTEMUI_TASK_KILL_PROCESS)) {
             killProcess();
         } else if (action.equals(SYSTEMUI_TASK_SCREENSHOT)) {
             takeScreenshot();
-//        } else if (action.equals(SYSTEMUI_TASK_SCREENRECORD)) {
-//            takeScreenrecord();
-//        } else if (action.equals(SYSTEMUI_TASK_AUDIORECORD)) {
-//            takeAudiorecord();
+            // } else if (action.equals(SYSTEMUI_TASK_SCREENRECORD)) {
+            // takeScreenrecord();
+            // } else if (action.equals(SYSTEMUI_TASK_AUDIORECORD)) {
+            // takeAudiorecord();
         } else if (action.equals(SYSTEMUI_TASK_SCREENOFF)) {
             screenOff();
         } else if (action.equals(SYSTEMUI_TASK_ASSIST)) {
             launchAssistAction();
-//        } else if (action.equals(SYSTEMUI_TASK_POWER_MENU)) {
-//            showPowerMenu();
+            // } else if (action.equals(SYSTEMUI_TASK_POWER_MENU)) {
+            // showPowerMenu();
         } else if (action.equals(SYSTEMUI_TASK_TORCH)) {
             toggleTorch();
         } else if (action.equals(SYSTEMUI_TASK_CAMERA)) {
@@ -509,14 +404,8 @@ public abstract class ActionHandler {
             triggerVirtualKeypress(KeyEvent.KEYCODE_BACK);
         } else if (action.equals(SYSTEMUI_TASK_HOME)) {
             triggerVirtualKeypress(KeyEvent.KEYCODE_HOME);
-        } else if (action.startsWith(APP_PREFIX)) {
-            launchActivity(action);
-        } else if (action.startsWith(CALL_PREFIX)) {
-            launchPhoneCall(action);
-        } else if (action.startsWith(TEXT_PREFIX)) {
-            launchTextMessage(action);
-        } else if (action.startsWith(EMAIL_PREFIX)) {
-            launchEmail(action);
+        } else {
+            postActionEventHandled(false);
         }
     }
 
@@ -532,78 +421,17 @@ public abstract class ActionHandler {
         }
     };
 
-    private void launchActivity(String action) {
-        String activity = action;
-        if (activity.startsWith(APP_PREFIX)) {
-            activity = activity.substring(APP_PREFIX.length());
-        }
-        ComponentName component = ComponentName.unflattenFromString(activity);
+    private void launchActivity(Intent intent) {
         try {
-            Intent intent = new Intent();
-            intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            intent.setComponent(component);
-            intent.addFlags(Intent.FLAG_ACTIVITY_TASK_ON_HOME
-                    | Intent.FLAG_ACTIVITY_NEW_TASK);
-            mContext.startActivity(intent);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            mContext.startActivityAsUser(intent, new UserHandle(UserHandle.USER_CURRENT));
             postActionEventHandled(true);
         } catch (Exception e) {
             Log.i(TAG, "Unable to launch activity " + e);
             postActionEventHandled(false);
-            handleAction(activity);
+            String uri = intent.toUri(0);
+            handleAction(uri);
         }
-    }
-
-    private void launchPhoneCall(String action) {
-        String call = parseContactActionForIntent(action);
-        if (call == null) return;
-        if (call.startsWith(CALL_PREFIX)) {
-            call = call.substring(APP_PREFIX.length());
-        } else {
-            return;
-        }
-        try {
-            Intent intent = new Intent(Intent.ACTION_CALL);
-            intent.setData(Uri.parse("tel:" + call));
-            intent.addFlags(Intent.FLAG_ACTIVITY_TASK_ON_HOME
-                    | Intent.FLAG_ACTIVITY_NEW_TASK);
-            mContext.startActivity(intent);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to invoke call", e);
-        }
-    }
-
-    private void launchTextMessage(String action) {
-        String sms = parseContactActionForIntent(action);
-        if (sms == null) return;
-        if (sms.startsWith(TEXT_PREFIX)) {
-            sms = sms.substring(TEXT_PREFIX.length());
-        } else {
-            return;
-        }
-        Intent smsIntent = new Intent(Intent.ACTION_VIEW);
-        smsIntent.setData(Uri.parse("smsto:"));
-        smsIntent.setType("vnd.android-dir/mms-sms");
-        smsIntent.putExtra("address", sms);
-        smsIntent.addFlags(Intent.FLAG_ACTIVITY_TASK_ON_HOME
-                | Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(smsIntent);
-    }
-
-    private void launchEmail(String action) {
-        String email = parseContactActionForIntent(action);
-        if (email == null) return;
-        if (email.startsWith(EMAIL_PREFIX)) {
-            email = email.substring(EMAIL_PREFIX.length());
-        } else {
-            return;
-        }
-        Intent emailIntent = new Intent(Intent.ACTION_SEND);
-        emailIntent.putExtra(Intent.EXTRA_EMAIL, new String[] {
-            email
-        });
-        emailIntent.addFlags(Intent.FLAG_ACTIVITY_TASK_ON_HOME
-                | Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(emailIntent);
     }
 
     private void switchToLastApp() {
@@ -678,7 +506,6 @@ public abstract class ActionHandler {
         sendCloseSystemWindows("assist");
         // launch the search activity
         Intent intent = new Intent(Intent.ACTION_SEARCH_LONG_PRESS);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
             // TODO: This only stops the factory-installed search manager.
             // Need to formalize an API to handle others
@@ -687,9 +514,9 @@ public abstract class ActionHandler {
             if (searchManager != null) {
                 searchManager.stopSearch();
             }
-            mContext.startActivityAsUser(intent, UserHandle.CURRENT);
+            launchActivity(intent);
         } catch (ActivityNotFoundException e) {
-            Slog.w(TAG, "No activity to handle assist long press action.", e);
+            Slog.w(TAG, "No assist activity installed", e);
         }
     }
 
@@ -709,12 +536,10 @@ public abstract class ActionHandler {
     private void launchCamera() {
         Intent i = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
         PackageManager pm = mContext.getPackageManager();
-
         final ResolveInfo mInfo = pm.resolveActivity(i, 0);
-
-        String action = new ComponentName(mInfo.activityInfo.packageName,
-                mInfo.activityInfo.name).flattenToString();
-        launchActivity(action);
+        Intent intent = new Intent().setComponent(new ComponentName(mInfo.activityInfo.packageName,
+                mInfo.activityInfo.name));
+        launchActivity(intent);
     }
 
     private void toggleWifi() {
@@ -991,7 +816,8 @@ public abstract class ActionHandler {
     static ServiceConnection mAudiorecordConnection = null;
 
     final Runnable mAudiorecordTimeout = new Runnable() {
-        @Override public void run() {
+        @Override
+        public void run() {
             synchronized (mAudiorecordLock) {
                 if (mAudiorecordConnection != null) {
                     mContext.unbindService(mAudiorecordConnection);
@@ -1038,8 +864,10 @@ public abstract class ActionHandler {
                         }
                     }
                 }
+
                 @Override
-                public void onServiceDisconnected(ComponentName name) {}
+                public void onServiceDisconnected(ComponentName name) {
+                }
             };
             if (mContext.bindServiceAsUser(
                     intent, conn, Context.BIND_AUTO_CREATE, UserHandle.CURRENT)) {
@@ -1072,9 +900,10 @@ public abstract class ActionHandler {
     }
 
     private void showPowerMenu() {
-        //Intent i = new Intent(CFXConstants.ACTION_CFX_INTERNAL_ACTIVITY);
-        //i.putExtra(CFXConstants.INTENT_EXTRA_INTERNAL_ACTIVITY, SYSTEMUI_TASK_POWER_MENU);
-        //mContext.sendBroadcastAsUser(i, new UserHandle(UserHandle.USER_ALL));
+        // Intent i = new Intent(CFXConstants.ACTION_CFX_INTERNAL_ACTIVITY);
+        // i.putExtra(CFXConstants.INTENT_EXTRA_INTERNAL_ACTIVITY,
+        // SYSTEMUI_TASK_POWER_MENU);
+        // mContext.sendBroadcastAsUser(i, new UserHandle(UserHandle.USER_ALL));
     }
 
     /**
