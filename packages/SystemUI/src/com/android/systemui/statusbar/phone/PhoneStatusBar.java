@@ -136,6 +136,7 @@ import com.android.systemui.DemoMode;
 import com.android.systemui.EventLogTags;
 import com.android.systemui.FontSizeUtils;
 import com.android.systemui.R;
+import com.android.systemui.cm.UserContentObserver;
 import com.android.systemui.doze.DozeHost;
 import com.android.systemui.doze.DozeLog;
 import com.android.systemui.keyguard.KeyguardViewMediator;
@@ -459,15 +460,19 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         }
     };
 
-    class SettingsObserver extends ContentObserver {
+    class SettingsObserver extends UserContentObserver {
         SettingsObserver(Handler handler) {
             super(handler);
         }
 
-        void observe() {
+        @Override
+        protected void observe() {
+            super.observe();
+
             ContentResolver resolver = mContext.getContentResolver();
             resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.STATUS_BAR_BRIGHTNESS_CONTROL), false, this);
+                    Settings.System.STATUS_BAR_BRIGHTNESS_CONTROL), false, this,
+                    UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.SCREEN_BRIGHTNESS_MODE), false, this, UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
@@ -478,10 +483,13 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         }
 
         @Override
-        public void onChange(boolean selfChange) {
-            update();
+        protected void unobserve() {
+            super.unobserve();
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.unregisterContentObserver(this);
         }
 
+        @Override
         public void update() {
             ContentResolver resolver = mContext.getContentResolver();
             int mode = Settings.System.getIntForUser(mContext.getContentResolver(),
@@ -489,16 +497,40 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                             Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL,
                             UserHandle.USER_CURRENT);
             mAutomaticBrightness = mode != Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL;
-            mBrightnessControl = Settings.System.getInt(
-                    resolver, Settings.System.STATUS_BAR_BRIGHTNESS_CONTROL, 0) == 1;
+            mBrightnessControl = Settings.System.getIntForUser(
+                    resolver, Settings.System.STATUS_BAR_BRIGHTNESS_CONTROL, 0,
+                    UserHandle.USER_CURRENT) == 1;
 
-            mClockLocation = Settings.System.getInt(
-                    resolver, Settings.System.STATUS_BAR_CLOCK, Clock.STYLE_CLOCK_RIGHT);
+            final int oldClockLocation = mClockLocation;
+            final View oldClockView = mClockView;
+            mClockLocation = Settings.System.getIntForUser(
+                    resolver, Settings.System.STATUS_BAR_CLOCK, Clock.STYLE_CLOCK_RIGHT,
+                    UserHandle.USER_CURRENT);
             updateClockView();
 
+            // check to see if we need to adjust alpha/visibility
+            // this fixes the bug where if User A has left and User B has center and you switch
+            // from A to B then go into the settings and adjust the clock to left - without this
+            // code block it will adjust the space but be transparent
+            if (oldClockView != mClockView) {
+                // if the new clock position is outside the system icon area, make the alpha
+                // and visibility match the system icon area alpha/visibility
+                if (isClockLocationOutsideSystemIconArea(mClockLocation)) {
+                    mClockView.setAlpha(mSystemIconArea.getAlpha());
+                    mClockView.setVisibility(mSystemIconArea.getVisibility());
+                }
+
+                // if the old clock position it outside the system icon area, make it opaque
+                // and set visibility to gone
+                if (isClockLocationOutsideSystemIconArea(oldClockLocation)) {
+                    oldClockView.setAlpha(1f);
+                    oldClockView.setVisibility(View.GONE);
+                }
+            }
+
             if (mNavigationBarView != null) {
-                boolean navLeftInLandscape = Settings.System.getInt(resolver,
-                        Settings.System.NAVBAR_LEFT_IN_LANDSCAPE, 0) == 1;
+                boolean navLeftInLandscape = Settings.System.getIntForUser(resolver,
+                        Settings.System.NAVBAR_LEFT_IN_LANDSCAPE, 0, UserHandle.USER_CURRENT) == 1;
                 mNavigationBarView.setLeftInLandscape(navLeftInLandscape);
             }
         }
@@ -535,6 +567,11 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         if (mNotificationIcons != null) {
             mNotificationIcons.setClockAndDateStatus(mClockLocation);
         }
+    }
+
+    private static boolean isClockLocationOutsideSystemIconArea(int clockLocation) {
+        return clockLocation == Clock.STYLE_CLOCK_CENTER
+                || clockLocation == Clock.STYLE_CLOCK_LEFT;
     }
 
     private void forceAddNavigationBar() {
@@ -926,8 +963,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         mStatusBarContents = (LinearLayout)mStatusBarView.findViewById(R.id.status_bar_contents);
 
         mClockView = (TextView) mStatusBarView.findViewById(R.id.clock);
-        mClockLocation = Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.STATUS_BAR_CLOCK, Clock.STYLE_CLOCK_RIGHT);
+        mClockLocation = Settings.System.getIntForUser(mContext.getContentResolver(),
+                Settings.System.STATUS_BAR_CLOCK, Clock.STYLE_CLOCK_RIGHT, UserHandle.USER_CURRENT);
         if (mClockController == null) mClockController = new Clock(mContext, mClockView);
         updateClockView();
 

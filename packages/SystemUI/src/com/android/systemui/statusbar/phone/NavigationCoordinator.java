@@ -32,9 +32,11 @@ import java.util.List;
 import org.teameos.utils.EosConstants;
 import org.teameos.utils.EosUtils;
 
+import com.android.systemui.cm.UserContentObserver;
 import com.android.systemui.statusbar.BaseNavigationBar;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -65,7 +67,7 @@ public class NavigationCoordinator {
     // we monitor softkeys, hardkeys, and NX here
     private PackageReceiver mPackageReceiver;
 
-    private boolean mHasHardkeys;
+    private final boolean mHasHardkeys;
     private List<String> mHardkeyActions;
     private List<String> mNxActions = new ArrayList<String>();
 
@@ -80,6 +82,7 @@ public class NavigationCoordinator {
         mRemoveNavbar = removeNavbar;
         mHasHardkeys = EosUtils.isCapKeyDevice(context);
         mNavbarObserver = new NavbarObserver(mHandler);
+        mNavbarObserver.observe();
 
         // iterate list check for packages and resolve
         if (mHasHardkeys) {
@@ -97,7 +100,6 @@ public class NavigationCoordinator {
             mHardkeyActions.add(EosConstants.INPUT_HARDKEY_ASSIST_SINGLETAP);
             mHardkeyActions.add(EosConstants.INPUT_HARDKEY_ASSIST_DOUBLETAP);
             mHardkeyActions.add(EosConstants.INPUT_HARDKEY_ASSIST_LONGPRESS);
-            mNavbarObserver.observeForceBar();
         }
 
         // add nx actions for package resolve
@@ -126,11 +128,6 @@ public class NavigationCoordinator {
             navBar.getBarTransitions().setMode(mLastBarMode);
             mLastBarMode = -1;
         }
-
-        mNavbarObserver.observeBarMode();
-        if (mHasHardkeys)
-            mNavbarObserver.observeForceBar();
-
         return navBar;
     }
 
@@ -142,54 +139,67 @@ public class NavigationCoordinator {
     // for now, it makes sense to let PhoneStatusBar add/remove navbar view
     // from window manager. Define the add/remove runnables in PSB then pass
     // to us for handling
-    class NavbarObserver extends ContentObserver {
+    class NavbarObserver extends UserContentObserver {
+
         NavbarObserver(Handler handler) {
             super(handler);
         }
 
-        void observeBarMode() {
-            mContext.getContentResolver().registerContentObserver(
-                    Settings.System.getUriFor(NX_ENABLED_URI), false, this);
-        }
-
-        void observeForceBar() {
-            mContext.getContentResolver().registerContentObserver(
-                    Settings.System.getUriFor(Settings.System.DEV_FORCE_SHOW_NAVBAR), false, this);
-        }
-
-        void unobserve() {
-            mContext.getContentResolver().unregisterContentObserver(this);
+        @Override
+        protected void unobserve() {
+            super.unobserve();
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.unregisterContentObserver(this);
         }
 
         @Override
-        public void onChange(boolean selfChange, Uri uri) {
-            if (mRecreating)
-                return;
-            if (uri.equals(Settings.System.getUriFor(NX_ENABLED_URI))) {
-                mNavbarObserver.unobserve();
-                if (mBar.getNavigationBarView() != null) {
+        protected void observe() {
+            super.observe();
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.registerContentObserver(
+                    Settings.System.getUriFor(NX_ENABLED_URI), false, this);
+            resolver.registerContentObserver(Settings.Secure.getUriFor(
+                    Settings.Secure.DEV_FORCE_SHOW_NAVBAR), false, this, UserHandle.USER_ALL);
+        }
+
+        @Override
+        protected void update() {
+            boolean isBarShowingNow = mBar.getNavigationBarView() != null;
+            if (mHasHardkeys) {
+                boolean visible = Settings.Secure.getIntForUser(mContext.getContentResolver(),
+                        Settings.Secure.DEV_FORCE_SHOW_NAVBAR, 0, UserHandle.USER_CURRENT) == 1;
+
+                // user changed bar modes, getNavigationBarView() handles bar mode
+                if (visible && isBarShowingNow) {
+                    mLastBarMode = mBar.getNavigationBarView().getBarTransitions().getMode();
+                    mBar.getNavigationBarView().onStop();
+                    mHandler.post(mRemoveNavbar);
+                    mHandler.postDelayed(mAddNavbar, 500);
+                // user now force showing navbar, add the bar, getNavigationBarView() handles bar mode
+                } else if (visible && !isBarShowingNow) {
+                    mHandler.postDelayed(mAddNavbar, 500);
+                // user now not force showing navbar, remove it
+                } else {
+                    if (isBarShowingNow) { // sanity check
+                        mBar.getNavigationBarView().onStop();
+                        mHandler.post(mRemoveNavbar);
+                    }
+                }
+            } else {
+                // no hardware keys, just a bar change
+                if (isBarShowingNow) { // sanity check before taking down old bar
                     mLastBarMode = mBar.getNavigationBarView().getBarTransitions().getMode();
                     mBar.getNavigationBarView().onStop();
                 }
                 mHandler.post(mRemoveNavbar);
                 mHandler.postDelayed(mAddNavbar, 500);
-                return;
-            } else if (uri.equals(Settings.System.getUriFor(Settings.System.DEV_FORCE_SHOW_NAVBAR))) {
-                mNavbarObserver.unobserve();
-                boolean visible = Settings.System.getIntForUser(mContext.getContentResolver(),
-                        Settings.System.DEV_FORCE_SHOW_NAVBAR, 0, UserHandle.USER_CURRENT) == 1;
-                if (visible) {
-                    mHandler.post(mAddNavbar);
-                } else {
-                    if (mBar.getNavigationBarView() != null) {
-                        mBar.getNavigationBarView().onStop();
-                    }
-                    mHandler.post(mRemoveNavbar);
-                }
-                mNavbarObserver.observeForceBar();
-                return;
             }
-            return;
+            // Send a broadcast to Settings to update Key disabling when user changes
+            // NOTE: shouldn't this be in the super class if the intent is just
+            // to notify settings of a user change? And what if it is just a uri change?
+            Intent intent = new Intent("com.cyanogenmod.action.UserChanged");
+            intent.setPackage("com.android.settings");
+            mContext.sendBroadcastAsUser(intent, new UserHandle(UserHandle.USER_CURRENT));
         }
     }
 
