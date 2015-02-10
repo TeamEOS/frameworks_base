@@ -1192,7 +1192,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_KEYGUARD_WALLPAPER_CHANGED);
-        filter.addAction(ActionHandler.ACTION_TOGGLE_FLASHLIGHT);
         if (DEBUG_MEDIA_FAKE_ARTWORK) {
             filter.addAction("fake_artwork");
         }
@@ -3561,37 +3560,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                 }
             } else if (Intent.ACTION_KEYGUARD_WALLPAPER_CHANGED.equals(action)) {
                 updateMediaMetaData(true);
-            } else if (ActionHandler.ACTION_TOGGLE_FLASHLIGHT.equals(action)) {
-                if (checkFlashlightFeatureAndPermission(context, intent)) {
-                    mHandler.removeCallbacks(mFlashlightToggle);
-                    mHandler.post(mFlashlightToggle);
-                }
             }
-        }
-    };
-
-    /**
-     * only SystemUI, Keyguard, and system can toggle flashlight
-     */
-    private boolean checkFlashlightFeatureAndPermission(Context ctx, Intent intent) {
-        if (!EosUtils.deviceSupportsTorch(ctx)) {
-            Log.w(TAG, "Flashlight is not supported");
-            return false;
-        }
-        if (ctx.getPackageName().equals("com.android.systemui")
-                || (ctx.getPackageName().equals("com.android.keyguard")
-                || (ctx.getApplicationInfo().uid == 1000))) {
-            return true;
-        }
-        String violator = ctx.getPackageName();
-        Log.w(TAG, violator + " tried to toggle system flashlight! This is malicious software!");
-        return false;
-    }
-
-    private final Runnable mFlashlightToggle = new Runnable() {
-        @Override
-        public void run() {
-            mFlashlightController.toggleFlashlight();
         }
     };
 
