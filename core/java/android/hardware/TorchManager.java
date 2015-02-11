@@ -16,6 +16,7 @@
 package android.hardware;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -162,6 +163,19 @@ public class TorchManager {
                     available ? 1 : 0, 0));
         }
     };
+
+    public void toggleTorch() {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    mService.toggleTorch();
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
 
     public void setTorchEnabled(final boolean newState) {
         mHandler.post(new Runnable() {
