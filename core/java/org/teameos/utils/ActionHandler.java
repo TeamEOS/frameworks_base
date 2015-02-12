@@ -38,6 +38,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
+import android.hardware.ITorchService;
 import android.hardware.input.InputManager;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
@@ -605,8 +606,13 @@ public abstract class ActionHandler {
     }
 
     private void toggleTorch() {
-        Intent i = new Intent(ACTION_TOGGLE_FLASHLIGHT);
-        mContext.sendBroadcast(i);
+        try {
+            ITorchService torchService = ITorchService.Stub.asInterface(ServiceManager
+                    .getService(Context.TORCH_SERVICE));
+            torchService.toggleTorch();
+        } catch (Exception e) {
+            Log.e(TAG, "Exception thrown acquiring torch service" + e.toString());
+        }
     }
 
     /**
