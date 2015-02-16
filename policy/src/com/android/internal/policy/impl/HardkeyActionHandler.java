@@ -478,15 +478,22 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
             } else if (longPress) {
                 if (!keyguardOn
-                        && !mBackButton.wasConsumed()
-                        && mBackButton.isLongTapEnabled()) {
+                        && !mBackButton.wasConsumed()) {
                     mBackButton.setPressed(true);
-                    if (!mBackButton.keyHasLongPressRecents()) {
-                        mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                    if (isLockTaskOn()) {
+                        turnOffLockTask();
+                        mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
+                        mBackButton.setWasConsumed(true);
+                    } else {
+                        if (mBackButton.isLongTapEnabled()) {
+                            if (!mBackButton.keyHasLongPressRecents()) {
+                                mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                            }
+                            mBackButton.fireLongPress();
+                            mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
+                            mBackButton.setWasConsumed(true);
+                        }
                     }
-                    mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
-                    mBackButton.fireLongPress();
-                    mBackButton.setWasConsumed(true);
                 }
             }
             return true;

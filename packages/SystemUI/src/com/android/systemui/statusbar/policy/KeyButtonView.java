@@ -83,6 +83,7 @@ public class KeyButtonView extends ImageView {
     private ButtonInfo mActions;
     private ActionHandler mActionHandler;
     public boolean mHasBlankSingleAction = false;
+    private boolean mDoOverrideSingleTap;
     private volatile boolean mRecentsPreloaded;
 
     public KeyButtonView(Context context, AttributeSet attrs) {
@@ -244,7 +245,7 @@ public class KeyButtonView extends ImageView {
                     doDoubleTap();
                 } else {
 
-                    if (mHasLongAction) {
+                    if (mHasLongAction || KeyButtonView.this.getId() == R.id.recent_apps) {
                         removeCallbacks(mCheckLongPress);
                         postDelayed(mCheckLongPress, mLongPressTimeout);
                     }
@@ -269,7 +270,7 @@ public class KeyButtonView extends ImageView {
                 // hack to fix ripple getting stuck. exitHardware() starts an animation,
                 // but sometimes does not finish it.
                 mRipple.exitSoftware();
-                if (mHasLongAction) {
+                if (mHasLongAction || KeyButtonView.this.getId() == R.id.recent_apps) {
                     removeCallbacks(mCheckLongPress);
                 }
                 if (mRecentsPreloaded == true)
@@ -279,7 +280,7 @@ public class KeyButtonView extends ImageView {
                 mUpTime = SystemClock.uptimeMillis();
                 boolean playSound;
 
-                if (mHasLongAction) {
+                if (mHasLongAction || KeyButtonView.this.getId() == R.id.recent_apps) {
                     removeCallbacks(mCheckLongPress);
                 }
                 playSound = isPressed();
@@ -289,10 +290,11 @@ public class KeyButtonView extends ImageView {
                     playSoundEffect(SoundEffectConstants.CLICK);
                 }
 
-                if (!mHasDoubleAction && !mHasLongAction) {
+                if (!mHasDoubleAction && !mHasLongAction && !mDoOverrideSingleTap) {
                     removeCallbacks(mSingleTap);
                     doSinglePress();
                 }
+                mDoOverrideSingleTap = false;
                 break;
         }
 
@@ -346,21 +348,29 @@ public class KeyButtonView extends ImageView {
     }
 
     private void doLongPress() {
-        if (mHasLongAction) {
-            removeCallbacks(mSingleTap);
-            if (mIsRecentsLongAction) {
-                try {
-                    mBarService.toggleRecentApps();
+        if (KeyButtonView.this.getId() == R.id.recent_apps
+                && mActionHandler.isLockTaskOn()) {
+            mActionHandler.turnOffLockTask();
+            mDoOverrideSingleTap = true;
+            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
+        } else {
+            if (mHasLongAction) {
+                removeCallbacks(mSingleTap);
+                if (mIsRecentsLongAction) {
+                    try {
+                        mBarService.toggleRecentApps();
+                        performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+                        sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
+                        mRecentsPreloaded = false;
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "RECENTS ACTION FAILED");
+                    }
+                } else {
+                    mActionHandler.performTask(mActions.longPressAction);
                     performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
                     sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
-                    mRecentsPreloaded = false;
-                } catch (RemoteException e) {
-                    Log.e(TAG, "RECENTS ACTION FAILED");
                 }
-            } else {
-                mActionHandler.performTask(mActions.longPressAction);
-                performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
-                sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
             }
         }
     }

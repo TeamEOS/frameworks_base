@@ -19,6 +19,8 @@ package com.android.server.am;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.os.UserHandle;
+import android.provider.Settings;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.Toast;
 
@@ -49,9 +51,9 @@ public class LockTaskNotify {
 
     public void handleShowToast(boolean isLocked) {
         String text = mContext.getString(isLocked
-                ? R.string.lock_to_app_toast_locked : R.string.lock_to_app_toast);
+                ? R.string.lock_to_app_toast_locked : getStringForInterface());
         if (!isLocked && mAccessibilityManager.isEnabled()) {
-            text = mContext.getString(R.string.lock_to_app_toast_accessible);
+            text = mContext.getString(getStringForInterface());
         }
         if (mLastToast != null) {
             mLastToast.cancel();
@@ -66,6 +68,23 @@ public class LockTaskNotify {
             showString = R.string.lock_to_app_start;
         }
         Toast.makeText(mContext, mContext.getString(showString), Toast.LENGTH_LONG).show();
+    }
+
+    private int getStringForInterface() {
+        // hard key no bar showing
+        if (!mContext.getResources().getBoolean(
+                com.android.internal.R.bool.config_showNavigationBar)
+                && Settings.System.getIntForUser(mContext.getContentResolver(),
+                        Settings.System.DEV_FORCE_SHOW_NAVBAR, 0, UserHandle.USER_CURRENT) == 0) {
+            return R.string.lock_to_app_hardkey_toast;
+            // NX
+        } else if (Settings.System.getInt(mContext.getContentResolver(),
+                "eos_nx_enabled", 0) == 1) {
+            return R.string.lock_to_app_nx_toast;
+            // normal navbar
+        } else {
+            return R.string.lock_to_app_navbar_toast;
+        }
     }
 
     private final class H extends Handler {

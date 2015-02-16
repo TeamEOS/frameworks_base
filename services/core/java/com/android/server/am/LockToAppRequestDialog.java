@@ -9,6 +9,7 @@ import android.content.DialogInterface.OnClickListener;
 import android.content.res.Resources;
 import android.os.RemoteException;
 import android.os.ServiceManager;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.provider.Settings.SettingNotFoundException;
 import android.util.Slog;
@@ -81,15 +82,30 @@ public class LockToAppRequestDialog implements OnClickListener {
         }
     }
 
+    private int getStringForInterface() {
+        // hard key no bar showing
+        if (!mContext.getResources().getBoolean(
+                com.android.internal.R.bool.config_showNavigationBar)
+                && Settings.System.getIntForUser(mContext.getContentResolver(),
+                        Settings.System.DEV_FORCE_SHOW_NAVBAR, 0, UserHandle.USER_CURRENT) == 0) {
+            return R.string.lock_to_app_hardkey_description;
+            // NX
+        } else if (Settings.System.getInt(mContext.getContentResolver(),
+                "eos_nx_enabled", 0) == 1) {
+            return R.string.lock_to_app_nx_description;
+            // normal navbar
+        } else {
+            return R.string.lock_to_app_navbar_description;
+        }
+    }
+
     public void showLockTaskPrompt(TaskRecord task) {
         clearPrompt();
         mRequestedTask = task;
         final int unlockStringId = getLockString(task.userId);
 
         final Resources r = Resources.getSystem();
-        final String description= r.getString(mAccessibilityService.isEnabled()
-                ? R.string.lock_to_app_description_accessible
-                : R.string.lock_to_app_description);
+        final String description= r.getString(getStringForInterface());
         AlertDialog.Builder builder = new AlertDialog.Builder(mContext)
                         .setTitle(r.getString(R.string.lock_to_app_title))
                         .setMessage(description)

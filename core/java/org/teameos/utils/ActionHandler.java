@@ -905,6 +905,21 @@ public abstract class ActionHandler {
         }
     }
 
+    public void turnOffLockTask() {
+        try {
+            ActivityManagerNative.getDefault().stopLockTaskModeOnCurrent();
+        } catch (Exception e) {
+        }
+    }
+
+    public boolean isLockTaskOn() {
+        try {
+            return ActivityManagerNative.getDefault().isInLockTaskMode();
+        } catch (Exception e) {
+        }
+        return false;
+    }
+
     private void showPowerMenu() {
         // Intent i = new Intent(CFXConstants.ACTION_CFX_INTERNAL_ACTIVITY);
         // i.putExtra(CFXConstants.INTENT_EXTRA_INTERNAL_ACTIVITY,

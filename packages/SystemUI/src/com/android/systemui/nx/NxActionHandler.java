@@ -259,10 +259,15 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver, Sw
     public void onLongLeftPress() {
         boolean isEnabled = ((NxAction) mActionMap.get(EVENT_LONG_LEFT_PRESS))
                 .isEnabled();
-        if (isEnabled) {
-            fireAction(EVENT_LONG_LEFT_PRESS);
+        if (isLockTaskOn()) {
+            turnOffLockTask();
         } else {
-            fireAction(EVENT_LONG_RIGHT_PRESS);
+            if (isEnabled) {
+                fireAction(EVENT_LONG_LEFT_PRESS);
+            } else {
+                fireAction(EVENT_LONG_RIGHT_PRESS);
+            }
+
         }
     }
 
@@ -270,10 +275,14 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver, Sw
     public void onLongRightPress() {
         boolean isEnabled = ((NxAction) mActionMap.get(EVENT_LONG_RIGHT_PRESS))
                 .isEnabled();
-        if (isEnabled) {
-            fireAction(EVENT_LONG_RIGHT_PRESS);
+        if (isLockTaskOn()) {
+            turnOffLockTask();
         } else {
-            fireAction(EVENT_LONG_LEFT_PRESS);
+            if (isEnabled) {
+                fireAction(EVENT_LONG_RIGHT_PRESS);
+            } else {
+                fireAction(EVENT_LONG_LEFT_PRESS);
+            }
         }
     }
 }
