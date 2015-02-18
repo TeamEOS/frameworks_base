@@ -3320,6 +3320,54 @@ public final class Settings {
         public static final String T9_SEARCH_INPUT_LOCALE = "t9_search_input_locale";
 
         /**
+         * Color temperature of the display during the day
+         * @hide
+         */
+        public static final String DISPLAY_TEMPERATURE_DAY = "display_temperature_day";
+
+        /**
+         * Color temperature of the display at night
+         * @hide
+         */
+        public static final String DISPLAY_TEMPERATURE_NIGHT = "display_temperature_night";
+
+        /**
+         * Display color temperature adjustment mode, one of DAY (default), NIGHT, or AUTO.
+         * @hide
+         */
+        public static final String DISPLAY_TEMPERATURE_MODE = "display_temperature_mode";
+
+        /**
+         * Automatic outdoor mode
+         * @hide
+         */
+        public static final String DISPLAY_AUTO_OUTDOOR_MODE = "display_auto_outdoor_mode";
+
+        /**
+         * Use display power saving features such as CABC or CABL
+         * @hide
+         */
+        public static final String DISPLAY_LOW_POWER = "display_low_power";
+
+        /**
+         * Use color enhancement feature of display
+         * @hide
+         */
+        public static final String DISPLAY_COLOR_ENHANCE = "display_color_enhance";
+
+        /**
+         * Manual display color adjustments (RGB values as floats, separated by spaces)
+         * @hide
+         */
+        public static final String DISPLAY_COLOR_ADJUSTMENT = "display_color_adjustment";
+
+        /**
+         * Did we tell about how they can stop breaking their eyes?
+         * @hide
+         */
+        public static final String LIVE_DISPLAY_HINTED = "live_display_hinted";
+
+        /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
          *
@@ -3396,7 +3444,12 @@ public final class Settings {
             STATUS_BAR_SHOW_BATTERY_PERCENT,
             INCREASING_RING,
             INCREASING_RING_START_VOLUME,
-            INCREASING_RING_RAMP_UP_TIME
+            INCREASING_RING_RAMP_UP_TIME,
+            DISPLAY_TEMPERATURE_NIGHT,
+            DISPLAY_TEMPERATURE_DAY,
+            DISPLAY_TEMPERATURE_MODE,
+            DISPLAY_AUTO_OUTDOOR_MODE,
+            LIVE_DISPLAY_HINTED
         };
 
         /**
@@ -5763,6 +5816,48 @@ public final class Settings {
          * @hide
          */
         public static final String ADVANCED_MODE = "advanced_mode";
+
+        /**
+         * String to contain power menu actions
+         * @hide
+         */
+        public static final String POWER_MENU_ACTIONS = "power_menu_actions";
+
+        /**
+         * Developer options - Navigation Bar show switch
+         * @hide
+         */
+        public static final String DEV_FORCE_SHOW_NAVBAR = "dev_force_show_navbar";
+
+        /**
+         * The keyboard brightness to be used while the screen is on.
+         * Valid value range is between 0 and {@link PowerManager#getMaximumKeyboardBrightness()}
+         * @hide
+         */
+        public static final String KEYBOARD_BRIGHTNESS = "keyboard_brightness";
+
+        /**
+         * The button brightness to be used while the screen is on or after a button press,
+         * depending on the value of {@link BUTTON_BACKLIGHT_TIMEOUT}.
+         * Valid value range is between 0 and {@link PowerManager#getMaximumButtonBrightness()}
+         * @hide
+         */
+        public static final String BUTTON_BRIGHTNESS = "button_brightness";
+
+        /**
+         * The time in ms to keep the button backlight on after pressing a button.
+         * A value of 0 will keep the buttons on for as long as the screen is on.
+         * @hide
+         */
+        public static final String BUTTON_BACKLIGHT_TIMEOUT = "button_backlight_timeout";
+
+        /**
+         * Stored color matrix for LiveDisplay. This is used to allow co-existence with
+         * display tuning done by DisplayAdjustmentUtils when hardware support isn't
+         * available.
+         * @hide
+         */
+        public static final String LIVE_DISPLAY_COLOR_MATRIX = "live_display_color_matrix";
 
         /**
          * This are the settings to be backed up.
