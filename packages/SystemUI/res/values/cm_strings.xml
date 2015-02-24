@@ -44,6 +44,15 @@
     <!-- Content description of the location tile in quick settings when on, high accuracy mode (not shown on the screen). [CHAR LIMIT=NONE] -->
     <string name="accessibility_quick_settings_location_high_accuracy">Location reporting: high accuracy mode.</string>
 
+    <!-- Content description of the usb tether tile in quick settings when off (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_quick_settings_usb_tether_off">USB tether off.</string>
+    <!-- Content description of the usb tether tile in quick settings when on (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_quick_settings_usb_tether_on">USB tether on.</string>
+    <!-- Announcement made when the usb tether state changes to off (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_quick_settings_usb_tether_changed_off">USB tether turned off.</string>
+    <!-- Announcement made when the usb tether state changes to on (not shown on the screen). [CHAR LIMIT=NONE] -->
+    <string name="accessibility_quick_settings_usb_tether_changed_on">USB tether turned on.</string>
+
     <!-- QuickSettings: Mobile data [CHAR LIMIT=NONE] -->
     <string name="quick_settings_mobile_data_label">Mobile data</string>
     <!-- QuickSettings: Roaming [CHAR LIMIT=NONE] -->
@@ -63,7 +72,9 @@
     <!-- QuickSettings: Location (On, gps-only) [CHAR LIMIT=NONE] -->
     <string name="quick_settings_location_gps_only_label">Device only</string>
     <!-- QuickSettings: Location (On, high-accuracy) [CHAR LIMIT=NONE] -->
-    <string name="quick_settings_location_high_accuracy_label">High accuracy</string>
+    <string name="quick_settings_location_high_accuracy_label">High accuracy</string>    
+    <!-- QuickSettings: USB tether [CHAR LIMIT=NONE] -->
+    <string name="quick_settings_usb_tether_label">USB tether</string>
 
     <string name="quick_settings_nfc_label">NFC</string>
     <string name="quick_settings_profiles_detail_title">System profiles</string>
