@@ -769,8 +769,8 @@ public abstract class ActionHandler {
     }
 
     private void killProcess() {
-        if (mContext
-                .checkCallingOrSelfPermission(android.Manifest.permission.FORCE_STOP_PACKAGES) == PackageManager.PERMISSION_GRANTED) {
+        if (mContext.checkCallingOrSelfPermission(android.Manifest.permission.FORCE_STOP_PACKAGES) == PackageManager.PERMISSION_GRANTED
+                && !isLockTaskOn()) {
             try {
                 final Intent intent = new Intent(Intent.ACTION_MAIN);
                 String defaultHomePackage = "com.android.launcher";
