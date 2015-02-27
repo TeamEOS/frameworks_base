@@ -61,14 +61,6 @@ public class KeyButtonView extends ImageView {
     private PowerManager mPm;
 
     private View.OnTouchListener mHomeActionListener;
-    protected static IStatusBarService mBarService;
-
-    public static synchronized void getStatusBarInstance() {
-        if (mBarService == null) {
-            mBarService = IStatusBarService.Stub.asInterface(
-                    ServiceManager.getService(Context.STATUS_BAR_SERVICE));
-        }
-    }
 
     private boolean mHasSingleAction = true, mHasDoubleAction, mHasLongAction;
     private boolean mIsRecentsAction = false, mIsRecentsSingleAction, mIsRecentsLongAction,
@@ -84,7 +76,6 @@ public class KeyButtonView extends ImageView {
     private ActionHandler mActionHandler;
     public boolean mHasBlankSingleAction = false;
     private boolean mDoOverrideSingleTap;
-    private volatile boolean mRecentsPreloaded;
 
     public KeyButtonView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
@@ -158,7 +149,6 @@ public class KeyButtonView extends ImageView {
 
         if (mIsRecentsSingleAction || mIsRecentsLongAction || mIsRecentsDoubleTapAction) {
             mIsRecentsAction = true;
-            getStatusBarInstance();
         }
 
         setLongClickable(mHasLongAction);
@@ -231,8 +221,9 @@ public class KeyButtonView extends ImageView {
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
-                if (mIsRecentsAction && mRecentsPreloaded == false)
-                    preloadRecentApps();
+                if (mIsRecentsAction) {
+                    ActionHandler.preloadRecentApps();
+                }
                 mDownTime = SystemClock.uptimeMillis();
                 setPressed(true);
                 if (mHasSingleAction) {
@@ -273,8 +264,7 @@ public class KeyButtonView extends ImageView {
                 if (mHasLongAction || KeyButtonView.this.getId() == R.id.recent_apps) {
                     removeCallbacks(mCheckLongPress);
                 }
-                if (mRecentsPreloaded == true)
-                    cancelPreloadRecentApps();
+                ActionHandler.cancelPreloadRecentApps();
                 break;
             case MotionEvent.ACTION_UP:
                 mUpTime = SystemClock.uptimeMillis();
@@ -313,13 +303,8 @@ public class KeyButtonView extends ImageView {
             // cool
             sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
         } else if (mIsRecentsSingleAction) {
-            try {
-                mBarService.toggleRecentApps();
-                sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
-                mRecentsPreloaded = false;
-            } catch (RemoteException e) {
-                Log.e(TAG, "RECENTS ACTION FAILED");
-            }
+            ActionHandler.toggleRecentApps();
+            sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
             return;
         }
 
@@ -335,12 +320,7 @@ public class KeyButtonView extends ImageView {
         if (mHasDoubleAction) {
             removeCallbacks(mSingleTap);
             if (mIsRecentsDoubleTapAction) {
-                try {
-                    mBarService.toggleRecentApps();
-                    mRecentsPreloaded = false;
-                } catch (RemoteException e) {
-                    Log.e(TAG, "RECENTS ACTION FAILED");
-                }
+                ActionHandler.toggleRecentApps();
             } else {
                 mActionHandler.performTask(mActions.doubleTapAction);
             }
@@ -358,14 +338,9 @@ public class KeyButtonView extends ImageView {
             if (mHasLongAction) {
                 removeCallbacks(mSingleTap);
                 if (mIsRecentsLongAction) {
-                    try {
-                        mBarService.toggleRecentApps();
-                        performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
-                        sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
-                        mRecentsPreloaded = false;
-                    } catch (RemoteException e) {
-                        Log.e(TAG, "RECENTS ACTION FAILED");
-                    }
+                    ActionHandler.toggleRecentApps();
+                    performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+                    sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
                 } else {
                     mActionHandler.performTask(mActions.longPressAction);
                     performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
@@ -392,29 +367,6 @@ public class KeyButtonView extends ImageView {
             }
         }
     };
-
-
-    private void cancelPreloadRecentApps() {
-        if (mRecentsPreloaded == false)
-            return;
-        try {
-            mBarService.cancelPreloadRecentApps();
-        } catch (RemoteException e) {
-            // use previous state
-            return;
-        }
-        mRecentsPreloaded = false;
-    }
-
-    private void preloadRecentApps() {
-        try {
-            mBarService.preloadRecentApps();
-        } catch (RemoteException e) {
-            mRecentsPreloaded = false;
-            return;
-        }
-        mRecentsPreloaded = true;
-    }
 
     public static class ButtonInfo {
         public String singleAction, doubleTapAction, longPressAction, lpUri, dtUri;

@@ -26,17 +26,14 @@ package com.android.internal.policy.impl;
 import org.teameos.utils.ActionHandler;
 import org.teameos.utils.EosConstants;
 
-import com.android.internal.telephony.ITelephony;
-
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.ContentObserver;
 import android.os.Handler;
 import android.os.Message;
-import android.os.RemoteException;
-import android.os.ServiceManager;
 import android.os.UserHandle;
 import android.provider.Settings;
+import android.telecom.TelecomManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -52,11 +49,7 @@ public class HardkeyActionHandler extends ActionHandler {
     private static final String TAG = HardkeyActionHandler.class.getSimpleName();
 
     // messages to PWM to do some actions we can't really do here
-    // without losing sanity very quickly
     static final int MSG_FIRE_HOME = 7102;
-    static final int MSG_TOGGLE_RECENTS = 7103;
-    static final int MSG_CANCEL_PRELOAD = 7104;
-    static final int MSG_DO_PRELOAD = 7105;
     static final int MSG_UPDATE_MENU_KEY = 7106;
     static final int MSG_DO_HAPTIC_FB = 7107;
 
@@ -76,15 +69,15 @@ public class HardkeyActionHandler extends ActionHandler {
     private HardKeyButton mMenuButton;
     private HardKeyButton mAssistButton;
 
-    private ActionReceiver mActionReceiver = new ActionReceiver() {
+    // Behavior of HOME button during incomming call ring.
+    // (See Settings.Secure.RING_HOME_BUTTON_BEHAVIOR.)
+    int mRingHomeBehavior;
 
+    private ActionReceiver mActionReceiver = new ActionReceiver() {
         @Override
         public void onActionDispatched(HardKeyButton button, String task) {
             if (task.equals(HardKeyButton.HOME)) {
                 mHandler.sendEmptyMessage(MSG_FIRE_HOME);
-                return;
-            } else if (task.equals(HardKeyButton.RECENTS)) {
-                mHandler.sendEmptyMessage(MSG_TOGGLE_RECENTS);
                 return;
             } else if (task.equals(HardKeyButton.SLEEP)) {
                 // can't consume UP event if screen is off, do it manually
@@ -162,7 +155,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mHomeButton.keyHasDoubleTapRecents()) {
-                    mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                    cancelPreloadRecentApps();
                 }
 
                 if (canceled) {
@@ -170,16 +163,19 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 // If an incoming call is ringing, HOME is totally disabled.
-                // (The user is already on the InCallScreen at this point,
+                // (The user is already on the InCallUI at this point,
                 // and his ONLY options are to answer or reject the call.)
-                try {
-                    ITelephony telephonyService = getTelephonyService();
-                    if (telephonyService != null && telephonyService.isRinging()) {
+                TelecomManager telecomManager = getTelecommService();
+                if (telecomManager != null && telecomManager.isRinging()) {
+                    if ((mRingHomeBehavior
+                            & Settings.Secure.RING_HOME_BUTTON_BEHAVIOR_ANSWER) != 0) {
+                        Log.i(TAG, "Answering with HOME button.");
+                        telecomManager.acceptRingingCall();
+                        return true;
+                    } else {
                         Log.i(TAG, "Ignoring HOME; there's a ringing incoming call.");
                         return true;
                     }
-                } catch (RemoteException ex) {
-                    Log.w(TAG, "RemoteException from getPhoneInterface()", ex);
                 }
 
                 if (mHomeButton.isDoubleTapEnabled()) {
@@ -232,7 +228,7 @@ public class HardkeyActionHandler extends ActionHandler {
                     mHomeButton.setWasConsumed(true);
                 } else if (mHomeButton.keyHasLongPressRecents()
                         || mHomeButton.keyHasDoubleTapRecents()) {
-                    mHandler.sendEmptyMessage(MSG_DO_PRELOAD);
+                    preloadRecentApps();
                 }
             } else if (longPress) {
                 if (!keyguardOn
@@ -240,7 +236,7 @@ public class HardkeyActionHandler extends ActionHandler {
                         && mHomeButton.isLongTapEnabled()) {
                     mHomeButton.setPressed(true);
                     if (!mHomeButton.keyHasLongPressRecents()) {
-                        mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                        cancelPreloadRecentApps();
                     }
                     mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
                     mHomeButton.fireLongPress();
@@ -258,7 +254,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mMenuButton.keyHasDoubleTapRecents()) {
-                    mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                    cancelPreloadRecentApps();
                 }
 
                 if (canceled || keyguardOn) {
@@ -273,7 +269,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mMenuButton.keyHasSingleTapRecent()) {
-                    mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                    cancelPreloadRecentApps();
                 }
 
                 mMenuButton.fireSingleTap();
@@ -294,7 +290,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 } else if (mMenuButton.keyHasLongPressRecents()
                         || mMenuButton.keyHasDoubleTapRecents()
                         || mMenuButton.keyHasSingleTapRecent()) {
-                    mHandler.sendEmptyMessage(MSG_DO_PRELOAD);
+                    preloadRecentApps();
                 }
             } else if (longPress) {
                 if (!keyguardOn
@@ -302,7 +298,7 @@ public class HardkeyActionHandler extends ActionHandler {
                         && mMenuButton.isLongTapEnabled()) {
                     mMenuButton.setPressed(true);
                     if (!mMenuButton.keyHasLongPressRecents()) {
-                        mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                        cancelPreloadRecentApps();
                     }
                     mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
                     mMenuButton.fireLongPress();
@@ -320,7 +316,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mRecentButton.keyHasDoubleTapRecents()) {
-                    mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                    cancelPreloadRecentApps();
                 }
 
                 if (canceled || keyguardOn) {
@@ -335,7 +331,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mRecentButton.keyHasSingleTapRecent()) {
-                    mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                    cancelPreloadRecentApps();
                 }
 
                 mRecentButton.fireSingleTap();
@@ -356,7 +352,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 } else if (mRecentButton.keyHasLongPressRecents()
                         || mRecentButton.keyHasDoubleTapRecents()
                         || mRecentButton.keyHasSingleTapRecent()) {
-                    mHandler.sendEmptyMessage(MSG_DO_PRELOAD);
+                    preloadRecentApps();
                 }
             } else if (longPress) {
                 if (!keyguardOn
@@ -364,7 +360,7 @@ public class HardkeyActionHandler extends ActionHandler {
                         && mRecentButton.isLongTapEnabled()) {
                     mRecentButton.setPressed(true);
                     if (!mRecentButton.keyHasLongPressRecents()) {
-                        mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                        cancelPreloadRecentApps();
                     }
                     mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
                     mRecentButton.fireLongPress();
@@ -382,7 +378,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mAssistButton.keyHasDoubleTapRecents()) {
-                    mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                    cancelPreloadRecentApps();
                 }
 
                 if (canceled || keyguardOn) {
@@ -397,7 +393,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mAssistButton.keyHasSingleTapRecent()) {
-                    mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                    cancelPreloadRecentApps();
                 }
                 mAssistButton.fireSingleTap();
                 return true;
@@ -417,7 +413,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 } else if (mAssistButton.keyHasLongPressRecents()
                         || mAssistButton.keyHasDoubleTapRecents()
                         || mAssistButton.keyHasSingleTapRecent()) {
-                    mHandler.sendEmptyMessage(MSG_DO_PRELOAD);
+                    preloadRecentApps();
                 }
             } else if (longPress) {
                 if (!keyguardOn
@@ -425,7 +421,7 @@ public class HardkeyActionHandler extends ActionHandler {
                         && mAssistButton.isLongTapEnabled()) {
                     mAssistButton.setPressed(true);
                     if (!mAssistButton.keyHasLongPressRecents()) {
-                        mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                        cancelPreloadRecentApps();
                     }
                     mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
                     mAssistButton.fireLongPress();
@@ -443,7 +439,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mBackButton.keyHasDoubleTapRecents()) {
-                    mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                    cancelPreloadRecentApps();
                 }
 
                 if (canceled || keyguardOn) {
@@ -474,7 +470,7 @@ public class HardkeyActionHandler extends ActionHandler {
                     mBackButton.setWasConsumed(true);
                 } else if (mBackButton.keyHasLongPressRecents()
                         || mBackButton.keyHasDoubleTapRecents()) {
-                    mHandler.sendEmptyMessage(MSG_DO_PRELOAD);
+                    preloadRecentApps();
                 }
             } else if (longPress) {
                 if (!keyguardOn
@@ -487,7 +483,7 @@ public class HardkeyActionHandler extends ActionHandler {
                     } else {
                         if (mBackButton.isLongTapEnabled()) {
                             if (!mBackButton.keyHasLongPressRecents()) {
-                                mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                                cancelPreloadRecentApps();
                             }
                             mBackButton.fireLongPress();
                             mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
@@ -558,7 +554,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 if (mDoubleTapPending) {
                     mDoubleTapPending = false;
                     if (!keyHasSingleTapRecent()) {
-                        mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD);
+                        cancelPreloadRecentApps();
                     }
                     mActionReceiver.onActionDispatched(HardKeyButton.this, mSingleTap);
                 }
@@ -683,10 +679,8 @@ public class HardkeyActionHandler extends ActionHandler {
         }
     }
 
-    // these two are needed for the wonky aosp home/keyguard handling
-    private static ITelephony getTelephonyService() {
-        return ITelephony.Stub.asInterface(
-                ServiceManager.checkService(Context.TELEPHONY_SERVICE));
+    private TelecomManager getTelecommService() {
+        return (TelecomManager) mContext.getSystemService(Context.TELECOM_SERVICE);
     }
 
     private static final int[] WINDOW_TYPES_WHERE_HOME_DOESNT_WORK = {
@@ -747,6 +741,9 @@ public class HardkeyActionHandler extends ActionHandler {
             resolver.registerContentObserver(Settings.System.getUriFor(
                     EosConstants.INPUT_HARDKEY_RECENT_LONGPRESS), false, this,
                     UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.Secure.RING_HOME_BUTTON_BEHAVIOR), false, this,
+                    UserHandle.USER_ALL);
 
             updateKeyAssignments();
         }
@@ -791,6 +788,11 @@ public class HardkeyActionHandler extends ActionHandler {
             Message msg = mHandler.obtainMessage(MSG_UPDATE_MENU_KEY);
             msg.arg1 = hasMenuKeyEnabled ? 1 : 0;
             mHandler.sendMessage(msg);
+
+            mRingHomeBehavior = Settings.Secure.getIntForUser(cr,
+                    Settings.Secure.RING_HOME_BUTTON_BEHAVIOR,
+                    Settings.Secure.RING_HOME_BUTTON_BEHAVIOR_DEFAULT,
+                    UserHandle.USER_CURRENT);
         }
     }
 }

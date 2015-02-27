@@ -67,9 +67,10 @@ import java.util.List;
 import com.android.internal.statusbar.IStatusBarService;
 
 public abstract class ActionHandler {
+    protected static String TAG = ActionHandler.class.getSimpleName();
+
     protected ArrayList<String> mActions;
     protected Context mContext;
-    protected static String TAG = ActionHandler.class.getSimpleName();
 
     private static final String SYSTEM_PREFIX = "task";
     private static final String SYSTEMUI = "com.android.systemui";
@@ -85,7 +86,7 @@ public abstract class ActionHandler {
     public static final String SYSTEMUI_TASK_SCREENOFF = "task_screenoff";
     public static final String SYSTEMUI_TASK_KILL_PROCESS = "task_killcurrent";
     public static final String SYSTEMUI_TASK_ASSIST = "task_assist";
-    // public static final String SYSTEMUI_TASK_POWER_MENU = "task_powermenu";
+    public static final String SYSTEMUI_TASK_POWER_MENU = "task_powermenu";
     public static final String SYSTEMUI_TASK_TORCH = "task_torch";
     public static final String SYSTEMUI_TASK_CAMERA = "task_camera";
     public static final String SYSTEMUI_TASK_BT = "task_bt";
@@ -99,7 +100,7 @@ public abstract class ActionHandler {
     public static final String SYSTEMUI_TASK_BACK = "task_back";
     public static final String SYSTEMUI_TASK_HOME = "task_home";
 
-    public static final String ACTION_TOGGLE_FLASHLIGHT = "toggle_flashlight";
+    public static final String INTENT_SHOW_POWER_MENU = "action_handler_show_power_menu";
 
     private static enum SystemAction {
         NoAction(SYSTEMUI_TASK_NO_ACTION, "No Action", SYSTEMUI, "ic_sysbar_null"),
@@ -115,6 +116,7 @@ public abstract class ActionHandler {
         Hotspot(SYSTEMUI_TASK_WIFIAP, "Hotspot toggle", SYSTEMUI, "ic_qs_wifi_ap_on"),
         LastApp(SYSTEMUI_TASK_LAST_APP, "Last app", SYSTEMUI, "ic_sysbar_lastapp"),
         Overview(SYSTEMUI_TASK_RECENTS, "Overview", SYSTEMUI, "ic_sysbar_recent"),
+        PowerMenu(SYSTEMUI_TASK_POWER_MENU, "Power menu", SYSTEMUI, "ic_sysbar_null"),
         Menu(SYSTEMUI_TASK_MENU, "Menu", SYSTEMUI, "ic_sysbar_menu_big"),
         Back(SYSTEMUI_TASK_BACK, "Back", SYSTEMUI, "ic_sysbar_back"),
         Home(SYSTEMUI_TASK_HOME, "Home", SYSTEMUI, "ic_sysbar_home");
@@ -160,8 +162,8 @@ public abstract class ActionHandler {
             SystemAction.Assistant, SystemAction.Flashlight,
             SystemAction.Bluetooth, SystemAction.WiFi,
             SystemAction.Hotspot, SystemAction.LastApp,
-            SystemAction.Overview, SystemAction.Menu,
-            SystemAction.Back, SystemAction.Home
+            SystemAction.PowerMenu, SystemAction.Overview,
+            SystemAction.Menu, SystemAction.Back, SystemAction.Home
     };
 
     public static ArrayList<ActionBundle> getSystemActions(Context context) {
@@ -288,6 +290,97 @@ public abstract class ActionHandler {
         }
     }
 
+    private static final class StatusBarHelper {
+        private static boolean isPreloaded = false;
+        private static final Object mLock = new Object();
+        private static IStatusBarService mService = null;
+
+        private static IStatusBarService getStatusBarService() {
+            synchronized (mLock) {
+                if (mService == null) {
+                    try {
+                        mService = IStatusBarService.Stub.asInterface(
+                                ServiceManager.getService("statusbar"));
+                    } catch (Exception e) {
+                    }
+                }
+                return mService;
+            }
+        }
+
+        private static void toggleRecentsApps() {
+            IStatusBarService service = getStatusBarService();
+            if (service != null) {
+                try {
+                    sendCloseSystemWindows("recentapps");
+                    service.toggleRecentApps();
+                } catch (RemoteException e) {
+                    return;
+                }
+                isPreloaded = false;
+            }
+        }
+
+        private static void cancelPreloadRecentApps() {
+            if (isPreloaded == false)
+                return;
+            IStatusBarService service = getStatusBarService();
+            if (service != null) {
+                try {
+                    service.cancelPreloadRecentApps();
+                } catch (Exception e) {
+                    return;
+                }
+            }
+            isPreloaded = false;
+        }
+
+        private static void preloadRecentApps() {
+            IStatusBarService service = getStatusBarService();
+            if (service != null) {
+                try {
+                    service.preloadRecentApps();
+                } catch (RemoteException e) {
+                    isPreloaded = false;
+                    return;
+                }
+                isPreloaded = true;
+            }
+        }
+
+        private static void expandNotificationPanel() {
+            IStatusBarService service = getStatusBarService();
+            if (service != null) {
+                try {
+                    service.expandNotificationsPanel();
+                } catch (RemoteException e) {
+                }
+            }
+        }
+
+        private static void expandSettingsPanel() {
+            IStatusBarService service = getStatusBarService();
+            if (service != null) {
+                try {
+                    service.expandSettingsPanel();
+                } catch (RemoteException e) {
+                }
+            }
+        }
+    }
+
+    public static void toggleRecentApps() {
+        StatusBarHelper.toggleRecentsApps();
+    }
+
+    public static void cancelPreloadRecentApps() {
+        StatusBarHelper.cancelPreloadRecentApps();
+    }
+
+    public static void preloadRecentApps() {
+        StatusBarHelper.preloadRecentApps();
+    }
+
     public ActionHandler(Context context, ArrayList<String> actions) {
         if (context == null)
             throw new IllegalArgumentException("Context cannot be null");
@@ -375,8 +468,8 @@ public abstract class ActionHandler {
             screenOff();
         } else if (action.equals(SYSTEMUI_TASK_ASSIST)) {
             launchAssistAction();
-            // } else if (action.equals(SYSTEMUI_TASK_POWER_MENU)) {
-            // showPowerMenu();
+        } else if (action.equals(SYSTEMUI_TASK_POWER_MENU)) {
+            showPowerMenu();
         } else if (action.equals(SYSTEMUI_TASK_TORCH)) {
             toggleTorch();
         } else if (action.equals(SYSTEMUI_TASK_CAMERA)) {
@@ -388,13 +481,13 @@ public abstract class ActionHandler {
         } else if (action.equals(SYSTEMUI_TASK_BT)) {
             toggleBluetooth();
         } else if (action.equals(SYSTEMUI_TASK_RECENTS)) {
-            callStatusbarStub(SYSTEMUI_TASK_RECENTS);
+            toggleRecentApps();
         } else if (action.equals(SYSTEMUI_TASK_LAST_APP)) {
             switchToLastApp();
         } else if (action.equals(SYSTEMUI_TASK_SETTINGS_PANEL)) {
-            callStatusbarStub(SYSTEMUI_TASK_SETTINGS_PANEL);
+            StatusBarHelper.expandSettingsPanel();
         } else if (action.equals(SYSTEMUI_TASK_NOTIFICATION_PANEL)) {
-            callStatusbarStub(SYSTEMUI_TASK_NOTIFICATION_PANEL);
+            StatusBarHelper.expandNotificationPanel();
         } else if (action.equals(SYSTEMUI_TASK_VOICE_SEARCH)) {
             launchAssistLongPressAction();
         } else if (action.equals(SYSTEMUI_TASK_APP_SEARCH)) {
@@ -456,11 +549,11 @@ public abstract class ActionHandler {
         for (int i = 1; i < tasks.size(); i++) {
             String packageName = tasks.get(i).topActivity.getPackageName();
             if (!packageName.equals(defaultHomePackage)
-                    && !packageName.equals(mContext.getPackageName())) {
+                    && !packageName.equals(mContext.getPackageName())
+                    && !packageName.equals(SYSTEMUI)) {
                 return tasks.get(i);
             }
         }
-
         return null;
     }
 
@@ -470,28 +563,6 @@ public abstract class ActionHandler {
         final PackageManager pm = mContext.getPackageManager();
         final ResolveInfo launcherInfo = pm.resolveActivity(launcherIntent, 0);
         return launcherInfo.activityInfo.packageName;
-    }
-
-    private boolean callStatusbarStub(String action) {
-        try {
-            IStatusBarService barService = IStatusBarService.Stub.asInterface(
-                    ServiceManager.getService("statusbar"));
-            if (barService == null)
-                return false;
-            if (SYSTEMUI_TASK_RECENTS.equals(action)) {
-                sendCloseSystemWindows("recentapps");
-                barService.toggleRecentApps();
-            } else if (SYSTEMUI_TASK_SETTINGS_PANEL.equals(action)) {
-                barService.expandSettingsPanel();
-            } else if (SYSTEMUI_TASK_NOTIFICATION_PANEL.equals(action)) {
-                barService.expandNotificationsPanel();
-            } else {
-                return false;
-            }
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     private static void sendCloseSystemWindows(String reason) {
@@ -921,10 +992,8 @@ public abstract class ActionHandler {
     }
 
     private void showPowerMenu() {
-        // Intent i = new Intent(CFXConstants.ACTION_CFX_INTERNAL_ACTIVITY);
-        // i.putExtra(CFXConstants.INTENT_EXTRA_INTERNAL_ACTIVITY,
-        // SYSTEMUI_TASK_POWER_MENU);
-        // mContext.sendBroadcastAsUser(i, new UserHandle(UserHandle.USER_ALL));
+        mContext.sendBroadcastAsUser(new Intent(INTENT_SHOW_POWER_MENU), new UserHandle(
+                UserHandle.USER_ALL));
     }
 
     /**

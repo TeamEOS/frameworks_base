@@ -73,7 +73,6 @@ import android.telecom.TelecomManager;
 import android.service.gesture.EdgeGestureManager;
 import com.android.internal.os.DeviceKeyHandler;
 
-import com.android.internal.util.cm.ActionUtils;
 import dalvik.system.DexClassLoader;
 import android.util.DisplayMetrics;
 import android.util.EventLog;
@@ -126,6 +125,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashSet;
 import java.lang.reflect.Constructor;
+
+import org.teameos.utils.ActionHandler;
 
 import static android.view.WindowManager.LayoutParams.*;
 import static android.view.WindowManagerPolicy.WindowManagerFuncs.LID_ABSENT;
@@ -649,15 +650,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 case HardkeyActionHandler.MSG_FIRE_HOME:
                     launchHomeFromHotKey();
                     break;
-                case HardkeyActionHandler.MSG_CANCEL_PRELOAD:
-                    cancelPreloadRecentApps();
-                    break;
-                case HardkeyActionHandler.MSG_DO_PRELOAD:
-                    preloadRecentApps();
-                    break;
-                case HardkeyActionHandler.MSG_TOGGLE_RECENTS:
-                    toggleRecentApps();
-                    break;
                 case HardkeyActionHandler.MSG_UPDATE_MENU_KEY:
                     synchronized (mLock) {
                         mHasPermanentMenuKey = msg.arg1 == 1;
@@ -677,6 +669,32 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 }
             }
         }
+    }
+
+    private BroadcastReceiver mActionsReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (context == null || intent == null) {
+                return;
+            }
+            if (!isCallerAllowed(context)) {
+                return;
+            }
+            String action = intent.getAction();
+            if (ActionHandler.INTENT_SHOW_POWER_MENU.equals(action)) {
+                mHandler.removeMessages(MSG_DISPATCH_SHOW_GLOBAL_ACTIONS);
+                mHandler.sendEmptyMessage(MSG_DISPATCH_SHOW_GLOBAL_ACTIONS);
+            }
+        }
+    };
+
+    private boolean isCallerAllowed(Context ctx) {
+        if (ctx.getPackageName().equals("com.android.systemui")
+                || (ctx.getPackageName().equals("com.android.keyguard")
+                || (ctx.getApplicationInfo().uid == 1000))) {
+            return true;
+        }
+        return false;
     }
 
     private UEventObserver mHDMIObserver = new UEventObserver() {
@@ -1273,6 +1291,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         // register for multiuser-relevant broadcasts
         filter = new IntentFilter(Intent.ACTION_USER_SWITCHED);
         context.registerReceiver(mMultiuserReceiver, filter);
+
+        // eos action handler show power menu, and maybe other actions later
+        filter = new IntentFilter(ActionHandler.INTENT_SHOW_POWER_MENU);
+        context.registerReceiver(mActionsReceiver, filter);
 
         // monitor for system gestures
         mSystemGestures = new SystemGesturesPointerEventListener(context,
