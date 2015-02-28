@@ -63,11 +63,11 @@ public class NavigationBarView extends BaseNavigationBar {
     int mNavigationIconHints = 0;
 
     private BackButtonDrawable mBackIcon, mBackLandIcon;
-    private Drawable mRecentIcon;
-    private Drawable mRecentLandIcon;
-    private DeadZone mDeadZone;
     private Drawable mHomeIcon, mHomeLandIcon;
+    private Drawable mRecentIcon, mRecentLandIcon;
+    private Drawable mMenuIcon, mMenuLandIcon;
 
+    private DeadZone mDeadZone;
     private NavigationBarViewTaskSwitchHelper mTaskSwitchHelper;
     private final NavigationBarTransitions mBarTransitions;
 
@@ -275,6 +275,8 @@ public class NavigationBarView extends BaseNavigationBar {
         mRecentLandIcon = res.getDrawable(R.drawable.ic_sysbar_recent_land);
         mHomeIcon = res.getDrawable(R.drawable.ic_sysbar_home);
         mHomeLandIcon = res.getDrawable(R.drawable.ic_sysbar_home_land);
+        mMenuIcon = res.getDrawable(R.drawable.ic_sysbar_menu);
+        mMenuLandIcon = res.getDrawable(R.drawable.ic_sysbar_menu_land);
     }
 
     public void updateResources(Resources res) {
@@ -285,6 +287,11 @@ public class NavigationBarView extends BaseNavigationBar {
             ViewGroup container = (ViewGroup) mRotatedViews[i];
             if (container != null) {
                 updateLightsOutResources(container);
+                ImageView ime = (ImageView) container.findViewById(R.id.ime_switcher);
+                if (ime != null) {
+                    ime.setImageDrawable(null);
+                    ime.setImageDrawable(res.getDrawable(R.drawable.ic_ime_switcher_default));
+                }
             }
         }
     }
@@ -340,6 +347,7 @@ public class NavigationBarView extends BaseNavigationBar {
 
         ((ImageView)getRecentsButton()).setImageDrawable(mVertical ? mRecentLandIcon : mRecentIcon);
         ((ImageView)getHomeButton()).setImageDrawable(mVertical ? mHomeLandIcon : mHomeIcon);
+        ((ImageView)getMenuButton()).setImageDrawable(mVertical ? mMenuLandIcon : mMenuIcon);
 
         final boolean showImeButton = ((hints & StatusBarManager.NAVIGATION_HINT_IME_SHOWN) != 0);
         getImeSwitchButton().setVisibility(showImeButton ? View.VISIBLE : View.INVISIBLE);
