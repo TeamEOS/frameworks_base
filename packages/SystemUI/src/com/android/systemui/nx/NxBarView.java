@@ -24,6 +24,7 @@ import org.teameos.utils.EosUtils;
 
 import com.android.systemui.R;
 import com.android.systemui.nx.eyecandy.NxMediaController;
+import com.android.systemui.nx.eyecandy.NxRipple;
 import com.android.systemui.nx.eyecandy.NxSurface;
 import com.android.systemui.statusbar.BaseNavigationBar;
 import com.android.systemui.statusbar.phone.BarTransitions;
@@ -31,6 +32,7 @@ import com.android.systemui.nx.BaseGestureDetector;
 
 import android.animation.LayoutTransition;
 import android.content.Context;
+import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.graphics.Canvas;
 import android.graphics.Rect;
@@ -64,9 +66,11 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     private boolean mIsAnimating;
     private boolean mLogoEnabled;
     private boolean mLogoAnimates;
+    private boolean mRippleEnabled;
     private boolean mKeyguardShowing;
     private NxMediaController mMC;
     private PowerManager mPm;
+    private NxRipple mRipple;
 
     private final class NxGestureDetector extends BaseGestureDetector {
         final int LP_TIMEOUT = ViewConfiguration.getLongPressTimeout();
@@ -115,6 +119,9 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
             mContext.getContentResolver().registerContentObserver(
                     Settings.System.getUriFor("eos_nx_long_press_timeout"), false,
                     NxBarObserver.this);
+            mContext.getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor("eos_nx_show_ripple"), false,
+                    NxBarObserver.this);
         }
 
         void unregister() {
@@ -142,6 +149,8 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
             if (doPulse != mMC.isPulseEnabled()) {
                 mMC.setPulseEnabled(doPulse);
             }
+            mRippleEnabled = Settings.System.getInt(mContext.getContentResolver(),
+                    "eos_nx_show_ripple", 1) == 1;
         }
     }
 
@@ -154,12 +163,16 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
                 mUserAutoHideListener.onTouch(NxBarView.this, event);
             }
             if (action == MotionEvent.ACTION_DOWN) {
-                mPm.cpuBoost(750000);
+                mPm.cpuBoost(1000 * 1000);
                 if (!mIsAnimating) {
                     animateLogo(true);
                 }
-            } else if (action == MotionEvent.ACTION_UP) {
+            } else if (action == MotionEvent.ACTION_UP
+                    || action == MotionEvent.ACTION_CANCEL) {
                 animateLogo(false);
+            }
+            if (mRippleEnabled) {
+                mRipple.onTouch(NxBarView.this, event);
             }
             return mGestureDetector.onTouchEvent(event);
         }
@@ -181,6 +194,8 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
                 "nx_logo_animates", 1) == 1;
         int lpTimeout = Settings.System.getInt(mContext.getContentResolver(),
                 "eos_nx_long_press_timeout", mGestureDetector.LP_TIMEOUT_MAX);
+        mRippleEnabled = Settings.System.getInt(mContext.getContentResolver(),
+                "eos_nx_show_ripple", 1) == 1;
         mGestureDetector.setLongPressTimeout(lpTimeout);
         mSpinIn = getLogoAnimator(false);
         mSpinOut = getLogoAnimator(true);
@@ -190,6 +205,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         mMC.setPulseEnabled(doPulse);
         mMC.onSetNxSurface(this);
         mPm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        mRipple = new NxRipple(this);
     }
 
     @Override
@@ -213,6 +229,11 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
             setDisabledFlags(mDisabledFlags, true /* force */);
             invalidate();
         }
+    }
+
+    @Override
+    public void updateResources(Resources res) {
+        mRipple.updateResources(res);
     }
 
     private void animateLogo(boolean isDown) {
@@ -261,6 +282,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         mMC.onSizeChanged();
+        mRipple.onSizeChanged(w, h, oldw, oldh);
     }
 
     @Override
@@ -317,6 +339,9 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         super.onDraw(canvas);
         if (mMC.shouldDrawPulse()) {
             mMC.onDrawNx(canvas);
+        }
+        if (mRippleEnabled) {
+            mRipple.onDraw(canvas);
         }
     }
 
