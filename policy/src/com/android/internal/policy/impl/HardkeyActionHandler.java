@@ -31,6 +31,7 @@ import android.content.Context;
 import android.database.ContentObserver;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PowerManager;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.telecom.TelecomManager;
@@ -52,6 +53,9 @@ public class HardkeyActionHandler extends ActionHandler {
     static final int MSG_FIRE_HOME = 7102;
     static final int MSG_UPDATE_MENU_KEY = 7106;
     static final int MSG_DO_HAPTIC_FB = 7107;
+
+    // fire rocket boosters
+    private static final int BOOST_LEVEL = 1000 * 1000;
 
     // Masks for checking presence of hardware keys.
     // Must match values in core/res/res/values/config.xml
@@ -92,10 +96,12 @@ public class HardkeyActionHandler extends ActionHandler {
 
     private SettingsObserver mObserver;
     private Handler mHandler;
+    private PowerManager mPm;
 
     public HardkeyActionHandler(Context context, Handler handler) {
         super(context);
         mHandler = handler;
+        mPm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
 
         mDeviceHardwareKeys = mContext.getResources().getInteger(
                 com.android.internal.R.integer.config_deviceHardwareKeys);
@@ -141,6 +147,12 @@ public class HardkeyActionHandler extends ActionHandler {
 
         mObserver = new SettingsObserver(mHandler);
         mObserver.observe();
+    }
+
+    void fireBooster(HardKeyButton button) {
+        if (!button.isDoubleTapPending()) {
+            mPm.cpuBoost(BOOST_LEVEL);
+        }
     }
 
     boolean handleKeyEvent(WindowState win, int keyCode, int repeatCount, boolean down,
@@ -221,6 +233,7 @@ public class HardkeyActionHandler extends ActionHandler {
 
             if (repeatCount == 0) {
                 mHomeButton.setPressed(true);
+                fireBooster(mHomeButton);
                 if (mHomeButton.isDoubleTapPending()) {
                     mHomeButton.setDoubleTapPending(false);
                     mHomeButton.cancelDTTimeout();
@@ -282,6 +295,7 @@ public class HardkeyActionHandler extends ActionHandler {
 
             if (repeatCount == 0) {
                 mMenuButton.setPressed(true);
+                fireBooster(mMenuButton);
                 if (mMenuButton.isDoubleTapPending()) {
                     mMenuButton.setDoubleTapPending(false);
                     mMenuButton.cancelDTTimeout();
@@ -344,6 +358,7 @@ public class HardkeyActionHandler extends ActionHandler {
 
             if (repeatCount == 0) {
                 mRecentButton.setPressed(true);
+                fireBooster(mRecentButton);
                 if (mRecentButton.isDoubleTapPending()) {
                     mRecentButton.setDoubleTapPending(false);
                     mRecentButton.cancelDTTimeout();
@@ -405,6 +420,7 @@ public class HardkeyActionHandler extends ActionHandler {
 
             if (repeatCount == 0) {
                 mAssistButton.setPressed(true);
+                fireBooster(mAssistButton);
                 if (mAssistButton.isDoubleTapPending()) {
                     mAssistButton.setDoubleTapPending(false);
                     mAssistButton.cancelDTTimeout();
@@ -463,6 +479,7 @@ public class HardkeyActionHandler extends ActionHandler {
 
             if (repeatCount == 0) {
                 mBackButton.setPressed(true);
+                fireBooster(mBackButton);
                 if (mBackButton.isDoubleTapPending()) {
                     mBackButton.setDoubleTapPending(false);
                     mBackButton.cancelDTTimeout();
