@@ -74,8 +74,6 @@ public class NavigationBarView extends BaseNavigationBar {
     // performs manual animation in sync with layout transitions
     private final NavTransitionListener mTransitionListener = new NavTransitionListener();
 
-    private Resources mThemedResources;
-
     private boolean mIsLayoutRtl;
     private boolean mForceShowMenuFromUser;
     private boolean mDelegateIntercepted;
@@ -279,46 +277,23 @@ public class NavigationBarView extends BaseNavigationBar {
         mMenuLandIcon = res.getDrawable(R.drawable.ic_sysbar_menu_land);
     }
 
-    public void updateResources(Resources res) {
-        mThemedResources = res;
-        getIcons(mThemedResources);
-        mBarTransitions.updateResources(res);
-        for (int i = 0; i < mRotatedViews.length; i++) {
-            ViewGroup container = (ViewGroup) mRotatedViews[i];
-            if (container != null) {
-                updateLightsOutResources(container);
-                ImageView ime = (ImageView) container.findViewById(R.id.ime_switcher);
-                if (ime != null) {
-                    ime.setImageDrawable(null);
-                    ime.setImageDrawable(res.getDrawable(R.drawable.ic_ime_switcher_default));
-                }
-            }
-        }
+    @Override
+    protected void onUpdateResources(Resources res) {
+        getIcons(res);
     }
 
-    private void updateLightsOutResources(ViewGroup container) {
-        ViewGroup lightsOut = (ViewGroup) container.findViewById(R.id.lights_out);
-        if (lightsOut != null) {
-            final int nChildren = lightsOut.getChildCount();
-            for (int i = 0; i < nChildren; i++) {
-                final View child = lightsOut.getChildAt(i);
-                if (child instanceof ImageView) {
-                    final ImageView iv = (ImageView) child;
-                    // clear out the existing drawable, this is required since the
-                    // ImageView keeps track of the resource ID and if it is the same
-                    // it will not update the drawable.
-                    iv.setImageDrawable(null);
-                    iv.setImageDrawable(mThemedResources.getDrawable(
-                            R.drawable.ic_sysbar_lights_out_dot_large));
-                }
-            }
+    @Override
+    protected void onUpdateRotatedView(ViewGroup container, Resources res){
+        ImageView ime = (ImageView) container.findViewById(R.id.ime_switcher);
+        if (ime != null) {
+            ime.setImageDrawable(null);
+            ime.setImageDrawable(res.getDrawable(R.drawable.ic_ime_switcher_default));
         }
     }
 
     @Override
     public void setLayoutDirection(int layoutDirection) {
-        getIcons(mThemedResources != null ? mThemedResources : getContext().getResources());
-
+        getIcons(getAvailableResources());
         super.setLayoutDirection(layoutDirection);
     }
 

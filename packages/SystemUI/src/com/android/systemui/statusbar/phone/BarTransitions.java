@@ -69,13 +69,6 @@ public class BarTransitions {
         }
     }
 
-    // restore mode the navbar was in before bar change
-    public void setMode(int mode) {
-        if (mMode != mode) {
-            mMode = mode;
-        }
-    }
-
     protected void setGradientResourceId(int gradientResourceId) {
         mBarBackground.setGradientResourceId(mView.getContext().getResources(),
                 gradientResourceId);

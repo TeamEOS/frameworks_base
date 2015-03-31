@@ -30,7 +30,6 @@ import com.android.systemui.statusbar.BaseNavigationBar;
 import com.android.systemui.statusbar.phone.BarTransitions;
 import com.android.systemui.nx.BaseGestureDetector;
 
-import android.animation.LayoutTransition;
 import android.content.Context;
 import android.content.res.Resources;
 import android.database.ContentObserver;
@@ -232,7 +231,12 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     }
 
     @Override
-    public void updateResources(Resources res) {
+    protected void onUpdateRotatedView(ViewGroup container, Resources res) {
+        // maybe do something with nx logo
+    }
+
+    @Override
+    protected void onUpdateResources(Resources res) {
         mRipple.updateResources(res);
     }
 
@@ -243,23 +247,8 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         }
     }
 
-    // we still receive all flags from service so we can be aware
     public void setDisabledFlags(int disabledFlags, boolean force) {
         super.setDisabledFlags(disabledFlags, force);
-
-        ViewGroup navButtons = (ViewGroup) mCurrentView.findViewById(R.id.nav_buttons);
-        if (navButtons != null) {
-            LayoutTransition lt = navButtons.getLayoutTransition();
-            if (lt != null) {
-                if (!mScreenOn && mCurrentView != null) {
-                    lt.disableTransitionType(
-                            LayoutTransition.CHANGE_APPEARING |
-                                    LayoutTransition.CHANGE_DISAPPEARING |
-                                    LayoutTransition.APPEARING |
-                                    LayoutTransition.DISAPPEARING);
-                }
-            }
-        }
 
         mGestureHandler.onScreenStateChanged(mScreenOn);
         getNxLogo().setVisibility((mLogoEnabled && !mMC.shouldDrawPulse()) ? View.VISIBLE : View.INVISIBLE);
@@ -271,8 +260,6 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     @Override
     public void reorient() {
         super.reorient();
-
-        // force the low profile & disabled states into compliance
         mBarTransitions.init(mVertical);
         mGestureHandler.setIsVertical(mVertical);
         setDisabledFlags(mDisabledFlags, true /* force */);
@@ -336,7 +323,6 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
 
     @Override
     public void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
         if (mMC.shouldDrawPulse()) {
             mMC.onDrawNx(canvas);
         }

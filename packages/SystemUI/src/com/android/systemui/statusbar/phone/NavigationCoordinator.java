@@ -55,12 +55,10 @@ public class NavigationCoordinator {
     private static final int NAVBAR_LAYOUT = com.android.systemui.R.layout.navigation_bar;
     private static final int NX_LAYOUT = com.android.systemui.R.layout.nx_bar;
     private static final String NX_ENABLED_URI = "eos_nx_enabled";
-    private boolean mRecreating = false;
     private PhoneStatusBar mBar;
     private NavbarObserver mNavbarObserver;
     private Runnable mAddNavbar;
     private Runnable mRemoveNavbar;
-    private int mLastBarMode = -1;
 
     // monitor package changes and clear actions on features
     // that launched the package, if one was assigned
@@ -123,17 +121,7 @@ public class NavigationCoordinator {
                 NX_ENABLED_URI, 0) == 1;
         BaseNavigationBar navBar = (BaseNavigationBar) View.inflate(mContext,
                 isNxEnabled ? NX_LAYOUT : NAVBAR_LAYOUT, null);
-
-        if (mLastBarMode != -1) {
-            navBar.getBarTransitions().setMode(mLastBarMode);
-            mLastBarMode = -1;
-        }
         return navBar;
-    }
-
-    // hook theme change from PhoneStatusBar
-    public void setRecreating(boolean recreating) {
-        mRecreating = recreating;
     }
 
     // for now, it makes sense to let PhoneStatusBar add/remove navbar view
@@ -171,7 +159,6 @@ public class NavigationCoordinator {
 
                 // user changed bar modes, getNavigationBarView() handles bar mode
                 if (visible && isBarShowingNow) {
-                    mLastBarMode = mBar.getNavigationBarView().getBarTransitions().getMode();
                     mBar.getNavigationBarView().onStop();
                     mHandler.post(mRemoveNavbar);
                     mHandler.postDelayed(mAddNavbar, 500);
@@ -188,7 +175,6 @@ public class NavigationCoordinator {
             } else {
                 // no hardware keys, just a bar change
                 if (isBarShowingNow) { // sanity check before taking down old bar
-                    mLastBarMode = mBar.getNavigationBarView().getBarTransitions().getMode();
                     mBar.getNavigationBarView().onStop();
                 }
                 mHandler.post(mRemoveNavbar);

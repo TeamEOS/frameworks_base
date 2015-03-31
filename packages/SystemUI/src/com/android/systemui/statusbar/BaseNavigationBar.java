@@ -43,7 +43,9 @@ import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 public abstract class BaseNavigationBar extends LinearLayout {
@@ -78,7 +80,10 @@ public abstract class BaseNavigationBar extends LinearLayout {
     protected View.OnTouchListener mRecentsPreloadOnTouchListener;
     protected View.OnTouchListener mHomeActionListener;
     protected View.OnLongClickListener mLongPressBackRecentsListener;
-    protected View.OnTouchListener mUserAutoHideListener; 
+    protected View.OnTouchListener mUserAutoHideListener;
+
+    // call getAvailableResources() to safeguard against null
+    private Resources mThemedResources;
 
     private class H extends Handler {
         public void handleMessage(Message m) {
@@ -114,6 +119,15 @@ public abstract class BaseNavigationBar extends LinearLayout {
     public abstract BarTransitions getBarTransitions();
     protected abstract void onPrepareToStop();
 
+    // let subclass know theme changed
+    protected void onUpdateResources(Resources res) {}
+
+    // iterate bar containers and pass container to subclass
+    protected void onUpdateRotatedView(ViewGroup container, Resources res){}
+
+    // any implementation specific handling can be handled here
+    protected void onInflateFromUser() {}
+
     public void setMenuVisibility(final boolean show) {}
     public void setMenuVisibility(final boolean show, final boolean force) {}
     public void setNavigationIconHints(int hints) {}
@@ -121,7 +135,33 @@ public abstract class BaseNavigationBar extends LinearLayout {
     public void onHandlePackageChanged(){}
     public void setKeyguardShowing(boolean showing){}
     public void setLeftInLandscape(boolean leftInLandscape) {}
-    public void updateResources(Resources res) {}
+
+    // if a bar instance is created from a user mode switch
+    // PhoneStatusBar should call this. This allows the view
+    // to make adjustments that are otherwise not needed when
+    // inflating on boot, such as setting proper transition flags
+    public final void notifyInflateFromUser() {
+        getBarTransitions().transitionTo(BarTransitions.MODE_TRANSPARENT, false);
+        onInflateFromUser();
+    }
+
+    // handle updating bar transitions, lights out
+    // pass iterated container to subclass for
+    // handling implementation specific updates
+    // let subclass know we're done for non-view
+    // specific work
+    public final void updateResources(Resources res) {
+        mThemedResources = res;
+        getBarTransitions().updateResources(res);
+        for (int i = 0; i < mRotatedViews.length; i++) {
+            ViewGroup container = (ViewGroup) mRotatedViews[i];
+            if (container != null) {
+                updateLightsOutResources(container);
+                onUpdateRotatedView(container, res);
+            }
+        }
+        onUpdateResources(res);
+    }
 
     /*
      * compatibility shim for handleLongPressBackRecents accessibility method
@@ -251,9 +291,33 @@ public abstract class BaseNavigationBar extends LinearLayout {
         }
     }
 
+    // returns themed resources is availabe, otherwise system resources
+    protected Resources getAvailableResources() {
+        return mThemedResources != null ? mThemedResources : getContext().getResources();
+    }
+
     protected void setVisibleOrGone(View view, boolean visible) {
         if (view != null) {
             view.setVisibility(visible ? VISIBLE : GONE);
+        }
+    }
+
+    private void updateLightsOutResources(ViewGroup container) {
+        ViewGroup lightsOut = (ViewGroup) container.findViewById(R.id.lights_out);
+        if (lightsOut != null) {
+            final int nChildren = lightsOut.getChildCount();
+            for (int i = 0; i < nChildren; i++) {
+                final View child = lightsOut.getChildAt(i);
+                if (child instanceof ImageView) {
+                    final ImageView iv = (ImageView) child;
+                    // clear out the existing drawable, this is required since the
+                    // ImageView keeps track of the resource ID and if it is the same
+                    // it will not update the drawable.
+                    iv.setImageDrawable(null);
+                    iv.setImageDrawable(mThemedResources.getDrawable(
+                            R.drawable.ic_sysbar_lights_out_dot_large));
+                }
+            }
         }
     }
 
