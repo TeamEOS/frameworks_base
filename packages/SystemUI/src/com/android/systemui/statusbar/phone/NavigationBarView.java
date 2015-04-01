@@ -60,6 +60,7 @@ public class NavigationBarView extends BaseNavigationBar {
     final static String TAG = "PhoneStatusBar/NavigationBarView";
     private static final String URI_FORCE_SHOW_MENU = "eos_navbar_force_show_menu_button";
     boolean mShowMenu;
+    private boolean mKeyguardShowing;
     int mNavigationIconHints = 0;
 
     private BackButtonDrawable mBackIcon, mBackLandIcon;
@@ -364,9 +365,19 @@ public class NavigationBarView extends BaseNavigationBar {
         mBarTransitions.applyBackButtonQuiescentAlpha(mBarTransitions.getMode(), true /*animate*/);
     }
 
+    @Override
+    public void setKeyguardShowing(boolean showing) {
+        if (mKeyguardShowing != showing) {
+            mKeyguardShowing = showing;
+            mSoftkeyHandler.setKeyguardShowing(showing);
+            setMenuVisibility(shouldForceShowMenu(), true);
+        }
+    }
+
     private boolean shouldForceShowMenu() {
         return mForceShowMenuFromUser
-                && ((mNavigationIconHints & StatusBarManager.NAVIGATION_HINT_IME_SHOWN) == 0);
+                && ((mNavigationIconHints & StatusBarManager.NAVIGATION_HINT_IME_SHOWN) == 0)
+                && !mKeyguardShowing;
     }
 
     public void setMenuVisibility(final boolean show) {

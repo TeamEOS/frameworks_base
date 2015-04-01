@@ -68,6 +68,7 @@ public class SoftkeyActionHandler extends ActionHandler {
     private SoftkeyActionObserver mObserver;
     private boolean mRecreating;
     private boolean mInit = false;
+    private boolean mKeyguardShowing;
 
     public SoftkeyActionHandler(NavigationBarView v) {
         super(v.getContext());
@@ -82,6 +83,18 @@ public class SoftkeyActionHandler extends ActionHandler {
             mObserver.observe();
             mInit = true;
         }
+    }
+
+    public void setKeyguardShowing(boolean showing) {
+        if (mKeyguardShowing != showing) {
+            mKeyguardShowing = showing;
+        }
+    }
+
+    public boolean isSecureToFire(String action) {
+        return action == null
+                || !mKeyguardShowing
+                || (mKeyguardShowing && SYSTEMUI_TASK_BACK.equals(action));
     }
 
     public void setIsRecreating(boolean recreating) {

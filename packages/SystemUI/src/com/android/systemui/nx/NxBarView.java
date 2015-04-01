@@ -224,6 +224,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     public void setKeyguardShowing(boolean showing) {
         if (mKeyguardShowing != showing) {
             mKeyguardShowing = showing;
+            mActionHandler.setKeyguardShowing(showing);
             mMC.setKeyguardShowing(showing);
             setDisabledFlags(mDisabledFlags, true /* force */);
             invalidate();

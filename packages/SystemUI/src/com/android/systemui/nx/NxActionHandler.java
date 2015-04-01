@@ -63,6 +63,7 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver, Sw
     private View mHost;
     private Handler H = new Handler();
     private boolean isDoubleTapEnabled;
+    private boolean mKeyguardShowing;
 
     public NxActionHandler(Context context, View host) {
         super(context);
@@ -121,6 +122,13 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver, Sw
                 .isEnabled();
     }
 
+    public void setKeyguardShowing(boolean showing) {
+        if (mKeyguardShowing == showing) {
+            return;
+        }
+        mKeyguardShowing = showing;
+    }
+
     private String getAction(String uri, String defAction) {
         String action = Settings.System.getString(
                 mContext.getContentResolver(), uri);
@@ -135,7 +143,12 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver, Sw
     }
 
     public void fireAction(int type) {
-        ((NxAction) mActionMap.get(type)).fireAction();
+        NxAction action = ((NxAction) mActionMap.get(type));
+        // only back is allowed in keyguard
+        if (mKeyguardShowing && (action.getAction() != ActionHandler.SYSTEMUI_TASK_BACK)) {
+            return;
+        }
+        action.fireAction();
     }
 
     public void cancelAction(int type) {
