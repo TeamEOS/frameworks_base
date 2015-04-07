@@ -45,12 +45,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.Animation.AnimationListener;
-import android.view.animation.AnimationSet;
-import android.view.animation.LinearInterpolator;
-import android.view.animation.RotateAnimation;
-import android.view.animation.ScaleAnimation;
 
 public class NxBarView extends BaseNavigationBar implements NxSurface {
     final static String TAG = NxBarView.class.getSimpleName();
@@ -60,9 +54,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     private NxGestureDetector mGestureDetector;
     private final NxBarTransitions mBarTransitions;
     private NxBarObserver mObserver;
-    private boolean mIsAnimating;
     private boolean mLogoEnabled;
-    private boolean mLogoAnimates;
     private boolean mRippleEnabled;
     private boolean mKeyguardShowing;
     private NxMediaController mMC;
@@ -136,8 +128,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
                 }
                 setDisabledFlags(mDisabledFlags, true);
             }
-            mLogoAnimates = Settings.System.getInt(mContext.getContentResolver(),
-                    "nx_logo_animates", 1) == 1;
+            updateLogoAnimates();
             int lpTimeout = Settings.System.getInt(mContext.getContentResolver(),
                     "eos_nx_long_press_timeout", mGestureDetector.LP_TIMEOUT_MAX);
             mGestureDetector.setLongPressTimeout(lpTimeout);
@@ -161,7 +152,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
             }
             if (action == MotionEvent.ACTION_DOWN) {
                 mPm.cpuBoost(1000 * 1000);
-                if (!mIsAnimating) {
+                if (!getNxLogo().isAnimating()) {
                     animateLogo(true);
                 }
             } else if (action == MotionEvent.ACTION_UP
@@ -187,8 +178,6 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         mObserver.register();
         mLogoEnabled = Settings.System.getInt(mContext.getContentResolver(),
                 "nx_logo_visible", 1) == 1;
-        mLogoAnimates = Settings.System.getInt(mContext.getContentResolver(),
-                "nx_logo_animates", 1) == 1;
         int lpTimeout = Settings.System.getInt(mContext.getContentResolver(),
                 "eos_nx_long_press_timeout", mGestureDetector.LP_TIMEOUT_MAX);
         mRippleEnabled = Settings.System.getInt(mContext.getContentResolver(),
@@ -228,6 +217,20 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     }
 
     @Override
+    public void onFinishInflate() {
+        super.onFinishInflate();
+        updateLogoAnimates();
+    }
+
+    private void updateLogoAnimates() {
+        boolean logoAnimates = Settings.System.getInt(mContext.getContentResolver(),
+                "nx_logo_animates", 1) == 1;
+        for (NxLogoView v : EosUtils.getAllChildren(NxBarView.this, NxLogoView.class)) {
+            v.setSpinEnabled(logoAnimates);
+        }
+    }
+
+    @Override
     protected void onUpdateRotatedView(ViewGroup container, Resources res) {
         // maybe do something with nx logo
     }
@@ -238,10 +241,8 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     }
 
     private void animateLogo(boolean isPressed) {
-        if (mLogoAnimates && mLogoEnabled) {
-            getNxLogo().animate().cancel();
-            final AnimationSet logoAnim = getLogoAnimator(isPressed);
-            getNxLogo().startAnimation(logoAnim);
+        if (mLogoEnabled) {
+            getNxLogo().animateSpinner(isPressed);
         }
     }
 
@@ -273,43 +274,6 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     @Override
     public void setNavigationIconHints(int hints) {
         // maybe do something with the IME switcher
-    }
-
-    private AnimationSet getLogoAnimator(boolean isDown) {
-        final float from = isDown ? 1.0f : 0.0f;
-        final float to = isDown ? 0.0f : 1.0f;
-        final float fromDeg = isDown ? 0.0f : 360.0f;
-        final float toDeg = isDown ? 360.0f : 0.0f;
-
-        Animation scale = new ScaleAnimation(from, to, from, to, Animation.RELATIVE_TO_SELF,
-                0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-        RotateAnimation rotate = new RotateAnimation(fromDeg, toDeg, Animation.RELATIVE_TO_SELF,
-                0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-
-        AnimationSet animSet = new AnimationSet(true);
-        animSet.setInterpolator(new LinearInterpolator());
-        animSet.setDuration(150);
-        animSet.setFillAfter(true);
-        animSet.addAnimation(scale);
-        animSet.addAnimation(rotate);
-        animSet.setAnimationListener(new AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-                mIsAnimating = true;
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                mIsAnimating = false;
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-                // TODO Auto-generated method stub
-            }
-
-        });
-        return animSet;
     }
 
     @Override

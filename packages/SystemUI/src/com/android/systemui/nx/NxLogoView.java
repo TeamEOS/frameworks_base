@@ -23,23 +23,92 @@ package com.android.systemui.nx;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
+import android.view.animation.ScaleAnimation;
+import android.view.animation.Animation.AnimationListener;
 import android.widget.ImageView;
 
 public class NxLogoView extends ImageView {
     public static final String TAG = NxLogoView.class.getSimpleName();
 
-	public NxLogoView(Context context, AttributeSet attrs) {
-		this(context, attrs, 0);
-	}
+    private boolean mIsAnimating;
+    private boolean mSpinAnimationEnabled = true;
 
-	public NxLogoView(Context context, AttributeSet attrs, int defStyle) {
-		super(context, attrs, defStyle);
-		setBackground(null);
-	}
+    public NxLogoView(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
 
-	@Override
+    public NxLogoView(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        setBackground(null);
+    }
+
+    @Override
     public boolean onTouchEvent(MotionEvent ev) {
-	    // TEMP: pass all events to NX, for now
+        // TEMP: pass all events to NX, for now
         return false;
+    }
+
+    public boolean isAnimating() {
+        return mIsAnimating;
+    }
+
+    public void setSpinEnabled(boolean enabled) {
+        if (enabled == mSpinAnimationEnabled) {
+            return;
+        }
+        mSpinAnimationEnabled = enabled;
+        if (!enabled) {
+            animate().cancel();
+        }
+    }
+
+    public void animateSpinner(boolean isPressed) {
+        if (!mSpinAnimationEnabled) {
+            return;
+        }
+        animate().cancel();
+        final AnimationSet spinAnim = getSpinAnimation(isPressed);
+        startAnimation(spinAnim);
+    }
+
+    private AnimationSet getSpinAnimation(boolean isPressed) {
+        final float from = isPressed ? 1.0f : 0.0f;
+        final float to = isPressed ? 0.0f : 1.0f;
+        final float fromDeg = isPressed ? 0.0f : 360.0f;
+        final float toDeg = isPressed ? 360.0f : 0.0f;
+
+        Animation scale = new ScaleAnimation(from, to, from, to, Animation.RELATIVE_TO_SELF,
+                0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        RotateAnimation rotate = new RotateAnimation(fromDeg, toDeg, Animation.RELATIVE_TO_SELF,
+                0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+
+        AnimationSet animSet = new AnimationSet(true);
+        animSet.setInterpolator(new LinearInterpolator());
+        animSet.setDuration(150);
+        animSet.setFillAfter(true);
+        animSet.addAnimation(scale);
+        animSet.addAnimation(rotate);
+        animSet.setAnimationListener(new AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                mIsAnimating = true;
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                mIsAnimating = false;
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+                // TODO Auto-generated method stub
+            }
+
+        });
+        return animSet;
     }
 }
