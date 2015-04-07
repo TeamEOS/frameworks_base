@@ -122,7 +122,7 @@
                 android:layout_gravity="center"
                 android:layout_weight="0"
                 android:visibility="invisible"
-                android:src="@drawable/ic_eos_nx" />
+                android:src="@drawable/ic_eos_nx_land" />
 
             <View
                 android:layout_width="match_parent"

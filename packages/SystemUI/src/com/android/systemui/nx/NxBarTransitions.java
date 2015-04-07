@@ -27,7 +27,6 @@ import android.view.animation.AccelerateInterpolator;
 import com.android.internal.statusbar.IStatusBarService;
 import com.android.systemui.R;
 import com.android.systemui.statusbar.phone.BarTransitions;
-import com.android.systemui.statusbar.policy.KeyButtonView;
 
 public final class NxBarTransitions extends BarTransitions {
 
@@ -76,17 +75,8 @@ public final class NxBarTransitions extends BarTransitions {
     }
 
     private void applyMode(int mode, boolean animate, boolean force) {
-        // apply to key buttons
-        final float alpha = alphaForMode(mode);
-        mView.getNxLogo().setQuiescentAlpha(alpha, animate);
-
         // apply to lights out
         applyLightsOut(mode == MODE_LIGHTS_OUT, animate, force);
-    }
-
-    private float alphaForMode(int mode) {
-        final boolean isOpaque = mode == MODE_OPAQUE || mode == MODE_LIGHTS_OUT;
-        return isOpaque ? KeyButtonView.DEFAULT_QUIESCENT_ALPHA : 1f;
     }
 
     private void applyLightsOut(boolean lightsOut, boolean animate, boolean force) {

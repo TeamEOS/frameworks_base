@@ -20,13 +20,12 @@
 
 package com.android.systemui.nx;
 
-import com.android.systemui.statusbar.policy.KeyButtonView;
-
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.widget.ImageView;
 
-public class NxLogoView extends KeyButtonView {
+public class NxLogoView extends ImageView {
     public static final String TAG = NxLogoView.class.getSimpleName();
 
 	public NxLogoView(Context context, AttributeSet attrs) {

@@ -60,8 +60,6 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     private NxGestureDetector mGestureDetector;
     private final NxBarTransitions mBarTransitions;
     private NxBarObserver mObserver;
-    private AnimationSet mSpinOut;
-    private AnimationSet mSpinIn;
     private boolean mIsAnimating;
     private boolean mLogoEnabled;
     private boolean mLogoAnimates;
@@ -196,8 +194,6 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         mRippleEnabled = Settings.System.getInt(mContext.getContentResolver(),
                 "eos_nx_show_ripple", 1) == 1;
         mGestureDetector.setLongPressTimeout(lpTimeout);
-        mSpinIn = getLogoAnimator(false);
-        mSpinOut = getLogoAnimator(true);
         mMC = new NxMediaController(context);
         boolean doPulse = Settings.System.getInt(mContext.getContentResolver(),
                 "eos_nx_pulse", 0) == 1;
@@ -241,10 +237,11 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         mRipple.updateResources(res);
     }
 
-    private void animateLogo(boolean isDown) {
+    private void animateLogo(boolean isPressed) {
         if (mLogoAnimates && mLogoEnabled) {
             getNxLogo().animate().cancel();
-            getNxLogo().startAnimation(isDown ? mSpinOut : mSpinIn);
+            final AnimationSet logoAnim = getLogoAnimator(isPressed);
+            getNxLogo().startAnimation(logoAnim);
         }
     }
 

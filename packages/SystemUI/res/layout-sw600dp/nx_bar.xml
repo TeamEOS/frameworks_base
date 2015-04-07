@@ -113,7 +113,7 @@
                 android:layout_height="match_parent"
                 android:visibility="invisible"
                 android:layout_weight="0"
-                android:src="@drawable/ic_eos_nx" />
+                android:src="@drawable/ic_eos_nx_land" />
 
             <Space
                 android:layout_width="match_parent"
