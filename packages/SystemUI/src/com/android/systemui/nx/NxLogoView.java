@@ -33,9 +33,11 @@ import android.widget.ImageView;
 
 public class NxLogoView extends ImageView {
     public static final String TAG = NxLogoView.class.getSimpleName();
+    private static final int ALPHA_DURATION = 250;
 
     private boolean mIsAnimating;
     private boolean mSpinAnimationEnabled = true;
+    private boolean mLogoEnabled = true;
 
     public NxLogoView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
@@ -56,6 +58,28 @@ public class NxLogoView extends ImageView {
         return mIsAnimating;
     }
 
+    public void updateVisibility(boolean isPulsing) {
+        if (!mLogoEnabled || isPulsing) {
+            animateAlpha(false, true);
+        } else if (mLogoEnabled && !isPulsing) {
+            animateAlpha(true, true);
+        }
+    }
+
+    private void animateAlpha(boolean show, boolean animate) {
+        animate().cancel();
+        final float alpha = show ? 1.0f : 0.0f;
+        if (!animate) {
+            setAlpha(alpha);
+        } else {
+            final int duration = ALPHA_DURATION;
+            animate()
+                    .alpha(alpha)
+                    .setDuration(duration)
+                    .start();
+        }
+    }
+
     public void setSpinEnabled(boolean enabled) {
         if (enabled == mSpinAnimationEnabled) {
             return;
@@ -66,8 +90,15 @@ public class NxLogoView extends ImageView {
         }
     }
 
+    public void setLogoEnabled(boolean enabled) {
+        if (enabled == mLogoEnabled) {
+            return;
+        }
+        mLogoEnabled = enabled;
+    }
+
     public void animateSpinner(boolean isPressed) {
-        if (!mSpinAnimationEnabled) {
+        if (!mLogoEnabled || !mSpinAnimationEnabled) {
             return;
         }
         animate().cancel();

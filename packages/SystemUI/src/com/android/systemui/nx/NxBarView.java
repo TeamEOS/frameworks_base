@@ -54,7 +54,6 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     private NxGestureDetector mGestureDetector;
     private final NxBarTransitions mBarTransitions;
     private NxBarObserver mObserver;
-    private boolean mLogoEnabled;
     private boolean mRippleEnabled;
     private boolean mKeyguardShowing;
     private NxMediaController mMC;
@@ -119,15 +118,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         }
 
         public void onChange(boolean selfChange, Uri uri) {
-            boolean oldEnabled = mLogoEnabled;
-            mLogoEnabled = Settings.System.getInt(mContext.getContentResolver(),
-                    "nx_logo_visible", 1) == 1;
-            if (oldEnabled != mLogoEnabled) {
-                for (NxLogoView v : EosUtils.getAllChildren(NxBarView.this, NxLogoView.class)) {
-                    v.setAlpha(mLogoEnabled ? 1.0f : 0.0f);
-                }
-                setDisabledFlags(mDisabledFlags, true);
-            }
+            updateLogoEnabled();
             updateLogoAnimates();
             int lpTimeout = Settings.System.getInt(mContext.getContentResolver(),
                     "eos_nx_long_press_timeout", mGestureDetector.LP_TIMEOUT_MAX);
@@ -153,11 +144,11 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
             if (action == MotionEvent.ACTION_DOWN) {
                 mPm.cpuBoost(1000 * 1000);
                 if (!getNxLogo().isAnimating()) {
-                    animateLogo(true);
+                    getNxLogo().animateSpinner(true);
                 }
             } else if (action == MotionEvent.ACTION_UP
                     || action == MotionEvent.ACTION_CANCEL) {
-                animateLogo(false);
+                getNxLogo().animateSpinner(false);
             }
             if (mRippleEnabled) {
                 mRipple.onTouch(NxBarView.this, event);
@@ -176,8 +167,6 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         this.setOnTouchListener(mNxTouchListener);
         mObserver = new NxBarObserver(new Handler());
         mObserver.register();
-        mLogoEnabled = Settings.System.getInt(mContext.getContentResolver(),
-                "nx_logo_visible", 1) == 1;
         int lpTimeout = Settings.System.getInt(mContext.getContentResolver(),
                 "eos_nx_long_press_timeout", mGestureDetector.LP_TIMEOUT_MAX);
         mRippleEnabled = Settings.System.getInt(mContext.getContentResolver(),
@@ -219,6 +208,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     @Override
     public void onFinishInflate() {
         super.onFinishInflate();
+        updateLogoEnabled();
         updateLogoAnimates();
     }
 
@@ -228,6 +218,15 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         for (NxLogoView v : EosUtils.getAllChildren(NxBarView.this, NxLogoView.class)) {
             v.setSpinEnabled(logoAnimates);
         }
+    }
+
+    private void updateLogoEnabled() {
+        boolean logoEnabled = Settings.System.getInt(mContext.getContentResolver(),
+                "nx_logo_visible", 1) == 1;
+        for (NxLogoView v : EosUtils.getAllChildren(NxBarView.this, NxLogoView.class)) {
+            v.setLogoEnabled(logoEnabled);
+        }
+        setDisabledFlags(mDisabledFlags, true);
     }
 
     @Override
@@ -240,20 +239,10 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         mRipple.updateResources(res);
     }
 
-    private void animateLogo(boolean isPressed) {
-        if (mLogoEnabled) {
-            getNxLogo().animateSpinner(isPressed);
-        }
-    }
-
     public void setDisabledFlags(int disabledFlags, boolean force) {
         super.setDisabledFlags(disabledFlags, force);
-
         mGestureHandler.onScreenStateChanged(mScreenOn);
-        getNxLogo().setVisibility((mLogoEnabled && !mMC.shouldDrawPulse()) ? View.VISIBLE : View.INVISIBLE);
-        if (mLogoEnabled && mMC.shouldDrawPulse()){
-            getNxLogo().setAlpha(0.0f);
-        }
+        getNxLogo().updateVisibility(mMC.shouldDrawPulse());
     }
 
     @Override

@@ -52,7 +52,6 @@
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
                 android:layout_weight="0"
-                android:visibility="invisible"
                 android:src="@drawable/ic_eos_nx" />
 
             <View
@@ -121,7 +120,6 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_weight="0"
-                android:visibility="invisible"
                 android:src="@drawable/ic_eos_nx_land" />
 
             <View
