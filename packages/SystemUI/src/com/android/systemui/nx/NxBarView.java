@@ -237,6 +237,9 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     @Override
     protected void onUpdateResources(Resources res) {
         mRipple.updateResources(res);
+        for (NxLogoView v : EosUtils.getAllChildren(NxBarView.this, NxLogoView.class)) {
+            v.updateResources(res);
+        }
     }
 
     public void setDisabledFlags(int disabledFlags, boolean force) {

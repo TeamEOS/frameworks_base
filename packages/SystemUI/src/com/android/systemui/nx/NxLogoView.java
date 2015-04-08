@@ -20,7 +20,12 @@
 
 package com.android.systemui.nx;
 
+import com.android.systemui.R;
+
 import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.PorterDuff.Mode;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.animation.Animation;
@@ -46,12 +51,19 @@ public class NxLogoView extends ImageView {
     public NxLogoView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         setBackground(null);
+        updateResources(context.getResources());
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
         // TEMP: pass all events to NX, for now
         return false;
+    }
+
+    public void updateResources(Resources res) {
+        int color = res.getColor(R.color.status_bar_clock_color);
+        Drawable logo = getDrawable();
+        logo.setColorFilter(color, Mode.SRC_ATOP);
     }
 
     public boolean isAnimating() {
