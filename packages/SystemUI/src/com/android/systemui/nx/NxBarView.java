@@ -290,6 +290,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     @Override
     protected void onPrepareToStop() {
         mObserver.unregister();
+        mActionHandler.unregister();
         mGestureHandler.unregister();
         if (mMC.isPulseEnabled()) {
             mMC.setPulseEnabled(false);
