@@ -135,6 +135,9 @@ public class NxMediaController implements NxRenderer {
     }
 
     public void setPulseEnabled(boolean enabled) {
+        if (enabled == mPulseEnabled) {
+            return;
+        }
         mPulseEnabled = enabled;
         if (enabled) {
             startListening();
@@ -144,9 +147,9 @@ public class NxMediaController implements NxRenderer {
         } else {
             stopListening();
             mPulse.stop();
-            if (mSurface != null) {
-                mSurface.updateBar();
-            }
+        }
+        if (mSurface != null) {
+            mSurface.updateBar();
         }
     }
 

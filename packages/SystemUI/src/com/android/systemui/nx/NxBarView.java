@@ -120,14 +120,10 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         public void onChange(boolean selfChange, Uri uri) {
             updateLogoEnabled();
             updateLogoAnimates();
+            updatePulseEnabled();
             int lpTimeout = Settings.System.getInt(mContext.getContentResolver(),
                     "eos_nx_long_press_timeout", mGestureDetector.LP_TIMEOUT_MAX);
             mGestureDetector.setLongPressTimeout(lpTimeout);
-            boolean doPulse = Settings.System.getInt(mContext.getContentResolver(),
-                    "eos_nx_pulse", 0) == 1;
-            if (doPulse != mMC.isPulseEnabled()) {
-                mMC.setPulseEnabled(doPulse);
-            }
             mRippleEnabled = Settings.System.getInt(mContext.getContentResolver(),
                     "eos_nx_show_ripple", 1) == 1;
         }
@@ -173,9 +169,6 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
                 "eos_nx_show_ripple", 1) == 1;
         mGestureDetector.setLongPressTimeout(lpTimeout);
         mMC = new NxMediaController(context);
-        boolean doPulse = Settings.System.getInt(mContext.getContentResolver(),
-                "eos_nx_pulse", 0) == 1;
-        mMC.setPulseEnabled(doPulse);
         mMC.onSetNxSurface(this);
         mPm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         mRipple = new NxRipple(this);
@@ -210,6 +203,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         super.onFinishInflate();
         updateLogoEnabled();
         updateLogoAnimates();
+        updatePulseEnabled();
     }
 
     private void updateLogoAnimates() {
@@ -227,6 +221,12 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
             v.setLogoEnabled(logoEnabled);
         }
         setDisabledFlags(mDisabledFlags, true);
+    }
+
+    private void updatePulseEnabled() {
+        boolean doPulse = Settings.System.getInt(mContext.getContentResolver(),
+                "eos_nx_pulse", 0) == 1;
+        mMC.setPulseEnabled(doPulse);
     }
 
     @Override
