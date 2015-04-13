@@ -2554,7 +2554,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         // from a hard key or
         // it's the key handler synthesizing a back or menu key event for
         // dispatch
-        if (mKeyHandler != null && !virtualKey) {
+        // if keyguard is showing and secure, don't intercept and let aosp keycode
+        // implementation handle event
+        if (mKeyHandler != null && !keyguardOn && !virtualKey) {
             boolean handled = mKeyHandler.handleKeyEvent(win, keyCode, repeatCount, down, canceled,
                     longPress, keyguardOn);
             if (handled)
