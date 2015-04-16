@@ -612,6 +612,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     private static final int MSG_HIDE_BOOT_MESSAGE = 11;
     private static final int MSG_LAUNCH_VOICE_ASSIST_WITH_WAKE_LOCK = 12;
     private static final int MSG_DISPATCH_VOLKEY_WITH_WAKE_LOCK = 13;
+    private static final int MSG_DISPATCH_TOGGLE_SCREENRECORD = 14;
     boolean mWifiDisplayConnected = false;
     int     mWifiDisplayCustomRotation = -1;
     private boolean mHasPermanentMenuKey;
@@ -680,6 +681,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                             KeyEvent.changeAction(event, KeyEvent.ACTION_UP));
                     break;
                 }
+                case MSG_DISPATCH_TOGGLE_SCREENRECORD:
+                    cancelPendingScreenrecordChordAction();
+                    mHandler.post(mScreenrecordRunnable);
+                    break;
             }
         }
     }
@@ -697,6 +702,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             if (ActionHandler.INTENT_SHOW_POWER_MENU.equals(action)) {
                 mHandler.removeMessages(MSG_DISPATCH_SHOW_GLOBAL_ACTIONS);
                 mHandler.sendEmptyMessage(MSG_DISPATCH_SHOW_GLOBAL_ACTIONS);
+            } else if (ActionHandler.INTENT_TOGGLE_SCREENRECORD.equals(action)) {
+                mHandler.removeMessages(MSG_DISPATCH_TOGGLE_SCREENRECORD);
+                mHandler.sendEmptyMessage(MSG_DISPATCH_TOGGLE_SCREENRECORD);
             }
         }
     };
@@ -1351,8 +1359,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         filter = new IntentFilter(Intent.ACTION_USER_SWITCHED);
         context.registerReceiver(mMultiuserReceiver, filter);
 
-        // eos action handler show power menu, and maybe other actions later
-        filter = new IntentFilter(ActionHandler.INTENT_SHOW_POWER_MENU);
+        // eos action handler
+        filter = new IntentFilter();
+        filter.addAction(ActionHandler.INTENT_SHOW_POWER_MENU);
+        filter.addAction(ActionHandler.INTENT_TOGGLE_SCREENRECORD);
         context.registerReceiver(mActionsReceiver, filter);
 
         // monitor for system gestures
