@@ -78,7 +78,6 @@ public class NavigationBarView extends BaseNavigationBar {
     private boolean mIsLayoutRtl;
     private boolean mForceShowMenuFromUser;
     private boolean mDelegateIntercepted;
-    private boolean mLeftInLandscape;
     private SoftkeyActionHandler mSoftkeyHandler;
     private NavbarObserver mObserver;
 
@@ -238,7 +237,7 @@ public class NavigationBarView extends BaseNavigationBar {
 
     @Override
     public void setLeftInLandscape(boolean leftInLandscape) {
-        mLeftInLandscape = leftInLandscape;
+        super.setLeftInLandscape(leftInLandscape);
         mDeadZone.setStartFromRight(leftInLandscape);
     }
 

@@ -51,6 +51,7 @@ public class NxPulse implements NxRenderer {
     private Context mContext;
     private boolean mVertical;
     private boolean mSizeChanged;
+    private boolean mLeftInLandscape;
 
     public NxPulse(Context context) {
         mContext = context;
@@ -115,6 +116,13 @@ public class NxPulse implements NxRenderer {
 
     public void setSizeChanged() {
         mSizeChanged = true;
+    }
+
+    public void setLeftInLandscape(boolean leftInLandscape) {
+        if (mLeftInLandscape != leftInLandscape) {
+            mLeftInLandscape = leftInLandscape;
+            mSizeChanged = true;
+        }
     }
 
     public void addRenderer(Renderer renderer) {
@@ -218,14 +226,12 @@ public class NxPulse implements NxRenderer {
         // if vertical flip our horizontally rendered bitmap
         if (isVertical) {
             Matrix matrix = new Matrix();
-            matrix.postRotate(-90);
+            matrix.postRotate(mLeftInLandscape ? 90 : -90);
             mRotatedBitmap = Bitmap.createBitmap(mCanvasBitmap, 0, 0,
                     mCanvasBitmap.getWidth(), mCanvasBitmap.getHeight(),
                     matrix, true);
-            canvas.drawBitmap(mRotatedBitmap, new Matrix(), null);
-        } else {
-            canvas.drawBitmap(mCanvasBitmap, new Matrix(), null);
         }
+        canvas.drawBitmap(isVertical ? mRotatedBitmap : mCanvasBitmap, new Matrix(), null);
 
         return canvas;
     }

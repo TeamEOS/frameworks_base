@@ -206,6 +206,12 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         updatePulseEnabled();
     }
 
+    @Override
+    public void setLeftInLandscape(boolean leftInLandscape) {
+        super.setLeftInLandscape(leftInLandscape);
+        mMC.setLeftInLandscape(leftInLandscape);
+    }
+
     private void updateLogoAnimates() {
         boolean logoAnimates = Settings.System.getInt(mContext.getContentResolver(),
                 "nx_logo_animates", 1) == 1;

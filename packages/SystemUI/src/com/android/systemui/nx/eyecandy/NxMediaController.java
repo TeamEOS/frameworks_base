@@ -134,6 +134,10 @@ public class NxMediaController implements NxRenderer {
         }
     }
 
+    public void setLeftInLandscape(boolean leftInLandscape) {
+        mPulse.setLeftInLandscape(leftInLandscape);
+    }
+
     public void setPulseEnabled(boolean enabled) {
         if (enabled == mPulseEnabled) {
             return;

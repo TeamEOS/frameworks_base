@@ -32,12 +32,15 @@ import com.android.systemui.statusbar.phone.PhoneStatusBar;
 import com.android.systemui.statusbar.policy.KeyButtonView;
 
 import android.app.StatusBarManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Handler;
 import android.os.Message;
+import android.os.UserHandle;
+import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Display;
@@ -73,6 +76,7 @@ public abstract class BaseNavigationBar extends LinearLayout {
     protected int mNavigationIconHints = 0;
     protected boolean mVertical;
     protected boolean mScreenOn;
+    protected boolean mLeftInLandscape;
     protected OnVerticalChangedListener mOnVerticalChangedListener;
 
     // listeners from PhoneStatusBar
@@ -134,7 +138,14 @@ public abstract class BaseNavigationBar extends LinearLayout {
     public void setNavigationIconHints(int hints, boolean force) {}
     public void onHandlePackageChanged(){}
     public void setKeyguardShowing(boolean showing){}
-    public void setLeftInLandscape(boolean leftInLandscape) {}
+
+    // PhoneStatusBar sets initial value and observes for changes
+    // TODO: Observe this in NavigationCoordinator
+    public void setLeftInLandscape(boolean leftInLandscape) {
+        if (mLeftInLandscape != leftInLandscape) {
+            mLeftInLandscape = leftInLandscape;
+        }
+    }
 
     // if a bar instance is created from a user mode switch
     // PhoneStatusBar should call this. This allows the view
@@ -142,6 +153,12 @@ public abstract class BaseNavigationBar extends LinearLayout {
     // inflating on boot, such as setting proper transition flags
     public final void notifyInflateFromUser() {
         getBarTransitions().transitionTo(BarTransitions.MODE_TRANSPARENT, false);
+        ContentResolver resolver = getContext().getContentResolver();
+
+        // PhoneStatusBar doesn't set this when user inflates a bar, only when
+        // actual value changes #common_cm
+        mLeftInLandscape = Settings.System.getIntForUser(resolver,
+                Settings.System.NAVBAR_LEFT_IN_LANDSCAPE, 0, UserHandle.USER_CURRENT) == 1;
         onInflateFromUser();
     }
 
