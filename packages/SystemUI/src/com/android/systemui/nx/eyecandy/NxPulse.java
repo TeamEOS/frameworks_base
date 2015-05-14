@@ -1,247 +1,411 @@
-/**
- * Copyright 2011, Felix Palmer
+/*
  * Copyright (C) 2014 The TeamEos Project
- * 
- * Modification made for the NX Gesture Interface feature
+ * Author: Randall Rushing aka Bigrushdog
  *
- * Licensed under the MIT license:
- * http://creativecommons.org/licenses/MIT/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Control class for NX media fuctions. Basic logic flow inspired by
+ * Roman Burg aka romanbb in his Equalizer tile produced for Cyanogenmod
+ *
  */
 
 package com.android.systemui.nx.eyecandy;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import com.pheelicks.visualizer.AudioData;
+import com.pheelicks.visualizer.BaseVisualizer;
+import com.pheelicks.visualizer.FFTData;
+import com.pheelicks.visualizer.renderer.Renderer;
+
+import android.annotation.NonNull;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.PorterDuff.Mode;
-import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
-import android.media.audiofx.Visualizer;
-import android.os.Handler;
+import android.graphics.Bitmap.Config;
+import android.media.session.MediaController;
+import android.media.session.MediaSession;
+import android.media.session.MediaSessionManager;
+import android.media.session.PlaybackState;
+import android.os.AsyncTask;
+import android.os.PowerManager;
 
-import com.android.systemui.nx.eyecandy.RenderFactory.RenderType;
-import com.android.systemui.nx.eyecandy.Renderer;
+public class NxPulse implements NxModule,
+        MediaSessionManager.OnActiveSessionsChangedListener {
 
-/**
- * A class that draws visualizations of data received from a
- * {@link Visualizer.OnDataCaptureListener#onWaveFormDataCapture } and
- * {@link Visualizer.OnDataCaptureListener#onFftDataCapture }
- */
-public class NxPulse implements NxRenderer {
-    private static final String TAG = "VisualizerView";
-    private static final int MSG_INVALIDATE = 102;
-
-    private byte[] mBytes;
-    private byte[] mFFTBytes;
-    private boolean mFlash = false;
-    private Rect mRect = new Rect();
-    private Visualizer mVisualizer;
-    private Set<Renderer> mRenderers;
-    private Paint mFlashPaint = new Paint();
-    private Paint mFadePaint = new Paint();
-    private NxSurface mSurface;
-    private Bitmap mCanvasBitmap;
-    private Bitmap mRotatedBitmap;
-    private Canvas mCanvas;
     private Context mContext;
-    private Handler mUiHandler;
-    private boolean mVertical;
-    private boolean mSizeChanged;
-    private boolean mLeftInLandscape;
+    private Map<MediaSession.Token, CallbackInfo> mCallbacks = new HashMap<>();
+    private MediaSessionManager mMediaSessionManager;
+    private NxVisualizer mVisualizer;
+    private boolean mKeyguardShowing;
+    private boolean mLinked;
+    private boolean mIsAnythingPlaying;
+    private boolean mPowerSaveModeEnabled;
+    private boolean mPulseEnabled;
+    private NxModule.Callbacks mCallback;
 
-    public NxPulse(Context context, Handler uiHandler) {
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (PowerManager.ACTION_POWER_SAVE_MODE_CHANGING.equals(intent.getAction())) {
+                mPowerSaveModeEnabled = intent.getBooleanExtra(PowerManager.EXTRA_POWER_SAVE_MODE,
+                        false);
+                checkIfPlaying();
+            }
+        }
+    };
+
+    public NxPulse(Context context, NxModule.Callbacks callback) {
         mContext = context;
-        mUiHandler = uiHandler;
+        mCallback = callback;
+        mVisualizer = new NxVisualizer();
+        mVisualizer.addRenderer(new BarGraphRenderer(16));
     }
 
-    public void start() {
-        mBytes = null;
-        mFFTBytes = null;
-        mFlashPaint.setColor(Color.argb(122, 255, 255, 255));
-        mFadePaint.setColor(Color.argb(200, 255, 255, 255)); // Adjust alpha to
-                                                             // change how
-                                                             // quickly the
-                                                             // image fades
-        mFadePaint.setXfermode(new PorterDuffXfermode(Mode.MULTIPLY));
-        if (mRenderers == null) {
-            mRenderers = new HashSet<Renderer>();
-        }
-        addRenderer(RenderFactory.get(mContext, RenderType.Bar));
-
-        if (mVisualizer == null) {
-            mVisualizer = new Visualizer(0);
-        }
-
-        if (mVisualizer != null) {
-            mVisualizer.setEnabled(false);
-        }
-
-        mVisualizer.setCaptureSize(Visualizer.getCaptureSizeRange()[1]);
-        Visualizer.OnDataCaptureListener captureListener = new Visualizer.OnDataCaptureListener()
-        {
-            @Override
-            public void onWaveFormDataCapture(Visualizer visualizer, byte[] bytes,
-                    int samplingRate)
-            {
-                updateVisualizer(bytes);
-            }
-
-            @Override
-            public void onFftDataCapture(Visualizer visualizer, byte[] bytes,
-                    int samplingRate)
-            {
-                updateVisualizerFFT(bytes);
-            }
-        };
-
-        mVisualizer.setDataCaptureListener(captureListener,
-                Visualizer.getMaxCaptureRate() / 2, true, true);
-        mVisualizer.setEnabled(true);
+    public void setKeyguardShowing(boolean showing) {
+        mKeyguardShowing = showing;
+        doLinkage();
     }
 
-    public void stop() {
-        if (mVisualizer != null) {
-            mVisualizer.setEnabled(false);
-            mVisualizer.release();
-            mVisualizer = null;
+    /*
+     * we don't need to pass new size as args here we'll capture fresh dimens on
+     * callback
+     */
+    public void onSizeChanged() {
+        if (mLinked) {
+            mVisualizer.setSizeChanged();
         }
-        if (mRenderers != null) {
-            mRenderers.clear();
-            mRenderers = null;
-        }
-    }
-
-    public void setSizeChanged() {
-        mSizeChanged = true;
     }
 
     public void setLeftInLandscape(boolean leftInLandscape) {
-        if (mLeftInLandscape != leftInLandscape) {
-            mLeftInLandscape = leftInLandscape;
+        mVisualizer.setLeftInLandscape(leftInLandscape);
+    }
+
+    public void setPulseEnabled(boolean enabled) {
+        if (enabled == mPulseEnabled) {
+            return;
+        }
+        mPulseEnabled = enabled;
+        if (mPulseEnabled) {
+            mMediaSessionManager = (MediaSessionManager)
+                    mContext.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            mContext.registerReceiver(mReceiver,
+                    new IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGING));
+            PowerManager pm = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
+            mPowerSaveModeEnabled = pm.isPowerSaveMode();
+            if (!mPowerSaveModeEnabled) {
+                mIsAnythingPlaying = isAnythingPlayingColdCheck();
+            }
+            mMediaSessionManager.addOnActiveSessionsChangedListener(this, null);
+        } else {
+            mIsAnythingPlaying = false;
+            mMediaSessionManager.removeOnActiveSessionsChangedListener(this);
+            for (Map.Entry<MediaSession.Token, CallbackInfo> entry : mCallbacks.entrySet()) {
+                entry.getValue().unregister();
+            }
+            mCallbacks.clear();
+            mContext.unregisterReceiver(mReceiver);
+        }
+        doLinkage();
+    }
+
+    public boolean isPulseEnabled() {
+        return mPulseEnabled;
+    }
+
+    public boolean shouldDrawPulse() {
+        return mLinked;
+    }
+
+    private void doLinkage() {
+        if (mKeyguardShowing || !mPulseEnabled) {
+            if (mLinked) {
+                // explicitly unlink
+                AsyncTask.execute(mUnlinkVisualizer);
+            }
+        } else {
+            // no keyguard, relink if there's something playing
+            if (mIsAnythingPlaying && !mLinked && mPulseEnabled) {
+                AsyncTask.execute(mLinkVisualizer);
+            } else if (mLinked) {
+                AsyncTask.execute(mUnlinkVisualizer);
+            }
+        }
+    }
+
+    private final Runnable mLinkVisualizer = new Runnable() {
+        @Override
+        public void run() {
+            if (mVisualizer != null) {
+                if (!mLinked && !mKeyguardShowing) {
+                    mVisualizer.link(0);
+                    mLinked = true;
+                    mCallback.onUpdateState();
+                }
+            }
+        }
+    };
+
+    private final Runnable mUnlinkVisualizer = new Runnable() {
+        @Override
+        public void run() {
+            if (mVisualizer != null) {
+                if (mLinked) {
+                    mVisualizer.unlink();
+                    mLinked = false;
+                    mCallback.onUpdateState();
+                    mCallback.onInvalidate();
+                }
+            }
+        }
+    };
+
+    @Override
+    public void onActiveSessionsChanged(List<MediaController> controllers) {
+        if (controllers != null) {
+            for (MediaController controller : controllers) {
+                if (!mCallbacks.containsKey(controller.getSessionToken())) {
+                    mCallbacks.put(controller.getSessionToken(), new CallbackInfo(controller));
+                }
+            }
+        }
+    }
+
+    private boolean isAnythingPlayingColdCheck() {
+        List<MediaController> activeSessions = mMediaSessionManager.getActiveSessions(null);
+        for (MediaController activeSession : activeSessions) {
+            PlaybackState playbackState = activeSession.getPlaybackState();
+            if (playbackState != null && playbackState.getState()
+                        == PlaybackState.STATE_PLAYING) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void checkIfPlaying() {
+        boolean anythingPlaying = false;
+        if (!mPowerSaveModeEnabled) {
+            for (Map.Entry<MediaSession.Token, CallbackInfo> entry : mCallbacks.entrySet()) {
+                if (entry.getValue().isPlaying()) {
+                    anythingPlaying = true;
+                    break;
+                }
+            }
+        }
+        if (anythingPlaying != mIsAnythingPlaying) {
+            mIsAnythingPlaying = anythingPlaying;
+            doLinkage();
+        }
+    }
+
+    @Override
+    public void setCallbacks(Callbacks callbacks) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onDraw(Canvas canvas) {
+        if (mLinked) {
+            mVisualizer.onDraw(canvas);
+        }
+    }
+
+    private class CallbackInfo {
+        MediaController.Callback mCallback;
+        MediaController mController;
+        boolean mIsPlaying;
+
+        public CallbackInfo(final MediaController controller) {
+            this.mController = controller;
+            mCallback = new MediaController.Callback() {
+                @Override
+                public void onSessionDestroyed() {
+                    destroy();
+                    checkIfPlaying();
+                }
+
+                @Override
+                public void onPlaybackStateChanged(@NonNull
+                PlaybackState state) {
+                    mIsPlaying = state.getState() == PlaybackState.STATE_PLAYING;
+                    checkIfPlaying();
+                }
+            };
+            controller.registerCallback(mCallback);
+        }
+
+        public boolean isPlaying() {
+            return mIsPlaying;
+        }
+
+        public void unregister() {
+            mController.unregisterCallback(mCallback);
+            mIsPlaying = false;
+        }
+
+        public void destroy() {
+            unregister();
+            mCallbacks.remove(mController.getSessionToken());
+            mController = null;
+            mCallback = null;
+        }
+    }
+
+    private class NxVisualizer extends BaseVisualizer {
+        private Bitmap mRotatedBitmap;
+        private boolean mVertical;
+        private boolean mSizeChanged;
+        private boolean mLeftInLandscape;
+
+        @Override
+        protected void onInvalidate() {
+            mCallback.onInvalidate();
+        }
+
+        @Override
+        protected int onGetWidth() {
+            return mCallback.onGetWidth();
+        }
+
+        @Override
+        protected int onGetHeight() {
+            return mCallback.onGetHeight();
+        }
+
+        public void setSizeChanged() {
             mSizeChanged = true;
         }
-    }
 
-    public void addRenderer(Renderer renderer) {
-        if (renderer != null) {
-            mRenderers.add(renderer);
-        }
-    }
-
-    /**
-     * Pass data to the visualizer. Typically this will be obtained from the
-     * Android Visualizer.OnDataCaptureListener call back. See
-     * {@link Visualizer.OnDataCaptureListener#onWaveFormDataCapture }
-     * 
-     * @param bytes
-     */
-    public void updateVisualizer(byte[] bytes) {
-        mBytes = bytes;
-        mUiHandler.obtainMessage(MSG_INVALIDATE).sendToTarget();
-    }
-
-    /**
-     * Pass FFT data to the visualizer. Typically this will be obtained from the
-     * Android Visualizer.OnDataCaptureListener call back. See
-     * {@link Visualizer.OnDataCaptureListener#onFftDataCapture }
-     * 
-     * @param bytes
-     */
-    public void updateVisualizerFFT(byte[] bytes) {
-        mFFTBytes = bytes;
-        mUiHandler.obtainMessage(MSG_INVALIDATE).sendToTarget();
-    }
-
- 
-    /**
-     * Call this to make the visualizer flash. Useful for flashing at the start
-     * of a song/loop etc...
-     */
-    public void flash() {
-        mFlash = true;
-        mUiHandler.obtainMessage(MSG_INVALIDATE).sendToTarget();
-    }
-
-
-    @Override
-    public Canvas onDrawNx(Canvas canvas) {
-        final Rect rect = mSurface.onGetSurfaceDimens();
-        final int sWidth = rect.width();
-        final int sHeight = rect.height();
-        final int cWidth = canvas.getWidth();
-        final int cHeight = canvas.getHeight();
-        final boolean isVertical = sHeight > sWidth;
-
-        // only null resources on orientation change
-        // to allow proper fade effect
-        if (isVertical != mVertical || mSizeChanged) {
-            mVertical = isVertical;
-            mSizeChanged = false;
-            mCanvasBitmap = null;
-            mCanvas = null;
-        }
-
-        // Create canvas once we're ready to draw
-        // the renderers don't like painting vertically
-        // if vertical, create a horizontal canvas based on flipped current dimensions
-        // let renders paint, the rotate the bitmap to draw to NX surface
-        // we keep both bitmaps as class members to minimize GC
-        mRect.set(0, 0, isVertical ? sHeight : sWidth, isVertical ? sWidth: sHeight);
-
-        if (mCanvasBitmap == null) {
-            mCanvasBitmap = Bitmap.createBitmap(isVertical ? cHeight : cWidth, isVertical ? cWidth : cHeight,
-                    Config.ARGB_8888);
-        }
-        if (mCanvas == null) {
-            mCanvas = new Canvas(mCanvasBitmap);
-        }
-
-        if (mBytes != null) {
-            // Render all audio renderers
-            AudioData audioData = new AudioData(mBytes);
-            for (Renderer r : mRenderers) {
-                r.render(mCanvas, audioData, mRect);
+        public void setLeftInLandscape(boolean leftInLandscape) {
+            if (mLeftInLandscape != leftInLandscape) {
+                mLeftInLandscape = leftInLandscape;
+                mSizeChanged = true;
             }
         }
 
-        if (mFFTBytes != null) {
-            // Render all FFT renderers
-            FFTData fftData = new FFTData(mFFTBytes);
-            for (Renderer r : mRenderers) {
-                r.render(mCanvas, fftData, mRect);
+        @Override
+        public void onDraw(Canvas canvas) {
+            final int sWidth = getWidth();
+            final int sHeight = getHeight();
+            final int cWidth = canvas.getWidth();
+            final int cHeight = canvas.getHeight();
+            final boolean isVertical = sHeight > sWidth;
+
+            // only null resources on orientation change
+            // to allow proper fade effect
+            if (isVertical != mVertical || mSizeChanged) {
+                mVertical = isVertical;
+                mSizeChanged = false;
+                mCanvasBitmap = null;
+                mCanvas = null;
             }
+
+            // Create canvas once we're ready to draw
+            // the renderers don't like painting vertically
+            // if vertical, create a horizontal canvas based on flipped current
+            // dimensions
+            // let renders paint, the rotate the bitmap to draw to NX surface
+            // we keep both bitmaps as class members to minimize GC
+            mRect.set(0, 0, isVertical ? sHeight : sWidth, isVertical ? sWidth : sHeight);
+
+            if (mCanvasBitmap == null) {
+                mCanvasBitmap = Bitmap.createBitmap(isVertical ? cHeight : cWidth,
+                        isVertical ? cWidth : cHeight,
+                        Config.ARGB_8888);
+            }
+            if (mCanvas == null) {
+                mCanvas = new Canvas(mCanvasBitmap);
+            }
+
+            if (mBytes != null) {
+                // Render all audio renderers
+                AudioData audioData = new AudioData(mBytes);
+                for (Renderer r : mRenderers) {
+                    r.render(mCanvas, audioData, mRect);
+                }
+            }
+
+            if (mFFTBytes != null) {
+                // Render all FFT renderers
+                FFTData fftData = new FFTData(mFFTBytes);
+                for (Renderer r : mRenderers) {
+                    r.render(mCanvas, fftData, mRect);
+                }
+            }
+
+            // Fade out old contents
+            mCanvas.drawPaint(mFadePaint);
+
+            if (mFlash) {
+                mFlash = false;
+                mCanvas.drawPaint(mFlashPaint);
+            }
+
+            // if vertical flip our horizontally rendered bitmap
+            if (isVertical) {
+                Matrix matrix = new Matrix();
+                matrix.postRotate(mLeftInLandscape ? 90 : -90);
+                mRotatedBitmap = Bitmap.createBitmap(mCanvasBitmap, 0, 0,
+                        mCanvasBitmap.getWidth(), mCanvasBitmap.getHeight(),
+                        matrix, true);
+            }
+            canvas.drawBitmap(isVertical ? mRotatedBitmap : mCanvasBitmap, new Matrix(), null);
         }
 
-        // Fade out old contents
-        mCanvas.drawPaint(mFadePaint);
-
-        if (mFlash) {
-            mFlash = false;
-            mCanvas.drawPaint(mFlashPaint);
-        }
-
-        // if vertical flip our horizontally rendered bitmap
-        if (isVertical) {
-            Matrix matrix = new Matrix();
-            matrix.postRotate(mLeftInLandscape ? 90 : -90);
-            mRotatedBitmap = Bitmap.createBitmap(mCanvasBitmap, 0, 0,
-                    mCanvasBitmap.getWidth(), mCanvasBitmap.getHeight(),
-                    matrix, true);
-        }
-        canvas.drawBitmap(isVertical ? mRotatedBitmap : mCanvasBitmap, new Matrix(), null);
-
-        return canvas;
     }
 
-    @Override
-    public void onSetNxSurface(NxSurface surface) {
-        mSurface = surface;
+    private static class BarGraphRenderer extends Renderer {
+        private int mDivisions;
+        private Paint mPaint;
+
+        public BarGraphRenderer(int divisions) {
+            super();
+            mDivisions = divisions;
+            mPaint = new Paint();
+            mPaint.setStrokeWidth(50f);
+            mPaint.setAntiAlias(true);
+            mPaint.setColor(Color.argb(188, 255, 255, 255));
+        }
+
+        @Override
+        public void onRender(Canvas canvas, AudioData data, Rect rect) {
+        }
+
+        @Override
+        public void onRender(Canvas canvas, FFTData data, Rect rect) {
+            for (int i = 0; i < data.bytes.length / mDivisions; i++) {
+                mFFTPoints[i * 4] = i * 4 * mDivisions;
+                mFFTPoints[i * 4 + 2] = i * 4 * mDivisions;
+                byte rfk = data.bytes[mDivisions * i];
+                byte ifk = data.bytes[mDivisions * i + 1];
+                float magnitude = (rfk * rfk + ifk * ifk);
+                int dbValue = (int) (10 * Math.log10(magnitude));
+
+                mFFTPoints[i * 4 + 1] = rect.height();
+                mFFTPoints[i * 4 + 3] = rect.height() - (dbValue * 2 - 10);
+            }
+            canvas.drawLines(mFFTPoints, mPaint);
+        }
     }
 }

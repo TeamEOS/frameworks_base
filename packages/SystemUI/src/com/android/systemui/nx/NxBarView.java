@@ -23,9 +23,9 @@ package com.android.systemui.nx;
 import com.android.internal.util.actions.ActionUtils;
 
 import com.android.systemui.R;
-import com.android.systemui.nx.eyecandy.NxMediaController;
+import com.android.systemui.nx.eyecandy.NxPulse;
+import com.android.systemui.nx.eyecandy.NxModule;
 import com.android.systemui.nx.eyecandy.NxRipple;
-import com.android.systemui.nx.eyecandy.NxSurface;
 import com.android.systemui.statusbar.BaseNavigationBar;
 import com.android.systemui.statusbar.phone.BarTransitions;
 import com.android.systemui.nx.BaseGestureDetector;
@@ -34,7 +34,6 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.graphics.Canvas;
-import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
@@ -48,7 +47,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
-public class NxBarView extends BaseNavigationBar implements NxSurface {
+public class NxBarView extends BaseNavigationBar implements NxModule.Callbacks {
     final static String TAG = NxBarView.class.getSimpleName();
 
     private static final int MSG_SET_DISABLED_FLAGS = 101;
@@ -60,7 +59,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     private final NxBarTransitions mBarTransitions;
     private NxBarObserver mObserver;
     private boolean mRippleEnabled;
-    private NxMediaController mMC;
+    private NxPulse mMC;
     private PowerManager mPm;
     private NxRipple mRipple;
     private UiHandler mUiHandler = new UiHandler();
@@ -186,8 +185,7 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         mRippleEnabled = Settings.System.getIntForUser(mContext.getContentResolver(),
                 Settings.System.NX_RIPPLE_ENABLED, 1, UserHandle.USER_CURRENT) == 1;
         mGestureDetector.setLongPressTimeout(lpTimeout);
-        mMC = new NxMediaController(context, mUiHandler);
-        mMC.onSetNxSurface(this);
+        mMC = new NxPulse(context, this);
         mPm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         mRipple = new NxRipple(this);
     }
@@ -289,25 +287,13 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
     }
 
     @Override
-    public Rect onGetSurfaceDimens() {
-        Rect rect = new Rect();
-        rect.set(0, 0, getWidth(), getHeight());
-        return rect;
-    }
-
-    @Override
     public void onDraw(Canvas canvas) {
         if (mMC.shouldDrawPulse()) {
-            mMC.onDrawNx(canvas);
+            mMC.onDraw(canvas);
         }
         if (mRippleEnabled) {
             mRipple.onDraw(canvas);
         }
-    }
-
-    @Override
-    public void updateBar() {
-        setDisabledFlags(mDisabledFlags, true /* force */);
     }
 
     @Override
@@ -318,5 +304,25 @@ public class NxBarView extends BaseNavigationBar implements NxSurface {
         if (mMC.isPulseEnabled()) {
             mMC.setPulseEnabled(false);
         }
+    }
+
+    @Override
+    public int onGetWidth() {
+        return getWidth();
+    }
+
+    @Override
+    public int onGetHeight() {
+        return getHeight();
+    }
+
+    @Override
+    public void onInvalidate() {
+        mUiHandler.obtainMessage(MSG_INVALIDATE).sendToTarget();
+    }
+
+    @Override
+    public void onUpdateState() {
+        mUiHandler.obtainMessage(MSG_SET_DISABLED_FLAGS).sendToTarget();
     }
 }
