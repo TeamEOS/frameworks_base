@@ -55,6 +55,7 @@ import android.os.IBinder;
 import android.os.UserHandle;
 import android.os.Vibrator;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Slog;
 import android.view.InputDevice;
@@ -69,6 +70,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.android.internal.statusbar.IStatusBarService;
+import com.android.internal.util.cm.QSUtils;
 
 public abstract class ActionHandler {
     protected static String TAG = ActionHandler.class.getSimpleName();
@@ -186,7 +188,28 @@ public abstract class ActionHandler {
     public static ArrayList<ActionBundle> getSystemActions(Context context) {
         ArrayList<ActionBundle> bundle = new ArrayList<ActionBundle>();
         for (int i = 0; i < systemActions.length; i++) {
-            bundle.add(systemActions[i].create(context));
+            ActionBundle b = systemActions[i].create(context);
+            String action = b.action;
+            if (TextUtils.equals(action, SYSTEMUI_TASK_WIFIAP)
+                    && !QSUtils.deviceSupportsMobileData(context)) {
+                continue;
+            } else if (TextUtils.equals(action, SYSTEMUI_TASK_BT)
+                    && !QSUtils.deviceSupportsBluetooth()) {
+                continue;
+            } else if (TextUtils.equals(action, SYSTEMUI_TASK_TORCH)
+                    && !QSUtils.deviceSupportsFlashLight(context)) {
+                continue;
+            } else if ((TextUtils.equals(action, SYSTEMUI_TASK_VIBRATOR))
+                    || (TextUtils.equals(action, SYSTEMUI_TASK_VIB_SILENT))) {
+                Vibrator vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+                if (vib == null || !vib.hasVibrator()) {
+                    continue;
+                }
+            } else if (TextUtils.equals(action, SYSTEMUI_TASK_CAMERA)
+                    && context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
+                continue;
+            }
+            bundle.add(b);
         }
         Collections.sort(bundle);
         return bundle;
