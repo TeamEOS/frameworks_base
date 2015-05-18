@@ -57,6 +57,7 @@ public class CommandQueue extends IStatusBar.Stub {
     private static final int MSG_NOTIFICATION_LIGHT_OFF     = 16 << MSG_SHIFT;
     private static final int MSG_NOTIFICATION_LIGHT_PULSE   = 17 << MSG_SHIFT;
     private static final int MSG_SHOW_SCREEN_PIN_REQUEST    = 18 << MSG_SHIFT;
+    private static final int MSG_SET_PIE_TRIGGER_MASK       = 19 << MSG_SHIFT;
 
     public static final int FLAG_EXCLUDE_NONE = 0;
     public static final int FLAG_EXCLUDE_SEARCH_PANEL = 1 << 0;
@@ -100,6 +101,7 @@ public class CommandQueue extends IStatusBar.Stub {
         public void notificationLightOff();
         public void notificationLightPulse(int argb, int onMillis, int offMillis);
         public void showScreenPinningRequest();
+        public void setPieTriggerMask(int newMask, boolean lock);
     }
 
     public CommandQueue(Callbacks callbacks, StatusBarIconList list) {
@@ -196,21 +198,21 @@ public class CommandQueue extends IStatusBar.Stub {
     public void toggleRecentApps() {
         synchronized (mList) {
             mHandler.removeMessages(MSG_TOGGLE_RECENT_APPS);
-            mHandler.obtainMessage(MSG_TOGGLE_RECENT_APPS, 0, 0, null).sendToTarget();
+            mHandler.sendEmptyMessage(MSG_TOGGLE_RECENT_APPS);
         }
     }
 
     public void preloadRecentApps() {
         synchronized (mList) {
             mHandler.removeMessages(MSG_PRELOAD_RECENT_APPS);
-            mHandler.obtainMessage(MSG_PRELOAD_RECENT_APPS, 0, 0, null).sendToTarget();
+           mHandler.sendEmptyMessage(MSG_PRELOAD_RECENT_APPS);
         }
     }
 
     public void cancelPreloadRecentApps() {
         synchronized (mList) {
             mHandler.removeMessages(MSG_CANCEL_PRELOAD_RECENT_APPS);
-            mHandler.obtainMessage(MSG_CANCEL_PRELOAD_RECENT_APPS, 0, 0, null).sendToTarget();
+            mHandler.sendEmptyMessage(MSG_CANCEL_PRELOAD_RECENT_APPS);
         }
     }
 
@@ -218,6 +220,14 @@ public class CommandQueue extends IStatusBar.Stub {
         synchronized (mList) {
             // don't coalesce these
             mHandler.obtainMessage(MSG_SET_WINDOW_STATE, window, state, null).sendToTarget();
+        }
+    }
+
+    public void setPieTriggerMask(int newMask, boolean lock) {
+        synchronized (mList) {
+            mHandler.removeMessages(MSG_SET_PIE_TRIGGER_MASK);
+            mHandler.obtainMessage(MSG_SET_PIE_TRIGGER_MASK,
+                    newMask, lock ? 1 : 0, null).sendToTarget();
         }
     }
 
@@ -340,6 +350,9 @@ public class CommandQueue extends IStatusBar.Stub {
                     break;
                 case MSG_SHOW_SCREEN_PIN_REQUEST:
                     mCallbacks.showScreenPinningRequest();
+                    break;
+                case MSG_SET_PIE_TRIGGER_MASK:
+                    mCallbacks.setPieTriggerMask(msg.arg1, msg.arg2 != 0);
                     break;
             }
         }

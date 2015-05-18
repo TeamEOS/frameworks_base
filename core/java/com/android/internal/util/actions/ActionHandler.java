@@ -356,6 +356,18 @@ public class ActionHandler {
         }
     }
 
+    public static boolean isActionKeyEvent(String action) {
+        if (action.equals(SYSTEMUI_TASK_HOME)
+                || action.equals(SYSTEMUI_TASK_BACK)
+//                || action.equals(SYSTEMUI_TASK_SEARCH)
+                || action.equals(SYSTEMUI_TASK_MENU)
+//                || action.equals(ActionConstants.ACTION_MENU_BIG)
+                || action.equals(SYSTEMUI_TASK_NO_ACTION)) {
+            return true;
+        }
+        return false;
+    }
+
     private static void launchActivity(Context context, Intent intent) {
         try {
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);

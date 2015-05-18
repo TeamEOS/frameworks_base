@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 The CyanogenMod Project (Jens Doll)
+ * Copyright (C) 2013-2015 The CyanogenMod Project (Jens Doll)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -81,6 +81,7 @@ public class EdgeGestureManager {
          * @param flags currently 0.
          * @see IEdgeGestureActivationListener#onEdgeGestureActivation(int, int, int, int)
          */
+
         public abstract void onEdgeGestureActivation(int touchX, int touchY, EdgeGesturePosition position, int flags);
 
         /**
@@ -110,8 +111,8 @@ public class EdgeGestureManager {
         }
 
         /**
-         * Turns listening for edge gesture activation gestures on again, after it was disabled during
-         * the call to the listener.
+         * Turns listening for edge gesture activation
+         * gestures on again, after it was disabled during the call to the listener.
          *
          * @see IEdgeGestureHostCallback#restoreListenerState()
          */
@@ -202,4 +203,45 @@ public class EdgeGestureManager {
         }
     }
 
+    /**
+     * Reduce left and right detection height if IME keyboard is active.
+     *
+     * @param enabled enables or disables the IME state.
+     * @hide
+     */
+    public void setImeIsActive(boolean enabled) {
+        if (DEBUG) {
+            Slog.d(TAG, "Set IME state to reduce left and right trigger height: "
+                    + enabled);
+        }
+        try {
+            if (mPs != null) {
+                mPs.setImeIsActive(enabled);
+            }
+        } catch (RemoteException e) {
+            Slog.e(TAG, "Failed to set IME state to reduce left and right trigger height: "
+                    + e.getMessage());
+        }
+    }
+
+    /**
+     * If setImeIsActive(boolean enabled) is set
+     * temporaly overwrite it for overlaying views like
+     * notification drawer or global menu.
+     *
+     * @param enabled enables or disables the override IME state.
+     * @hide
+     */
+    public void setOverwriteImeIsActive(boolean enabled) {
+        if (DEBUG) {
+            Slog.d(TAG, "Set overwrite IME state: " + enabled);
+        }
+        try {
+            if (mPs != null) {
+                mPs.setOverwriteImeIsActive(enabled);
+            }
+        } catch (RemoteException e) {
+            Slog.e(TAG, "Failed to set overwrite IME state: " + e.getMessage());
+        }
+    }
 }

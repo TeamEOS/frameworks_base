@@ -37,6 +37,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Message;
 import android.os.UserHandle;
@@ -48,10 +49,11 @@ import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
-public abstract class BaseNavigationBar extends LinearLayout {
+public abstract class BaseNavigationBar extends LinearLayout implements Hintable {
     public interface OnVerticalChangedListener {
         void onVerticalChanged(boolean isVertical);
     }
@@ -73,6 +75,7 @@ public abstract class BaseNavigationBar extends LinearLayout {
     protected View[] mRotatedViews = new View[4];
     protected DelegateViewHelper mDelegateHelper;
     protected View mCurrentView = null;
+    protected FrameLayout mRot0, mRot90;
     protected int mDisabledFlags = 0;
     protected int mNavigationIconHints = 0;
     protected boolean mVertical;
@@ -139,6 +142,15 @@ public abstract class BaseNavigationBar extends LinearLayout {
     public void setNavigationIconHints(int hints) {}
     public void setNavigationIconHints(int hints, boolean force) {}
     public void onHandlePackageChanged(){}
+
+    public void setForgroundColor(Drawable drawable) {
+        if (mRot0 != null) {
+            mRot0.setForeground(drawable);
+        }
+        if (mRot90 != null) {
+            mRot90.setForeground(drawable);
+        }
+    }
 
     // PhoneStatusBar sets initial value and observes for changes
     // TODO: Observe this in NavigationCoordinator
@@ -270,6 +282,8 @@ public abstract class BaseNavigationBar extends LinearLayout {
 
     @Override
     public void onFinishInflate() {
+        mRot0 = (FrameLayout) findViewById(R.id.rot0);
+        mRot90 = (FrameLayout) findViewById(R.id.rot90);
         mRotatedViews[Surface.ROTATION_0] =
         mRotatedViews[Surface.ROTATION_180] = findViewById(R.id.rot0);
 

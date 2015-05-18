@@ -121,6 +121,14 @@ public final class ActionUtils {
         return dp;
     }
 
+    public static int dpToPx(Context context, int dp) {
+        return (int) ((dp * context.getResources().getDisplayMetrics().density) + 0.5);
+    }
+
+    public static int pxToDp(Context context, int px) {
+        return (int) ((px / context.getResources().getDisplayMetrics().density) + 0.5);
+    }
+
     /* utility to iterate a viewgroup and return a list of child views */
     public static ArrayList<View> getAllChildren(View v) {
 

@@ -454,6 +454,15 @@ public class StatusBarManagerService extends IStatusBarService.Stub {
         }
     }
 
+    @Override
+    public void setPieTriggerMask(int newMask, boolean lock) {
+        if (mBar != null) {
+            try {
+                mBar.setPieTriggerMask(newMask, lock);
+            } catch (RemoteException ex) {}
+        }
+    }
+
     private void enforceStatusBar() {
         mContext.enforceCallingOrSelfPermission(android.Manifest.permission.STATUS_BAR,
                 "StatusBarManagerService");
