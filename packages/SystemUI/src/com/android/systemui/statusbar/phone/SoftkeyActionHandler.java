@@ -42,7 +42,7 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.ViewConfiguration;
 
-public class SoftkeyActionHandler extends ActionHandler {
+public class SoftkeyActionHandler {
     private static final int DT_TIMEOUT = ViewConfiguration.getDoubleTapTimeout();
     private static final int LP_TIMEOUT = ViewConfiguration.getLongPressTimeout();
     final int LP_TIMEOUT_MAX = LP_TIMEOUT;
@@ -99,7 +99,6 @@ public class SoftkeyActionHandler extends ActionHandler {
     private boolean mKeyguardShowing;
 
     public SoftkeyActionHandler(NavigationBarView v) {
-        super(v.getContext());
         mNavigationBarView = v;
         mResolver = v.getContext().getContentResolver();
         loadButtonMap(); // MUST load button map before observing
@@ -116,7 +115,7 @@ public class SoftkeyActionHandler extends ActionHandler {
     public boolean isSecureToFire(String action) {
         return action == null
                 || !mKeyguardShowing
-                || (mKeyguardShowing && SYSTEMUI_TASK_BACK.equals(action));
+                || (mKeyguardShowing && ActionHandler.SYSTEMUI_TASK_BACK.equals(action));
     }
 
     public void setIsRecreating(boolean recreating) {
@@ -196,12 +195,6 @@ public class SoftkeyActionHandler extends ActionHandler {
             KeyButtonView button = ((KeyButtonView) v);
             button.setLongPressTimeout(lpTimeout);
         }
-    }
-
-    @Override
-    public boolean handleAction(String action) {
-        // TODO Auto-generated method stub
-        return false;
     }
 
     public void onDispose() {

@@ -31,7 +31,6 @@ import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.ComponentName;
-import android.content.ServiceConnection;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -43,15 +42,11 @@ import android.hardware.input.InputManager;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.net.wifi.WifiManager;
-import android.os.Handler;
 import android.os.PowerManager;
-import android.os.Message;
-import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
-import android.os.IBinder;
 import android.os.UserHandle;
 import android.os.Vibrator;
 import android.provider.Settings;
@@ -65,7 +60,6 @@ import android.view.WindowManagerPolicyControl;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -74,9 +68,6 @@ import com.android.internal.util.cm.QSUtils;
 
 public abstract class ActionHandler {
     protected static String TAG = ActionHandler.class.getSimpleName();
-
-    protected ArrayList<String> mActions;
-    protected Context mContext;
 
     private static final String SYSTEM_PREFIX = "task";
     private static final String SYSTEMUI = "com.android.systemui";
@@ -111,6 +102,7 @@ public abstract class ActionHandler {
 
     public static final String INTENT_SHOW_POWER_MENU = "action_handler_show_power_menu";
     public static final String INTENT_TOGGLE_SCREENRECORD = "action_handler_toggle_screenrecord";
+    public static final String INTENT_SCREENSHOT = "action_handler_screenshot";
 
     private static enum SystemAction {
         NoAction(SYSTEMUI_TASK_NO_ACTION, "No Action", SYSTEMUI, "ic_sysbar_null"),
@@ -444,168 +436,94 @@ public abstract class ActionHandler {
         }
     }
 
-    public ActionHandler(Context context, ArrayList<String> actions) {
-        if (context == null)
-            throw new IllegalArgumentException("Context cannot be null");
-        mContext = context;
-        mActions = actions;
+    public static void performTask(Context context, ActionBundle bundle) {
+        performTask(context, bundle.action);
     }
 
-    public ActionHandler(Context context, String actions) {
-        if (context == null)
-            throw new IllegalArgumentException("Context cannot be null");
-        mContext = context;
-        mActions = new ArrayList<String>();
-        mActions.addAll(Arrays.asList(actions.split("\\|")));
-    }
-
-    public ActionHandler(Context context) {
-        if (context == null)
-            throw new IllegalArgumentException("Context cannot be null");
-        mContext = context;
-    }
-
-    /**
-     * Set the actions to perform.
-     * 
-     * @param actions
-     */
-    public void setActions(List<String> actions) {
-        if (actions == null) {
-            mActions = null;
-        } else {
-            mActions = new ArrayList<String>();
-            mActions.addAll(actions);
-        }
-    }
-
-    /**
-     * Event handler. This method must be called when the event should be
-     * triggered.
-     * 
-     * @param location
-     * @return
-     */
-    public final boolean handleEvent(int location) {
-        if (mActions == null) {
-            Log.d("ActionHandler", "Discarding event due to null actions");
-            return false;
-        }
-
-        String action = mActions.get(location);
-        if (action == null || action.equals("")) {
-            return false;
-        } else {
-            performTask(action);
-            return true;
-        }
-    }
-
-    public void performTask(ActionBundle bundle) {
-        performTask(bundle.action);
-    }
-
-    public void performTask(String action) {
+    public static void performTask(Context context, String action) {
         // null: throw it out
         if (action == null) {
             return;
         }
         // not a system action, should be intent
-        if(!action.startsWith(SYSTEM_PREFIX)) {
+        if (!action.startsWith(SYSTEM_PREFIX)) {
             Intent intent = ActionBundle.getIntent(action);
             if (intent == null) {
                 return;
             }
-            launchActivity(intent);
+            launchActivity(context, intent);
+            return;
         } else if (action.equals(SYSTEMUI_TASK_NO_ACTION)) {
             return;
         } else if (action.equals(SYSTEMUI_TASK_KILL_PROCESS)) {
-            killProcess();
+            killProcess(context);
         } else if (action.equals(SYSTEMUI_TASK_SCREENSHOT)) {
-            takeScreenshot();
+            takeScreenshot(context);
         } else if (action.equals(SYSTEMUI_TASK_SCREENRECORD)) {
-            takeScreenrecord();
+            takeScreenrecord(context);
             // } else if (action.equals(SYSTEMUI_TASK_AUDIORECORD)) {
             // takeAudiorecord();
         } else if (action.equals(SYSTEMUI_TASK_EXPANDED_DESKTOP)) {
-            toggleExpandedDesktop();
+            toggleExpandedDesktop(context);
         } else if (action.equals(SYSTEMUI_TASK_SCREENOFF)) {
-            screenOff();
+            screenOff(context);
         } else if (action.equals(SYSTEMUI_TASK_ASSIST)) {
-            launchAssistAction();
+            launchAssistAction(context);
         } else if (action.equals(SYSTEMUI_TASK_POWER_MENU)) {
-            showPowerMenu();
+            showPowerMenu(context);
         } else if (action.equals(SYSTEMUI_TASK_TORCH)) {
             toggleTorch();
         } else if (action.equals(SYSTEMUI_TASK_CAMERA)) {
-            launchCamera();
+            launchCamera(context);
         } else if (action.equals(SYSTEMUI_TASK_WIFI)) {
-            toggleWifi();
+            toggleWifi(context);
         } else if (action.equals(SYSTEMUI_TASK_WIFIAP)) {
-            toggleWifiAP();
+            toggleWifiAP(context);
         } else if (action.equals(SYSTEMUI_TASK_BT)) {
             toggleBluetooth();
         } else if (action.equals(SYSTEMUI_TASK_RECENTS)) {
             toggleRecentApps();
         } else if (action.equals(SYSTEMUI_TASK_LAST_APP)) {
-            switchToLastApp();
+            switchToLastApp(context);
         } else if (action.equals(SYSTEMUI_TASK_SETTINGS_PANEL)) {
             StatusBarHelper.expandSettingsPanel();
         } else if (action.equals(SYSTEMUI_TASK_NOTIFICATION_PANEL)) {
             StatusBarHelper.expandNotificationPanel();
         } else if (action.equals(SYSTEMUI_TASK_VOICE_SEARCH)) {
-            launchVoiceSearch();
+            launchVoiceSearch(context);
         } else if (action.equals(SYSTEMUI_TASK_APP_SEARCH)) {
-            triggerVirtualKeypress(KeyEvent.KEYCODE_SEARCH);
+            triggerVirtualKeypress(context, KeyEvent.KEYCODE_SEARCH);
         } else if (action.equals(SYSTEMUI_TASK_SILENT)) {
-            toggleSilent();
+            toggleSilent(context);
         } else if (action.equals(SYSTEMUI_TASK_VIBRATOR)) {
-            toggleVib();
+            toggleVib(context);
         } else if (action.equals(SYSTEMUI_TASK_VIB_SILENT)) {
-            toggleVibSilent();
+            toggleVibSilent(context);
         } else if (action.equals(SYSTEMUI_TASK_MENU)) {
-            triggerVirtualKeypress(KeyEvent.KEYCODE_MENU);
+            triggerVirtualKeypress(context, KeyEvent.KEYCODE_MENU);
         } else if (action.equals(SYSTEMUI_TASK_BACK)) {
-            triggerVirtualKeypress(KeyEvent.KEYCODE_BACK);
+            triggerVirtualKeypress(context, KeyEvent.KEYCODE_BACK);
         } else if (action.equals(SYSTEMUI_TASK_HOME)) {
-            triggerVirtualKeypress(KeyEvent.KEYCODE_HOME);
-        } else {
-            postActionEventHandled(false);
+            triggerVirtualKeypress(context, KeyEvent.KEYCODE_HOME);
         }
     }
 
-    public Handler getHandler() {
-        return H;
-    }
-
-    private Handler H = new Handler() {
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-
-            }
-        }
-    };
-
-    private void launchActivity(Intent intent) {
+    private static void launchActivity(Context context, Intent intent) {
         try {
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            mContext.startActivityAsUser(intent, new UserHandle(UserHandle.USER_CURRENT));
-            postActionEventHandled(true);
+            context.startActivityAsUser(intent, new UserHandle(UserHandle.USER_CURRENT));
         } catch (Exception e) {
             Log.i(TAG, "Unable to launch activity " + e);
-            postActionEventHandled(false);
-            String uri = intent.toUri(0);
-            handleAction(uri);
         }
     }
 
-    private void switchToLastApp() {
+    private static void switchToLastApp(Context context) {
         final ActivityManager am =
-                (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
-        ActivityManager.RunningTaskInfo lastTask = getLastTask(am);
+                (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        ActivityManager.RunningTaskInfo lastTask = getLastTask(context, am);
 
         if (lastTask != null) {
-            final ActivityOptions opts = ActivityOptions.makeCustomAnimation(mContext,
+            final ActivityOptions opts = ActivityOptions.makeCustomAnimation(context,
                     com.android.internal.R.anim.last_app_in,
                     com.android.internal.R.anim.last_app_out);
             am.moveTaskToFront(lastTask.id, ActivityManager.MOVE_TASK_NO_USER_ACTION,
@@ -613,14 +531,15 @@ public abstract class ActionHandler {
         }
     }
 
-    private ActivityManager.RunningTaskInfo getLastTask(final ActivityManager am) {
-        final String defaultHomePackage = resolveCurrentLauncherPackage();
+    private static ActivityManager.RunningTaskInfo getLastTask(Context context,
+            final ActivityManager am) {
+        final String defaultHomePackage = resolveCurrentLauncherPackage(context);
         List<ActivityManager.RunningTaskInfo> tasks = am.getRunningTasks(5);
 
         for (int i = 1; i < tasks.size(); i++) {
             String packageName = tasks.get(i).topActivity.getPackageName();
             if (!packageName.equals(defaultHomePackage)
-                    && !packageName.equals(mContext.getPackageName())
+                    && !packageName.equals(context.getPackageName())
                     && !packageName.equals(SYSTEMUI)) {
                 return tasks.get(i);
             }
@@ -628,10 +547,10 @@ public abstract class ActionHandler {
         return null;
     }
 
-    private String resolveCurrentLauncherPackage() {
+    private static String resolveCurrentLauncherPackage(Context context) {
         final Intent launcherIntent = new Intent(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_HOME);
-        final PackageManager pm = mContext.getPackageManager();
+        final PackageManager pm = context.getPackageManager();
         final ResolveInfo launcherInfo = pm.resolveActivity(launcherIntent, 0);
         return launcherInfo.activityInfo.packageName;
     }
@@ -645,8 +564,8 @@ public abstract class ActionHandler {
         }
     }
 
-    private void toggleSilent() {
-        AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+    private static void toggleSilent(Context context) {
+        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         if (am != null && ActivityManagerNative.isSystemReady()) {
             if (am.getRingerMode() != AudioManager.RINGER_MODE_SILENT) {
                 am.setRingerMode(AudioManager.RINGER_MODE_SILENT);
@@ -662,12 +581,12 @@ public abstract class ActionHandler {
         }
     }
 
-    private void toggleVib() {
-        AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+    private static void toggleVib(Context context) {
+        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         if (am != null && ActivityManagerNative.isSystemReady()) {
             if (am.getRingerMode() != AudioManager.RINGER_MODE_VIBRATE) {
                 am.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
-                Vibrator vib = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
+                Vibrator vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
                 if (vib != null) {
                     vib.vibrate(50);
                 }
@@ -683,12 +602,12 @@ public abstract class ActionHandler {
         }
     }
 
-    private void toggleVibSilent() {
-        AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+    private static void toggleVibSilent(Context context) {
+        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         if (am != null && ActivityManagerNative.isSystemReady()) {
             if (am.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
                 am.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
-                Vibrator vib = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
+                Vibrator vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
                 if (vib != null) {
                     vib.vibrate(50);
                 }
@@ -706,8 +625,8 @@ public abstract class ActionHandler {
         }
     }
 
-    private void toggleExpandedDesktop() {
-        ContentResolver cr = mContext.getContentResolver();
+    private static void toggleExpandedDesktop(Context context) {
+        ContentResolver cr = context.getContentResolver();
         String newVal = "";
         String currentVal = Settings.Global.getString(cr, Settings.Global.POLICY_CONTROL);
         if (currentVal == null) {
@@ -718,29 +637,29 @@ public abstract class ActionHandler {
         }
         Settings.Global.putString(cr, Settings.Global.POLICY_CONTROL, newVal);
         if (newVal.equals("")) {
-            WindowManagerPolicyControl.reloadFromSetting(mContext);
+            WindowManagerPolicyControl.reloadFromSetting(context);
         }
     }
 
-    private void launchVoiceSearch() {
+    private static void launchVoiceSearch(Context context) {
         sendCloseSystemWindows("assist");
         // launch the search activity
         Intent intent = new Intent(Intent.ACTION_SEARCH_LONG_PRESS);
         try {
             // TODO: This only stops the factory-installed search manager.
             // Need to formalize an API to handle others
-            SearchManager searchManager = (SearchManager) mContext
+            SearchManager searchManager = (SearchManager) context
                     .getSystemService(Context.SEARCH_SERVICE);
             if (searchManager != null) {
                 searchManager.stopSearch();
             }
-            launchActivity(intent);
+            launchActivity(context, intent);
         } catch (ActivityNotFoundException e) {
             Slog.w(TAG, "No assist activity installed", e);
         }
     }
 
-    private void triggerVirtualKeypress(final int keyCode) {
+    private static void triggerVirtualKeypress(Context context, final int keyCode) {
         InputManager im = InputManager.getInstance();
         long now = SystemClock.uptimeMillis();
 
@@ -753,21 +672,21 @@ public abstract class ActionHandler {
         im.injectInputEvent(upEvent, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
     }
 
-    private void launchCamera() {
+    private static void launchCamera(Context context) {
         Intent i = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-        PackageManager pm = mContext.getPackageManager();
+        PackageManager pm = context.getPackageManager();
         final ResolveInfo mInfo = pm.resolveActivity(i, 0);
         Intent intent = new Intent().setComponent(new ComponentName(mInfo.activityInfo.packageName,
                 mInfo.activityInfo.name));
-        launchActivity(intent);
+        launchActivity(context, intent);
     }
 
-    private void toggleWifi() {
-        WifiManager wfm = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
+    private static void toggleWifi(Context context) {
+        WifiManager wfm = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         wfm.setWifiEnabled(!wfm.isWifiEnabled());
     }
 
-    private void toggleBluetooth() {
+    private static void toggleBluetooth() {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         boolean enabled = bluetoothAdapter.isEnabled();
         if (enabled) {
@@ -777,40 +696,38 @@ public abstract class ActionHandler {
         }
     }
 
-    private void toggleWifiAP() {
-        WifiManager wfm = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
-        int state = wfm.getWifiApState();
+    private static void toggleWifiAP(Context context) {
+        final ContentResolver cr = context.getContentResolver();
+        WifiManager wm = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        int state = wm.getWifiApState();
+        boolean enabled = false;
         switch (state) {
             case WifiManager.WIFI_AP_STATE_ENABLING:
             case WifiManager.WIFI_AP_STATE_ENABLED:
-                setSoftapEnabled(wfm, false);
+                enabled = false;
                 break;
             case WifiManager.WIFI_AP_STATE_DISABLING:
             case WifiManager.WIFI_AP_STATE_DISABLED:
-                setSoftapEnabled(wfm, true);
+                enabled = true;
                 break;
         }
-    }
-
-    private void setSoftapEnabled(WifiManager wm, boolean enable) {
-        final ContentResolver cr = mContext.getContentResolver();
         /**
          * Disable Wifi if enabling tethering
          */
         int wifiState = wm.getWifiState();
-        if (enable && ((wifiState == WifiManager.WIFI_STATE_ENABLING) ||
+        if (enabled && ((wifiState == WifiManager.WIFI_STATE_ENABLING) ||
                 (wifiState == WifiManager.WIFI_STATE_ENABLED))) {
             wm.setWifiEnabled(false);
             Settings.Global.putInt(cr, Settings.Global.WIFI_SAVED_STATE, 1);
         }
 
         // Turn on the Wifi AP
-        wm.setWifiApEnabled(null, enable);
+        wm.setWifiApEnabled(null, enabled);
 
         /**
          * If needed, restore Wifi on tether disable
          */
-        if (!enable) {
+        if (!enabled) {
             int wifiSavedState = 0;
             try {
                 wifiSavedState = Settings.Global.getInt(cr, Settings.Global.WIFI_SAVED_STATE);
@@ -824,7 +741,7 @@ public abstract class ActionHandler {
         }
     }
 
-    private void toggleTorch() {
+    private static void toggleTorch() {
         try {
             ITorchService torchService = ITorchService.Stub.asInterface(ServiceManager
                     .getService(Context.TORCH_SERVICE));
@@ -834,104 +751,24 @@ public abstract class ActionHandler {
         }
     }
 
-    /**
-     * functions needed for taking screenhots. This leverages the built in ICS
-     * screenshot functionality
-     */
-    final Object mScreenshotLock = new Object();
-    static ServiceConnection mScreenshotConnection = null;
-
-    final Runnable mScreenshotTimeout = new Runnable() {
-        @Override
-        public void run() {
-            synchronized (mScreenshotLock) {
-                if (mScreenshotConnection != null) {
-                    mContext.unbindService(mScreenshotConnection);
-                    mScreenshotConnection = null;
-                }
-            }
-        }
-    };
-
-    private void takeScreenshot() {
-        synchronized (mScreenshotLock) {
-            if (mScreenshotConnection != null) {
-                return;
-            }
-            ComponentName cn = new ComponentName("com.android.systemui",
-                    "com.android.systemui.screenshot.TakeScreenshotService");
-            Intent intent = new Intent();
-            intent.setComponent(cn);
-            ServiceConnection conn = new ServiceConnection() {
-                @Override
-                public void onServiceConnected(ComponentName name, IBinder service) {
-                    synchronized (mScreenshotLock) {
-                        if (mScreenshotConnection != this) {
-                            return;
-                        }
-                        Messenger messenger = new Messenger(service);
-                        Message msg = Message.obtain(null, 1);
-                        final ServiceConnection myConn = this;
-                        Handler h = new Handler(H.getLooper()) {
-                            @Override
-                            public void handleMessage(Message msg) {
-                                synchronized (mScreenshotLock) {
-                                    if (mScreenshotConnection == myConn) {
-                                        mContext.unbindService(mScreenshotConnection);
-                                        mScreenshotConnection = null;
-                                        H.removeCallbacks(mScreenshotTimeout);
-                                    }
-                                }
-                            }
-                        };
-                        msg.replyTo = new Messenger(h);
-                        msg.arg1 = msg.arg2 = 0;
-
-                        /*
-                         * remove for the time being if (mStatusBar != null &&
-                         * mStatusBar.isVisibleLw()) msg.arg1 = 1; if
-                         * (mNavigationBar != null &&
-                         * mNavigationBar.isVisibleLw()) msg.arg2 = 1;
-                         */
-
-                        /* wait for the dialog box to close */
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException ie) {
-                        }
-
-                        /* take the screenshot */
-                        try {
-                            messenger.send(msg);
-                        } catch (RemoteException e) {
-                        }
-                    }
-                }
-
-                @Override
-                public void onServiceDisconnected(ComponentName name) {
-                }
-            };
-            if (mContext.bindService(intent, conn, Context.BIND_AUTO_CREATE)) {
-                mScreenshotConnection = conn;
-                H.postDelayed(mScreenshotTimeout, 10000);
-            }
-        }
-    }
-
-    private void takeScreenrecord() {
-        mContext.sendBroadcastAsUser(new Intent(INTENT_TOGGLE_SCREENRECORD), new UserHandle(
+    private static void takeScreenshot(Context context) {
+        context.sendBroadcastAsUser(new Intent(INTENT_SCREENSHOT), new UserHandle(
                 UserHandle.USER_ALL));
     }
 
-    private void killProcess() {
-        if (mContext.checkCallingOrSelfPermission(android.Manifest.permission.FORCE_STOP_PACKAGES) == PackageManager.PERMISSION_GRANTED
+    private static void takeScreenrecord(Context context) {
+        context.sendBroadcastAsUser(new Intent(INTENT_TOGGLE_SCREENRECORD), new UserHandle(
+                UserHandle.USER_ALL));
+    }
+
+    private static void killProcess(Context context) {
+        if (context.checkCallingOrSelfPermission(android.Manifest.permission.FORCE_STOP_PACKAGES) == PackageManager.PERMISSION_GRANTED
                 && !isLockTaskOn()) {
             try {
                 final Intent intent = new Intent(Intent.ACTION_MAIN);
                 String defaultHomePackage = "com.android.launcher";
                 intent.addCategory(Intent.CATEGORY_HOME);
-                final ResolveInfo res = mContext.getPackageManager()
+                final ResolveInfo res = context.getPackageManager()
                         .resolveActivity(intent, 0);
                 if (res.activityInfo != null
                         && !res.activityInfo.packageName.equals("android")) {
@@ -953,122 +790,52 @@ public abstract class ActionHandler {
                                         && !pkg.equals(defaultHomePackage)) {
                                     am.forceStopPackage(pkg,
                                             UserHandle.USER_CURRENT);
-                                    postActionEventHandled(true);
                                     break;
                                 }
                             }
                         } else {
                             Process.killProcess(appInfo.pid);
-                            postActionEventHandled(true);
                             break;
                         }
                     }
                 }
             } catch (RemoteException remoteException) {
                 Log.d("ActionHandler", "Caller cannot kill processes, aborting");
-                postActionEventHandled(false);
             }
         } else {
             Log.d("ActionHandler", "Caller cannot kill processes, aborting");
-            postActionEventHandled(false);
         }
     }
 
-    final Object mAudiorecordLock = new Object();
-    static ServiceConnection mAudiorecordConnection = null;
-
-    final Runnable mAudiorecordTimeout = new Runnable() {
-        @Override
-        public void run() {
-            synchronized (mAudiorecordLock) {
-                if (mAudiorecordConnection != null) {
-                    mContext.unbindService(mAudiorecordConnection);
-                    mAudiorecordConnection = null;
-                }
-            }
-        }
-    };
-
-    // Assume this is called from the Handler thread.
-    private void takeAudiorecord() {
-        synchronized (mAudiorecordLock) {
-            if (mAudiorecordConnection != null) {
-                return;
-            }
-            ComponentName cn = new ComponentName("com.android.systemui",
-                    "com.android.systemui.eos.AudioRecordService");
-            Intent intent = new Intent();
-            intent.setComponent(cn);
-            ServiceConnection conn = new ServiceConnection() {
-                @Override
-                public void onServiceConnected(ComponentName name, IBinder service) {
-                    synchronized (mAudiorecordLock) {
-                        Messenger messenger = new Messenger(service);
-                        Message msg = Message.obtain(null, 1);
-                        final ServiceConnection myConn = this;
-                        Handler h = new Handler(H.getLooper()) {
-                            @Override
-                            public void handleMessage(Message msg) {
-                                synchronized (mAudiorecordLock) {
-                                    if (mAudiorecordConnection == myConn) {
-                                        mContext.unbindService(mAudiorecordConnection);
-                                        mAudiorecordConnection = null;
-                                        H.removeCallbacks(mAudiorecordTimeout);
-                                    }
-                                }
-                            }
-                        };
-                        msg.replyTo = new Messenger(h);
-                        msg.arg1 = msg.arg2 = 0;
-                        try {
-                            messenger.send(msg);
-                        } catch (RemoteException e) {
-                        }
-                    }
-                }
-
-                @Override
-                public void onServiceDisconnected(ComponentName name) {
-                }
-            };
-            if (mContext.bindServiceAsUser(
-                    intent, conn, Context.BIND_AUTO_CREATE, UserHandle.CURRENT)) {
-                mAudiorecordConnection = conn;
-                // Set max to 2 hours, sounds reasonable
-                H.postDelayed(mAudiorecordTimeout, 120 * 60 * 1000);
-            }
-        }
-    }
-
-    private void screenOff() {
-        PowerManager pm = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
+    private static void screenOff(Context context) {
+        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         pm.goToSleep(SystemClock.uptimeMillis());
     }
 
-    private void launchAssistAction() {
+    private static void launchAssistAction(Context context) {
         sendCloseSystemWindows("assist");
-        Intent intent = ((SearchManager) mContext.getSystemService(Context.SEARCH_SERVICE))
-                .getAssistIntent(mContext, true, UserHandle.USER_CURRENT);
+        Intent intent = ((SearchManager) context.getSystemService(Context.SEARCH_SERVICE))
+                .getAssistIntent(context, true, UserHandle.USER_CURRENT);
         if (intent != null) {
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                     | Intent.FLAG_ACTIVITY_SINGLE_TOP
                     | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             try {
-                mContext.startActivityAsUser(intent, UserHandle.CURRENT);
+                context.startActivityAsUser(intent, UserHandle.CURRENT);
             } catch (ActivityNotFoundException e) {
                 Slog.w(TAG, "No activity to handle assist action.", e);
             }
         }
     }
 
-    public void turnOffLockTask() {
+    public static void turnOffLockTask() {
         try {
             ActivityManagerNative.getDefault().stopLockTaskModeOnCurrent();
         } catch (Exception e) {
         }
     }
 
-    public boolean isLockTaskOn() {
+    public static boolean isLockTaskOn() {
         try {
             return ActivityManagerNative.getDefault().isInLockTaskMode();
         } catch (Exception e) {
@@ -1076,29 +843,8 @@ public abstract class ActionHandler {
         return false;
     }
 
-    private void showPowerMenu() {
-        mContext.sendBroadcastAsUser(new Intent(INTENT_SHOW_POWER_MENU), new UserHandle(
+    private static void showPowerMenu(Context context) {
+        context.sendBroadcastAsUser(new Intent(INTENT_SHOW_POWER_MENU), new UserHandle(
                 UserHandle.USER_ALL));
     }
-
-    /**
-     * This method is called after an action is performed. This is useful for
-     * subclasses to override, such as the one in the lock screen. As you need
-     * to unlock the device after performing an action.
-     * 
-     * @param actionWasPerformed
-     */
-    protected boolean postActionEventHandled(boolean actionWasPerformed) {
-        return actionWasPerformed;
-    }
-
-    /**
-     * This the the fall over method that is called if this base class cannot
-     * process an action. You do not need to manually call
-     * {@link postActionEventHandled}
-     * 
-     * @param action
-     * @return
-     */
-    public abstract boolean handleAction(String action);
 }

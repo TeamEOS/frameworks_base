@@ -45,7 +45,7 @@ import android.view.HapticFeedbackConstants;
 import android.view.SoundEffectConstants;
 import android.view.View;
 
-public class NxActionHandler extends ActionHandler implements ActionReceiver, Swipeable {
+public class NxActionHandler implements ActionReceiver, Swipeable {
     final static String TAG = NxActionHandler.class.getSimpleName();
 
     static final int EVENT_SINGLE_LEFT_TAP = 1;
@@ -62,12 +62,13 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver, Sw
     private Map<Integer, NxAction> mActionMap = new HashMap<Integer, NxAction>();
     private ActionObserver mObserver;
     private View mHost;
+    private Context mContext;
     private Handler H = new Handler();
     private boolean isDoubleTapEnabled;
     private boolean mKeyguardShowing;
 
     public NxActionHandler(Context context, View host) {
-        super(context);
+        mContext = context;
         mHost = host;
         mActionMap = new HashMap<Integer, NxAction>();
         loadActionMap();
@@ -176,17 +177,11 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver, Sw
     }
 
     @Override
-    public boolean handleAction(String action) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
     public void onActionDispatched(NxAction actionEvent, String task) {
         if (actionEvent.isEnabled()) {
             mHost.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
             mHost.playSoundEffect(SoundEffectConstants.CLICK);
-            performTask(task);
+            ActionHandler.performTask(mContext, task);
         }
     }
 
@@ -247,8 +242,8 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver, Sw
     public void onLongLeftPress() {
         boolean isEnabled = ((NxAction) mActionMap.get(EVENT_LONG_LEFT_PRESS))
                 .isEnabled();
-        if (isLockTaskOn()) {
-            turnOffLockTask();
+        if (ActionHandler.isLockTaskOn()) {
+            ActionHandler.turnOffLockTask();
         } else {
             fireAction(isEnabled ? EVENT_LONG_LEFT_PRESS : EVENT_LONG_RIGHT_PRESS);
         }
@@ -258,8 +253,8 @@ public class NxActionHandler extends ActionHandler implements ActionReceiver, Sw
     public void onLongRightPress() {
         boolean isEnabled = ((NxAction) mActionMap.get(EVENT_LONG_RIGHT_PRESS))
                 .isEnabled();
-        if (isLockTaskOn()) {
-            turnOffLockTask();
+        if (ActionHandler.isLockTaskOn()) {
+            ActionHandler.turnOffLockTask();
         } else {
             fireAction(isEnabled ? EVENT_LONG_RIGHT_PRESS : EVENT_LONG_LEFT_PRESS);
         }

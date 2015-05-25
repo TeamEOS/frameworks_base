@@ -41,7 +41,7 @@ import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.view.WindowManagerPolicy.WindowState;
 
-public class HardkeyActionHandler extends ActionHandler {
+public class HardkeyActionHandler {
     private interface ActionReceiver {
         public void onActionDispatched(HardKeyButton button, String task);
     }
@@ -88,7 +88,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 button.setPressed(false);
                 button.setWasConsumed(false);
             }
-            performTask(task);
+            ActionHandler.performTask(mContext, task);
         }
     };
 
@@ -97,9 +97,10 @@ public class HardkeyActionHandler extends ActionHandler {
     private SettingsObserver mObserver;
     private Handler mHandler;
     private PowerManager mPm;
+    private Context mContext;
 
     public HardkeyActionHandler(Context context, Handler handler) {
-        super(context);
+        mContext = context;
         mHandler = handler;
         mPm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
 
@@ -167,7 +168,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mHomeButton.keyHasDoubleTapRecents()) {
-                    cancelPreloadRecentApps();
+                    ActionHandler.cancelPreloadRecentApps();
                 }
 
                 if (canceled) {
@@ -241,7 +242,7 @@ public class HardkeyActionHandler extends ActionHandler {
                     mHomeButton.setWasConsumed(true);
                 } else if (mHomeButton.keyHasLongPressRecents()
                         || mHomeButton.keyHasDoubleTapRecents()) {
-                    preloadRecentApps();
+                    ActionHandler.preloadRecentApps();
                 }
             } else if (longPress) {
                 if (!keyguardOn
@@ -249,7 +250,7 @@ public class HardkeyActionHandler extends ActionHandler {
                         && mHomeButton.isLongTapEnabled()) {
                     mHomeButton.setPressed(true);
                     if (!mHomeButton.keyHasLongPressRecents()) {
-                        cancelPreloadRecentApps();
+                        ActionHandler.cancelPreloadRecentApps();
                     }
                     mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
                     mHomeButton.fireLongPress();
@@ -267,7 +268,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mMenuButton.keyHasDoubleTapRecents()) {
-                    cancelPreloadRecentApps();
+                    ActionHandler.cancelPreloadRecentApps();
                 }
 
                 if (canceled || keyguardOn) {
@@ -282,7 +283,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mMenuButton.keyHasSingleTapRecent()) {
-                    cancelPreloadRecentApps();
+                    ActionHandler.cancelPreloadRecentApps();
                 }
 
                 mMenuButton.fireSingleTap();
@@ -304,7 +305,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 } else if (mMenuButton.keyHasLongPressRecents()
                         || mMenuButton.keyHasDoubleTapRecents()
                         || mMenuButton.keyHasSingleTapRecent()) {
-                    preloadRecentApps();
+                    ActionHandler.preloadRecentApps();
                 }
             } else if (longPress) {
                 if (!keyguardOn
@@ -312,7 +313,7 @@ public class HardkeyActionHandler extends ActionHandler {
                         && mMenuButton.isLongTapEnabled()) {
                     mMenuButton.setPressed(true);
                     if (!mMenuButton.keyHasLongPressRecents()) {
-                        cancelPreloadRecentApps();
+                        ActionHandler.cancelPreloadRecentApps();
                     }
                     mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
                     mMenuButton.fireLongPress();
@@ -330,7 +331,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mRecentButton.keyHasDoubleTapRecents()) {
-                    cancelPreloadRecentApps();
+                    ActionHandler.cancelPreloadRecentApps();
                 }
 
                 if (canceled || keyguardOn) {
@@ -345,7 +346,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mRecentButton.keyHasSingleTapRecent()) {
-                    cancelPreloadRecentApps();
+                    ActionHandler.cancelPreloadRecentApps();
                 }
 
                 mRecentButton.fireSingleTap();
@@ -367,7 +368,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 } else if (mRecentButton.keyHasLongPressRecents()
                         || mRecentButton.keyHasDoubleTapRecents()
                         || mRecentButton.keyHasSingleTapRecent()) {
-                    preloadRecentApps();
+                    ActionHandler.preloadRecentApps();
                 }
             } else if (longPress) {
                 if (!keyguardOn
@@ -375,7 +376,7 @@ public class HardkeyActionHandler extends ActionHandler {
                         && mRecentButton.isLongTapEnabled()) {
                     mRecentButton.setPressed(true);
                     if (!mRecentButton.keyHasLongPressRecents()) {
-                        cancelPreloadRecentApps();
+                        ActionHandler.cancelPreloadRecentApps();
                     }
                     mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
                     mRecentButton.fireLongPress();
@@ -393,7 +394,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mAssistButton.keyHasDoubleTapRecents()) {
-                    cancelPreloadRecentApps();
+                    ActionHandler.cancelPreloadRecentApps();
                 }
 
                 if (canceled || keyguardOn) {
@@ -408,7 +409,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mAssistButton.keyHasSingleTapRecent()) {
-                    cancelPreloadRecentApps();
+                    ActionHandler.cancelPreloadRecentApps();
                 }
                 mAssistButton.fireSingleTap();
                 return true;
@@ -429,7 +430,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 } else if (mAssistButton.keyHasLongPressRecents()
                         || mAssistButton.keyHasDoubleTapRecents()
                         || mAssistButton.keyHasSingleTapRecent()) {
-                    preloadRecentApps();
+                    ActionHandler.preloadRecentApps();
                 }
             } else if (longPress) {
                 if (!keyguardOn
@@ -437,7 +438,7 @@ public class HardkeyActionHandler extends ActionHandler {
                         && mAssistButton.isLongTapEnabled()) {
                     mAssistButton.setPressed(true);
                     if (!mAssistButton.keyHasLongPressRecents()) {
-                        cancelPreloadRecentApps();
+                        ActionHandler.cancelPreloadRecentApps();
                     }
                     mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
                     mAssistButton.fireLongPress();
@@ -455,7 +456,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 }
 
                 if (!mBackButton.keyHasDoubleTapRecents()) {
-                    cancelPreloadRecentApps();
+                    ActionHandler.cancelPreloadRecentApps();
                 }
 
                 if (canceled || keyguardOn) {
@@ -487,20 +488,20 @@ public class HardkeyActionHandler extends ActionHandler {
                     mBackButton.setWasConsumed(true);
                 } else if (mBackButton.keyHasLongPressRecents()
                         || mBackButton.keyHasDoubleTapRecents()) {
-                    preloadRecentApps();
+                    ActionHandler.preloadRecentApps();
                 }
             } else if (longPress) {
                 if (!keyguardOn
                         && !mBackButton.wasConsumed()) {
                     mBackButton.setPressed(true);
-                    if (isLockTaskOn()) {
-                        turnOffLockTask();
+                    if (ActionHandler.isLockTaskOn()) {
+                        ActionHandler.turnOffLockTask();
                         mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
                         mBackButton.setWasConsumed(true);
                     } else {
                         if (mBackButton.isLongTapEnabled()) {
                             if (!mBackButton.keyHasLongPressRecents()) {
-                                cancelPreloadRecentApps();
+                                ActionHandler.cancelPreloadRecentApps();
                             }
                             mBackButton.fireLongPress();
                             mHandler.sendEmptyMessage(MSG_DO_HAPTIC_FB);
@@ -571,7 +572,7 @@ public class HardkeyActionHandler extends ActionHandler {
                 if (mDoubleTapPending) {
                     mDoubleTapPending = false;
                     if (!keyHasSingleTapRecent()) {
-                        cancelPreloadRecentApps();
+                        ActionHandler.cancelPreloadRecentApps();
                     }
                     mActionReceiver.onActionDispatched(HardKeyButton.this, mSingleTap);
                 }
@@ -704,12 +705,6 @@ public class HardkeyActionHandler extends ActionHandler {
             WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
             WindowManager.LayoutParams.TYPE_SYSTEM_ERROR,
     };
-
-    @Override
-    public boolean handleAction(String action) {
-        // TODO Auto-generated method stub
-        return false;
-    }
 
     private class SettingsObserver extends ContentObserver {
         SettingsObserver(Handler handler) {
