@@ -4308,6 +4308,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             mDraggedDownRow.notifyHeightChanged();
             mDraggedDownRow = null;
         }
+        if (getNavigationBarView() != null) {
+            getNavigationBarView().setKeyguardShowing(true);
+        }
     }
 
     public boolean isCollapsing() {
@@ -4414,6 +4417,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             mQSPanel.refreshAllTiles();
         }
         mHandler.removeMessages(MSG_LAUNCH_TRANSITION_TIMEOUT);
+        if (getNavigationBarView() != null) {
+            getNavigationBarView().setKeyguardShowing(false);
+        }
         return staying;
     }
 
