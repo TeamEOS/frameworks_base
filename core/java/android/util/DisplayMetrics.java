@@ -223,7 +223,7 @@ public class DisplayMetrics {
     public float noncompatYdpi;
 
     /** @hide */
-    public void updateDensity() {
+    public void forcePersistedDensity() {
         density = DENSITY_CURRENT / (float) DENSITY_DEFAULT;
         densityDpi = DENSITY_CURRENT;
         scaledDensity = density;
@@ -254,7 +254,6 @@ public class DisplayMetrics {
         noncompatScaledDensity = o.noncompatScaledDensity;
         noncompatXdpi = o.noncompatXdpi;
         noncompatYdpi = o.noncompatYdpi;
-        updateDensity();
     }
     
     public void setToDefaults() {
