@@ -86,7 +86,6 @@ public class NotificationPanelView extends PanelView implements
     private KeyguardStatusBarView mKeyguardStatusBar;
     private QSContainer mQsContainer;
     private QSPanel mQsPanel;
-    private LinearLayout mTaskManagerPanel;
     private KeyguardStatusView mKeyguardStatusView;
     private ObservableScrollView mScrollView;
     private TextView mClockView;
@@ -187,6 +186,10 @@ public class NotificationPanelView extends PanelView implements
 
     private float mKeyguardStatusBarAnimateAlpha = 1f;
     private int mOldLayoutDirection;
+
+    // Task manager
+    private boolean mShowTaskManager;
+    private LinearLayout mTaskManagerPanel;
 
     private Handler mHandler = new Handler();
     private SettingsObserver mSettingsObserver;
@@ -1386,8 +1389,7 @@ public class NotificationPanelView extends PanelView implements
     }
 
     public void setTaskManagerVisibility(boolean mTaskManagerShowing) {
-        if (Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.ENABLE_TASK_MANAGER, 0) == 1) {
+        if (mShowTaskManager) {
             cancelAnimation();
             boolean expandVisually = mQsExpanded || mStackScrollerOverscrolling;
             mQsPanel.setVisibility(expandVisually && !mTaskManagerShowing
@@ -2114,6 +2116,8 @@ public class NotificationPanelView extends PanelView implements
                     Settings.System.DOUBLE_TAP_SLEEP_GESTURE), false, this, UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.DOUBLE_TAP_SLEEP_ANYWHERE), false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.ENABLE_TASK_MANAGER), false, this, UserHandle.USER_ALL);
             update();
         }
 
@@ -2132,6 +2136,8 @@ public class NotificationPanelView extends PanelView implements
                     Settings.System.DOUBLE_TAP_SLEEP_GESTURE, 1, UserHandle.USER_CURRENT) == 1;
             mDoubleTapToSleepAnywhere = Settings.System.getIntForUser(resolver,
                     Settings.System.DOUBLE_TAP_SLEEP_ANYWHERE, 0, UserHandle.USER_CURRENT) == 1;
+            mShowTaskManager = Settings.System.getIntForUser(resolver,
+                    Settings.System.ENABLE_TASK_MANAGER, 0, UserHandle.USER_CURRENT) == 1;
         }
     }
 
