@@ -11560,8 +11560,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             }
 
             if (!Build.isFingerprintConsistent()) {
-                Slog.e(TAG, "Build fingerprint is not consistent, warning user");
-                mUiHandler.obtainMessage(SHOW_FINGERPRINT_ERROR_MSG).sendToTarget();
+                Slog.e(TAG, "Build fingerprint is not consistent");
             }
 
             long ident = Binder.clearCallingIdentity();
