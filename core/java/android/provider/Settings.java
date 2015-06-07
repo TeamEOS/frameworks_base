@@ -3557,6 +3557,27 @@ public final class Settings {
         public static final String NAVIGATION_BAR_MODE = "navigation_bar_mode";
 
         /**
+         * Navigation bar mode: currently aosp style and NX
+         * 
+         * @hide
+         */
+        public static final String NAVIGATION_BUTTON_ACTIONS = "navbar_button_configs";
+
+        /**
+         * Navigation bar mode: currently aosp style and NX
+         * 
+         * @hide
+         */
+        public static final String FLING_GESTURE_ACTIONS = "fling_gesture_configs";
+
+        /**
+         * Navigation bar mode: currently aosp style and NX
+         * 
+         * @hide
+         */
+        public static final String HWKEY_BUTTON_ACTIONS = "hwkeys_button_configs";
+
+        /**
          * Keep software key menu button visible
          * 
          * @hide
@@ -3569,223 +3590,6 @@ public final class Settings {
          * @hide
          */
         public static final String SOFTKEY_LONGPRESS_TIMEOUT = "softkey_longpress_timeout";
-
-        /**
-         * software key back long press action
-         * 
-         * @hide
-         */
-        public static final String SOFTKEY_BACK_LONGPRESS = "softkey_longpress_back";
-
-        /**
-         * software key home long press action
-         * 
-         * @hide
-         */
-        public static final String SOFTKEY_HOME_LONGPRESS = "softkey_longpress_home";
-
-        /**
-         * software key recent long press action
-         * 
-         * @hide
-         */
-        public static final String SOFTKEY_RECENT_LONGPRESS = "softkey_longpress_recent";
-
-        /**
-         * software key menu long press action
-         * 
-         * @hide
-         */
-        public static final String SOFTKEY_MENU_LONGPRESS = "softkey_longpress_menu";
-
-        /**
-         * software key back double tap action
-         * 
-         * @hide
-         */
-        public static final String SOFTKEY_BACK_DOUBLETAP = "softkey_doubletap_back";
-
-        /**
-         * software key home double tap action
-         * 
-         * @hide
-         */
-        public static final String SOFTKEY_HOME_DOUBLETAP = "softkey_doubletap_home";
-
-        /**
-         * software key recent double tap action
-         * 
-         * @hide
-         */
-        public static final String SOFTKEY_RECENT_DOUBLETAP = "softkey_doubletap_recent";
-
-        /**
-         * software key menu double tap action
-         * 
-         * @hide
-         */
-        public static final String SOFTKEY_MENU_DOUBLETAP = "softkey_doubletap_menu";
-
-        /**
-         * back key long press action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_BACK_LONGPRESS = "hardware_button_back_longpress";
-
-        /**
-         * home key long press action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_HOME_LONGPRESS = "hardware_button_home_longpress";
-
-        /**
-         * recent key long press action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_RECENT_LONGPRESS = "hardware_button_recent_longpress";
-
-        /**
-         * menu key long press action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_MENU_LONGPRESS = "hardware_button_menu_longpress";
-
-        /**
-         * search assistant key long press action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_ASSIST_LONGPRESS = "hardware_button_assist_longpress";
-
-        /**
-         * back key double tap action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_BACK_DOUBLETAP = "hardware_button_back_doubletap";
-
-        /**
-         * home key double tap action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_HOME_DOUBLETAP = "hardware_button_home_doubletap";
-
-        /**
-         * recent key double tap action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_RECENT_DOUBLETAP = "hardware_button_recent_doubletap";
-
-        /**
-         * menu key double tap action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_MENU_DOUBLETAP = "hardware_button_menu_doubletap";
-
-        /**
-         * search assistant double tap action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_ASSIST_DOUBLETAP = "hardware_button_assist_doubletap";
-
-        /**
-         * recent key double tap action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_RECENT_SINGLETAP = "hardware_button_recent_singletap";
-
-        /**
-         * menu key double tap action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_MENU_SINGLETAP = "hardware_button_menu_singletap";
-
-        /**
-         * search assistant double tap action
-         * 
-         * @hide
-         */
-        public static final String HARDWARE_BUTTON_ASSIST_SINGLETAP = "hardware_button_assist_singletap";
-
-        /**
-         * NX single tap right action
-         * 
-         * @hide
-         */
-        public static final String NX_SINGLETAP_RIGHT = "nx_singletap_right";
-
-        /**
-         * nx single tap left action
-         * 
-         * @hide
-         */
-        public static final String NX_SINGLETAP_LEFT = "nx_singletap_left";
-
-        /**
-         * NX double tap right action
-         * 
-         * @hide
-         */
-        public static final String NX_DOUBLETAP_RIGHT = "nx_doubletap_right";
-
-        /**
-         * nx double tap left action
-         * 
-         * @hide
-         */
-        public static final String NX_DOUBLETAP_LEFT = "nx_doubletap_left";
-
-        /**
-         * NX long press right action
-         * 
-         * @hide
-         */
-        public static final String NX_LONGPRESS_RIGHT = "nx_longpress_right";
-
-        /**
-         * nx long press left action
-         * 
-         * @hide
-         */
-        public static final String NX_LONGPRESS_LEFT = "nx_longpress_left";
-
-        /**
-         * NX short fling right action
-         * 
-         * @hide
-         */
-        public static final String NX_SHORT_FLING_RIGHT = "nx_short_fling_right";
-
-        /**
-         * nx short fling left action
-         * 
-         * @hide
-         */
-        public static final String NX_SHORT_FLING_LEFT = "nx_short_fling_left";
-
-        /**
-         * NX long fling right action
-         * 
-         * @hide
-         */
-        public static final String NX_LONG_FLING_RIGHT = "nx_long_fling_right";
-
-        /**
-         * nx long fling left action
-         * 
-         * @hide
-         */
-        public static final String NX_LONG_FLING_LEFT = "nx_long_fling_left";
 
         /**
          * nx logo visible
@@ -3969,37 +3773,9 @@ public final class Settings {
             NAVIGATION_BAR_MODE,
             NAVIGATION_BAR_FORCE_SHOW_MENU,
             SOFTKEY_LONGPRESS_TIMEOUT,
-            SOFTKEY_BACK_LONGPRESS,
-            SOFTKEY_HOME_LONGPRESS,
-            SOFTKEY_RECENT_LONGPRESS,
-            SOFTKEY_MENU_LONGPRESS,
-            SOFTKEY_BACK_DOUBLETAP,
-            SOFTKEY_HOME_DOUBLETAP,
-            SOFTKEY_RECENT_DOUBLETAP,
-            SOFTKEY_MENU_DOUBLETAP,
-            HARDWARE_BUTTON_BACK_LONGPRESS,
-            HARDWARE_BUTTON_HOME_LONGPRESS,
-            HARDWARE_BUTTON_RECENT_LONGPRESS,
-            HARDWARE_BUTTON_MENU_LONGPRESS,
-            HARDWARE_BUTTON_ASSIST_LONGPRESS,
-            HARDWARE_BUTTON_BACK_DOUBLETAP,
-            HARDWARE_BUTTON_HOME_DOUBLETAP,
-            HARDWARE_BUTTON_RECENT_DOUBLETAP,
-            HARDWARE_BUTTON_MENU_DOUBLETAP,
-            HARDWARE_BUTTON_ASSIST_DOUBLETAP,
-            HARDWARE_BUTTON_RECENT_SINGLETAP,
-            HARDWARE_BUTTON_MENU_SINGLETAP,
-            HARDWARE_BUTTON_ASSIST_SINGLETAP,
-            NX_SINGLETAP_RIGHT,
-            NX_SINGLETAP_LEFT,
-            NX_DOUBLETAP_RIGHT,
-            NX_DOUBLETAP_LEFT,
-            NX_LONGPRESS_RIGHT,
-            NX_LONGPRESS_LEFT,
-            NX_SHORT_FLING_RIGHT,
-            NX_SHORT_FLING_LEFT,
-            NX_LONG_FLING_RIGHT,
-            NX_LONG_FLING_LEFT,
+            NAVIGATION_BUTTON_ACTIONS,
+            HWKEY_BUTTON_ACTIONS,
+            FLING_GESTURE_ACTIONS,
             NX_LOGO_VISIBLE,
             NX_LOGO_ANIMATES,
             NX_PULSE_ENABLED,

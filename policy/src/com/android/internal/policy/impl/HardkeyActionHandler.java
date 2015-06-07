@@ -23,7 +23,13 @@
 
 package com.android.internal.policy.impl;
 
+import java.util.ArrayList;
+
+import com.android.internal.util.actions.ActionConstants;
 import com.android.internal.util.actions.ActionHandler;
+import com.android.internal.util.actions.Config;
+import com.android.internal.util.actions.Config.ActionConfig;
+import com.android.internal.util.actions.Config.ButtonConfig;
 
 import android.content.ContentResolver;
 import android.content.Context;
@@ -80,10 +86,10 @@ public class HardkeyActionHandler {
     private ActionReceiver mActionReceiver = new ActionReceiver() {
         @Override
         public void onActionDispatched(HardKeyButton button, String task) {
-            if (task.equals(HardKeyButton.HOME)) {
+            if (task.equals(ActionHandler.SYSTEMUI_TASK_HOME)) {
                 mHandler.sendEmptyMessage(MSG_FIRE_HOME);
                 return;
-            } else if (task.equals(HardKeyButton.SLEEP)) {
+            } else if (task.equals(ActionHandler.SYSTEMUI_TASK_SCREENOFF)) {
                 // can't consume UP event if screen is off, do it manually
                 button.setPressed(false);
                 button.setWasConsumed(false);
@@ -107,44 +113,11 @@ public class HardkeyActionHandler {
         mDeviceHardwareKeys = mContext.getResources().getInteger(
                 com.android.internal.R.integer.config_deviceHardwareKeys);
 
-        mBackButton = new HardKeyButton(context,
-                Settings.System.HARDWARE_BUTTON_BACK_LONGPRESS,
-                Settings.System.HARDWARE_BUTTON_BACK_DOUBLETAP, handler, mActionReceiver);
-
-        mHomeButton = new HardKeyButton(context,
-                Settings.System.HARDWARE_BUTTON_HOME_LONGPRESS,
-                Settings.System.HARDWARE_BUTTON_HOME_DOUBLETAP, handler, mActionReceiver);
-
-        mRecentButton = new HardKeyButton(context,
-                Settings.System.HARDWARE_BUTTON_RECENT_SINGLETAP,
-                Settings.System.HARDWARE_BUTTON_RECENT_LONGPRESS,
-                Settings.System.HARDWARE_BUTTON_RECENT_DOUBLETAP, handler, mActionReceiver);
-
-        mMenuButton = new HardKeyButton(context,
-                Settings.System.HARDWARE_BUTTON_MENU_SINGLETAP,
-                Settings.System.HARDWARE_BUTTON_MENU_LONGPRESS,
-                Settings.System.HARDWARE_BUTTON_MENU_DOUBLETAP, handler, mActionReceiver);
-
-        mAssistButton = new HardKeyButton(context,
-                Settings.System.HARDWARE_BUTTON_ASSIST_SINGLETAP,
-                Settings.System.HARDWARE_BUTTON_ASSIST_LONGPRESS,
-                Settings.System.HARDWARE_BUTTON_ASSIST_DOUBLETAP, handler, mActionReceiver);
-
-        mBackButton.setDefaults(HardKeyButton.BACK,
-                HardKeyButton.NONE,
-                HardKeyButton.NONE);
-        mHomeButton.setDefaults(HardKeyButton.HOME,
-                HardKeyButton.MENU,
-                HardKeyButton.RECENTS);
-        mRecentButton.setDefaults(HardKeyButton.RECENTS,
-                HardKeyButton.NONE,
-                HardKeyButton.NONE);
-        mMenuButton.setDefaults(HardKeyButton.MENU,
-                HardKeyButton.NONE,
-                HardKeyButton.NONE);
-        mAssistButton.setDefaults(HardKeyButton.ASSIST,
-                HardKeyButton.VOICE,
-                HardKeyButton.NONE);
+        mBackButton = new HardKeyButton(mActionReceiver, handler);
+        mHomeButton = new HardKeyButton(mActionReceiver, handler);
+        mRecentButton = new HardKeyButton(mActionReceiver, handler);
+        mMenuButton = new HardKeyButton(mActionReceiver, handler);
+        mAssistButton = new HardKeyButton(mActionReceiver, handler);
 
         mObserver = new SettingsObserver(mHandler);
         mObserver.observe();
@@ -516,55 +489,21 @@ public class HardkeyActionHandler {
     }
 
     private class HardKeyButton {
-        static final String NONE = "";
-        static final String BACK = ActionHandler.SYSTEMUI_TASK_BACK;
-        static final String HOME = ActionHandler.SYSTEMUI_TASK_HOME;
-        static final String RECENTS = ActionHandler.SYSTEMUI_TASK_RECENTS;
-        static final String MENU = ActionHandler.SYSTEMUI_TASK_MENU;
-        static final String ASSIST = ActionHandler.SYSTEMUI_TASK_ASSIST;
-        static final String VOICE = ActionHandler.SYSTEMUI_TASK_VOICE_SEARCH;
-        static final String SLEEP = ActionHandler.SYSTEMUI_TASK_SCREENOFF;
-
-        private Handler mHandler;
+        private ButtonConfig mConfig;
         private ActionReceiver mActionReceiver;
+        private Handler mHandler;
 
-        private String mSingleTapUri = NONE;
-        private String mLongPressUri = NONE;
-        private String mDoubleTapUri = NONE;
-        private String mSingleTap = NONE;
-        private String mLongPress = NONE;
-        private String mDoubleTap = NONE;
-        private String mSingleTapDef = NONE;
-        private String mLongPressDef = NONE;
-        private String mDoubleTapDef = NONE;
-
-        private boolean mStaticSingleTap = false;
         private boolean mDoubleTapPending = false;
         private boolean mIsPressed = false;
         private boolean mWasConsumed = false;
 
-        public HardKeyButton(Context ctx, String singleTapUri, String longPressUri,
-                String doubleTapUri, Handler handler, ActionReceiver receiver) {
-            mSingleTapUri = singleTapUri;
-            mLongPressUri = longPressUri;
-            mDoubleTapUri = doubleTapUri;
+        public HardKeyButton(ActionReceiver receiver, Handler handler) {
             mHandler = handler;
             mActionReceiver = receiver;
         }
 
-        public HardKeyButton(Context ctx, String longPressUri,
-                String doubleTapUri, Handler handler, ActionReceiver receiver) {
-            this(ctx, NONE, longPressUri, doubleTapUri, handler, receiver);
-            mStaticSingleTap = true;
-        }
-
-        void setDefaults(String singleTapDef, String longPressDef, String doubleTapDef) {
-            mSingleTapDef = singleTapDef;
-            if (mStaticSingleTap) {
-                mSingleTap = mSingleTapDef;
-            }
-            mLongPressDef = longPressDef;
-            mDoubleTapDef = doubleTapDef;
+        void setConfig(ButtonConfig config) {
+            mConfig = config;
         }
 
         final Runnable mDoubleTapTimeout = new Runnable() {
@@ -574,62 +513,53 @@ public class HardkeyActionHandler {
                     if (!keyHasSingleTapRecent()) {
                         ActionHandler.cancelPreloadRecentApps();
                     }
-                    mActionReceiver.onActionDispatched(HardKeyButton.this, mSingleTap);
+                    mActionReceiver.onActionDispatched(HardKeyButton.this, mConfig.getActionConfig(ActionConfig.PRIMARY).getAction());
                 }
             }
         };
 
         final Runnable mSTRunnable = new Runnable() {
             public void run() {
-                mActionReceiver.onActionDispatched(HardKeyButton.this, mSingleTap);
+                mActionReceiver.onActionDispatched(HardKeyButton.this, mConfig.getActionConfig(ActionConfig.PRIMARY).getAction());
             }
         };
 
         final Runnable mDTRunnable = new Runnable() {
             public void run() {
-                mActionReceiver.onActionDispatched(HardKeyButton.this, mDoubleTap);
+                mActionReceiver.onActionDispatched(HardKeyButton.this, mConfig.getActionConfig(ActionConfig.THIRD).getAction());
             }
         };
 
         final Runnable mLPRunnable = new Runnable() {
             public void run() {
-                mActionReceiver.onActionDispatched(HardKeyButton.this, mLongPress);
+                mActionReceiver.onActionDispatched(HardKeyButton.this, mConfig.getActionConfig(ActionConfig.SECOND).getAction());
             }
         };
 
         boolean keyHasSingleTapRecent() {
-            return RECENTS.equals(mSingleTap);
+            return mConfig.getActionConfig(ActionConfig.PRIMARY).isActionRecents();
         }
 
         boolean keyHasLongPressRecents() {
-            return RECENTS.equals(mLongPress);
+            return mConfig.getActionConfig(ActionConfig.SECOND).isActionRecents();
         }
 
         boolean keyHasDoubleTapRecents() {
-            return RECENTS.equals(mDoubleTap);
+            return mConfig.getActionConfig(ActionConfig.THIRD).isActionRecents();
         }
 
         boolean keyHasMenuAction() {
-            return MENU.equals(mSingleTap)
-                    || MENU.equals(mLongPress)
-                    || MENU.equals(mDoubleTap);
+            return ActionHandler.SYSTEMUI_TASK_MENU.equals(mConfig.getActionConfig(ActionConfig.PRIMARY).getAction())
+                    || ActionHandler.SYSTEMUI_TASK_MENU.equals(mConfig.getActionConfig(ActionConfig.SECOND).getAction())
+                    || ActionHandler.SYSTEMUI_TASK_MENU.equals(mConfig.getActionConfig(ActionConfig.THIRD).getAction());
         }
 
         boolean isDoubleTapEnabled() {
-            return !isActionEmpty(mDoubleTap)
-                    || !ActionHandler.SYSTEMUI_TASK_NO_ACTION.equals(mDoubleTap);
+            return !mConfig.getActionConfig(ActionConfig.THIRD).hasNoAction();
         }
 
         boolean isLongTapEnabled() {
-            return !isActionEmpty(mLongPress);
-        }
-
-        void updateActions(ContentResolver cr) {
-            if (!mStaticSingleTap) {
-                mSingleTap = getActionFromProvider(cr, mSingleTapUri, mSingleTapDef);
-            }
-            mDoubleTap = getActionFromProvider(cr, mDoubleTapUri, mDoubleTapDef);
-            mLongPress = getActionFromProvider(cr, mLongPressUri, mLongPressDef);
+            return !mConfig.getActionConfig(ActionConfig.SECOND).hasNoAction();
         }
 
         void setDoubleTapPending(boolean pending) {
@@ -654,26 +584,6 @@ public class HardkeyActionHandler {
 
         boolean wasConsumed() {
             return mWasConsumed;
-        }
-
-        String getActionFromProvider(ContentResolver cr, String uri,
-                String def) {
-            String tmp = Settings.System.getStringForUser(cr, uri, UserHandle.USER_CURRENT);
-            tmp = checkEmpty(tmp, def);
-            return tmp;
-        }
-
-        String checkEmpty(String action, String def) {
-            if (isActionEmpty(action)) {
-                action = def;
-            }
-            return action;
-        }
-
-        boolean isActionEmpty(String action) {
-            return TextUtils.isEmpty(action)
-                    || action.startsWith("empty")
-                    || null == action;
         }
 
         void fireDoubleTap() {
@@ -714,45 +624,10 @@ public class HardkeyActionHandler {
         void observe() {
             // Observe all users' changes
             ContentResolver resolver = mContext.getContentResolver();
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_ASSIST_SINGLETAP), false, this,
-                    UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_MENU_SINGLETAP), false, this,
-                    UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_RECENT_SINGLETAP), false, this,
-                    UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_ASSIST_DOUBLETAP), false, this,
-                    UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_ASSIST_LONGPRESS), false, this,
-                    UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_BACK_DOUBLETAP), false, this,
-                    UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_BACK_LONGPRESS), false, this,
-                    UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_HOME_DOUBLETAP), false, this,
-                    UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_HOME_LONGPRESS), false, this,
-                    UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_MENU_DOUBLETAP), false, this,
-                    UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_MENU_LONGPRESS), false, this,
-                    UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_RECENT_DOUBLETAP), false, this,
-                    UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.HARDWARE_BUTTON_RECENT_LONGPRESS), false, this,
-                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(
+                    Settings.System.getUriFor(ActionConstants.getDefaults(ActionConstants.HWKEYS)
+                            .getUri()), false,
+                    this, UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.Secure.RING_HOME_BUTTON_BEHAVIOR), false, this,
                     UserHandle.USER_ALL);
@@ -774,11 +649,23 @@ public class HardkeyActionHandler {
             final boolean hasAssist = (mDeviceHardwareKeys & KEY_MASK_ASSIST) != 0;
             final boolean hasAppSwitch = (mDeviceHardwareKeys & KEY_MASK_APP_SWITCH) != 0;
 
-            mBackButton.updateActions(cr);
-            mHomeButton.updateActions(cr);
-            mRecentButton.updateActions(cr);
-            mMenuButton.updateActions(cr);
-            mAssistButton.updateActions(cr);
+            ArrayList<ButtonConfig> configs = Config.getConfig(mContext,
+                    ActionConstants.getDefaults(ActionConstants.HWKEYS));
+
+            ButtonConfig config = Config.getButtonConfigFromTag(configs, ActionConstants.Hwkeys.BACK_BUTTON_TAG);
+            mBackButton.setConfig(config);
+
+            config = Config.getButtonConfigFromTag(configs, ActionConstants.Hwkeys.HOME_BUTTON_TAG);
+            mHomeButton.setConfig(config);
+
+            config = Config.getButtonConfigFromTag(configs, ActionConstants.Hwkeys.OVERVIEW_BUTTON_TAG);
+            mRecentButton.setConfig(config);
+
+            config = Config.getButtonConfigFromTag(configs, ActionConstants.Hwkeys.MENU_BUTTON_TAG);
+            mMenuButton.setConfig(config);
+
+            config = Config.getButtonConfigFromTag(configs, ActionConstants.Hwkeys.ASSIST_BUTTON_TAG);
+            mAssistButton.setConfig(config);
 
             boolean hasMenuKeyEnabled = false;
 

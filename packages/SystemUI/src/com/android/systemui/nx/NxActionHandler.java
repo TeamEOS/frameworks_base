@@ -26,12 +26,17 @@
 
 package com.android.systemui.nx;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.android.internal.util.actions.ActionConstants;
+import com.android.internal.util.actions.ActionConstants.ConfigMap;
 import com.android.internal.util.actions.ActionHandler;
+import com.android.internal.util.actions.Config;
+import com.android.internal.util.actions.Config.ActionConfig;
+import com.android.internal.util.actions.Config.ButtonConfig;
 
-import com.android.systemui.nx.NxAction.ActionReceiver;
 import com.android.systemui.nx.NxGestureHandler.Swipeable;
 
 import android.content.Context;
@@ -41,25 +46,15 @@ import android.os.Handler;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.SoundEffectConstants;
 import android.view.View;
 
-public class NxActionHandler implements ActionReceiver, Swipeable {
+public class NxActionHandler implements Swipeable {
     final static String TAG = NxActionHandler.class.getSimpleName();
 
-    static final int EVENT_SINGLE_LEFT_TAP = 1;
-    static final int EVENT_SINGLE_RIGHT_TAP = 2;
-    static final int EVENT_DOUBLE_LEFT_TAP = 3;
-    static final int EVENT_DOUBLE_RIGHT_TAP = 4;
-    static final int EVENT_LONG_LEFT_PRESS = 5;
-    static final int EVENT_LONG_RIGHT_PRESS = 6;
-    static final int EVENT_FLING_SHORT_LEFT = 7;
-    static final int EVENT_FLING_SHORT_RIGHT = 8;
-    static final int EVENT_FLING_LONG_LEFT = 9;
-    static final int EVENT_FLING_LONG_RIGHT = 10;
-
-    private Map<Integer, NxAction> mActionMap = new HashMap<Integer, NxAction>();
+    private Map<String, ActionConfig> mActionMap = new HashMap<String, ActionConfig>();
     private ActionObserver mObserver;
     private View mHost;
     private Context mContext;
@@ -70,48 +65,25 @@ public class NxActionHandler implements ActionReceiver, Swipeable {
     public NxActionHandler(Context context, View host) {
         mContext = context;
         mHost = host;
-        mActionMap = new HashMap<Integer, NxAction>();
-        loadActionMap();
         mObserver = new ActionObserver(H);
         mObserver.register();
     }
 
-    private void loadActionMap() {
+    void loadConfigs() {
         mActionMap.clear();
-
-        mActionMap.put(EVENT_SINGLE_RIGHT_TAP, new NxAction(Settings.System.NX_SINGLETAP_RIGHT, this,
-                H, getAction(Settings.System.NX_SINGLETAP_RIGHT, ActionHandler.SYSTEMUI_TASK_HOME)));
-
-        mActionMap.put(EVENT_SINGLE_LEFT_TAP, new NxAction(Settings.System.NX_SINGLETAP_LEFT, this,
-                H, getAction(Settings.System.NX_SINGLETAP_LEFT, null)));
-
-        mActionMap.put(EVENT_DOUBLE_RIGHT_TAP, new NxAction(Settings.System.NX_DOUBLETAP_RIGHT, this,
-                H, getAction(Settings.System.NX_DOUBLETAP_RIGHT, null)));
-
-        mActionMap.put(EVENT_DOUBLE_LEFT_TAP, new NxAction(Settings.System.NX_DOUBLETAP_LEFT, this,
-                H, getAction(Settings.System.NX_DOUBLETAP_LEFT, null)));
-
-        mActionMap.put(EVENT_LONG_RIGHT_PRESS, new NxAction(Settings.System.NX_LONGPRESS_RIGHT, this,
-                H, getAction(Settings.System.NX_LONGPRESS_RIGHT, ActionHandler.SYSTEMUI_TASK_MENU)));
-
-        mActionMap.put(EVENT_LONG_LEFT_PRESS, new NxAction(Settings.System.NX_LONGPRESS_LEFT, this,
-                H, getAction(Settings.System.NX_LONGPRESS_LEFT, null)));
-
-        mActionMap.put(EVENT_FLING_SHORT_LEFT, new NxAction(Settings.System.NX_SHORT_FLING_LEFT,
-                this, H, getAction(Settings.System.NX_SHORT_FLING_LEFT, ActionHandler.SYSTEMUI_TASK_BACK)));
-
-        mActionMap.put(EVENT_FLING_SHORT_RIGHT, new NxAction(Settings.System.NX_SHORT_FLING_RIGHT,
-                this, H, getAction(Settings.System.NX_SHORT_FLING_RIGHT, ActionHandler.SYSTEMUI_TASK_RECENTS)));
-
-        mActionMap.put(EVENT_FLING_LONG_LEFT, new NxAction(Settings.System.NX_LONG_FLING_LEFT,
-                this, H, getAction(Settings.System.NX_LONG_FLING_LEFT, null)));
-
-        mActionMap.put(EVENT_FLING_LONG_RIGHT, new NxAction(Settings.System.NX_LONG_FLING_RIGHT,
-                this, H, getAction(Settings.System.NX_LONG_FLING_RIGHT, ActionHandler.SYSTEMUI_TASK_ASSIST)));
-
-        isDoubleTapEnabled = ((NxAction) mActionMap.get(EVENT_DOUBLE_RIGHT_TAP))
-                .isEnabled() || ((NxAction) mActionMap.get(EVENT_DOUBLE_LEFT_TAP))
-                .isEnabled();
+        ArrayList<ButtonConfig> configs = Config.getConfig(mContext,
+                ActionConstants.getDefaults(ActionConstants.FLING));
+        for (Map.Entry<String, ConfigMap> entry : ActionConstants
+                .getDefaults(ActionConstants.FLING).getActionMap().entrySet()) {
+            ButtonConfig button = configs.get(entry.getValue().button);
+            ActionConfig action = button.getActionConfig(entry.getValue().action);
+            mActionMap.put(entry.getKey(), action);
+        }
+        isDoubleTapEnabled = !((ActionConfig) mActionMap
+                .get(ActionConstants.Fling.DOUBLE_LEFT_TAP_TAG))
+                .hasNoAction()
+                || !((ActionConfig) mActionMap.get(ActionConstants.Fling.DOUBLE_RIGHT_TAP_TAG))
+                        .hasNoAction();
     }
 
     public void setKeyguardShowing(boolean showing) {
@@ -121,30 +93,19 @@ public class NxActionHandler implements ActionReceiver, Swipeable {
         mKeyguardShowing = showing;
     }
 
-    private String getAction(String uri, String defAction) {
-        String action = Settings.System.getStringForUser(
-                mContext.getContentResolver(), uri, UserHandle.USER_CURRENT);
-        if (TextUtils.isEmpty(action)) {
-            if (defAction == null) {
-                action = ActionHandler.SYSTEMUI_TASK_NO_ACTION;
-            } else {
-                action = defAction;
-            }
-        }
-        return action;
-    }
-
-    public void fireAction(int type) {
-        NxAction action = ((NxAction) mActionMap.get(type));
-        // only back is allowed in keyguard
-        if (mKeyguardShowing && (action.getAction() != ActionHandler.SYSTEMUI_TASK_BACK)) {
+    public void fireAction(ActionConfig action) {
+        if (action == null || action.hasNoAction()) {
             return;
         }
-        action.fireAction();
-    }
-
-    public void cancelAction(int type) {
-        ((NxAction) mActionMap.get(type)).cancelAction();
+        final String theAction = action.getAction();
+        // only back is allowed in keyguard
+        if (mKeyguardShowing
+                && (!TextUtils.equals(theAction, ActionHandler.SYSTEMUI_TASK_BACK))) {
+            return;
+        }
+        mHost.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+        mHost.playSoundEffect(SoundEffectConstants.CLICK);
+        ActionHandler.performTask(mContext, theAction);
     }
 
     public void unregister() {
@@ -158,12 +119,11 @@ public class NxActionHandler implements ActionReceiver, Swipeable {
         }
 
         void register() {
-            for (int i = 1; i < mActionMap.size() + 1; i++) {
-                NxAction action = mActionMap.get(i);
-                mContext.getContentResolver().registerContentObserver(
-                        Settings.System.getUriFor(action.getUri()), false,
-                        ActionObserver.this, UserHandle.USER_ALL);
-            }
+            mContext.getContentResolver().registerContentObserver(
+                    Settings.System.getUriFor(ActionConstants.getDefaults(ActionConstants.FLING)
+                            .getUri()), false,
+                    ActionObserver.this, UserHandle.USER_ALL);
+            loadConfigs();
         }
 
         void unregister() {
@@ -172,16 +132,7 @@ public class NxActionHandler implements ActionReceiver, Swipeable {
         }
 
         public void onChange(boolean selfChange, Uri uri) {
-            loadActionMap();
-        }
-    }
-
-    @Override
-    public void onActionDispatched(NxAction actionEvent, String task) {
-        if (actionEvent.isEnabled()) {
-            mHost.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
-            mHost.playSoundEffect(SoundEffectConstants.CLICK);
-            ActionHandler.performTask(mContext, task);
+            loadConfigs();
         }
     }
 
@@ -192,71 +143,83 @@ public class NxActionHandler implements ActionReceiver, Swipeable {
 
     @Override
     public void onShortLeftSwipe() {
-        fireAction(EVENT_FLING_SHORT_LEFT);
+        fireAction((ActionConfig) mActionMap.get(ActionConstants.Fling.FLING_SHORT_LEFT_TAG));
     }
 
     @Override
     public void onLongLeftSwipe() {
-        fireAction(EVENT_FLING_LONG_LEFT);
+        fireAction((ActionConfig) mActionMap.get(ActionConstants.Fling.FLING_LONG_LEFT_TAG));
     }
 
     @Override
     public void onShortRightSwipe() {
-        fireAction(EVENT_FLING_SHORT_RIGHT);
+        fireAction((ActionConfig) mActionMap.get(ActionConstants.Fling.FLING_SHORT_RIGHT_TAG));
     }
 
     @Override
     public void onLongRightSwipe() {
-        fireAction(EVENT_FLING_LONG_RIGHT);
+        fireAction((ActionConfig) mActionMap.get(ActionConstants.Fling.FLING_LONG_RIGHT_TAG));
     }
 
     @Override
     public void onSingleLeftPress() {
-        boolean isEnabled = ((NxAction) mActionMap.get(EVENT_SINGLE_LEFT_TAP))
-                .isEnabled();
-        fireAction(isEnabled ? EVENT_SINGLE_LEFT_TAP : EVENT_SINGLE_RIGHT_TAP);
+        ActionConfig left_tap = (ActionConfig) mActionMap
+                .get(ActionConstants.Fling.SINGLE_LEFT_TAP_TAG);
+        ActionConfig right_tap = (ActionConfig) mActionMap
+                .get(ActionConstants.Fling.SINGLE_RIGHT_TAP_TAG);
+        fireAction(!left_tap.hasNoAction() ? left_tap : right_tap);
     }
 
     @Override
     public void onSingleRightPress() {
-        boolean isEnabled = ((NxAction) mActionMap.get(EVENT_SINGLE_RIGHT_TAP))
-                .isEnabled();
-        fireAction(isEnabled ? EVENT_SINGLE_RIGHT_TAP : EVENT_SINGLE_LEFT_TAP);
+        ActionConfig right_tap = (ActionConfig) mActionMap
+                .get(ActionConstants.Fling.SINGLE_RIGHT_TAP_TAG);
+        ActionConfig left_tap = (ActionConfig) mActionMap
+                .get(ActionConstants.Fling.SINGLE_LEFT_TAP_TAG);
+        fireAction(!right_tap.hasNoAction() ? right_tap : left_tap);
     }
 
     @Override
     public void onDoubleLeftTap() {
-        boolean isEnabled = ((NxAction) mActionMap.get(EVENT_DOUBLE_LEFT_TAP))
-                .isEnabled();
-        fireAction(isEnabled ? EVENT_DOUBLE_LEFT_TAP : EVENT_DOUBLE_RIGHT_TAP);
+        ActionConfig left_tap = (ActionConfig) mActionMap
+                .get(ActionConstants.Fling.DOUBLE_LEFT_TAP_TAG);
+        ActionConfig right_tap = (ActionConfig) mActionMap
+                .get(ActionConstants.Fling.DOUBLE_RIGHT_TAP_TAG);
+        fireAction(!left_tap.hasNoAction() ? left_tap : right_tap);
     }
 
     @Override
     public void onDoubleRightTap() {
-        boolean isEnabled = ((NxAction) mActionMap.get(EVENT_DOUBLE_RIGHT_TAP))
-                .isEnabled();
-        fireAction(isEnabled ? EVENT_DOUBLE_RIGHT_TAP : EVENT_DOUBLE_LEFT_TAP);
+        ActionConfig right_tap = (ActionConfig) mActionMap
+                .get(ActionConstants.Fling.DOUBLE_RIGHT_TAP_TAG);
+        ActionConfig left_tap = (ActionConfig) mActionMap
+                .get(ActionConstants.Fling.DOUBLE_LEFT_TAP_TAG);
+        fireAction(!right_tap.hasNoAction() ? right_tap : left_tap);
     }
 
     @Override
     public void onLongLeftPress() {
-        boolean isEnabled = ((NxAction) mActionMap.get(EVENT_LONG_LEFT_PRESS))
-                .isEnabled();
+        ActionConfig left_long = (ActionConfig) mActionMap
+                .get(ActionConstants.Fling.LONG_LEFT_PRESS_TAG);
+        ActionConfig right_long = (ActionConfig) mActionMap
+                .get(ActionConstants.Fling.LONG_RIGHT_PRESS_TAG);
         if (ActionHandler.isLockTaskOn()) {
             ActionHandler.turnOffLockTask();
         } else {
-            fireAction(isEnabled ? EVENT_LONG_LEFT_PRESS : EVENT_LONG_RIGHT_PRESS);
+            fireAction(!left_long.hasNoAction() ? left_long : right_long);
         }
     }
 
     @Override
     public void onLongRightPress() {
-        boolean isEnabled = ((NxAction) mActionMap.get(EVENT_LONG_RIGHT_PRESS))
-                .isEnabled();
+        ActionConfig right_long = (ActionConfig) mActionMap
+                .get(ActionConstants.Fling.LONG_RIGHT_PRESS_TAG);
+        ActionConfig left_long = (ActionConfig) mActionMap
+                .get(ActionConstants.Fling.LONG_LEFT_PRESS_TAG);
         if (ActionHandler.isLockTaskOn()) {
             ActionHandler.turnOffLockTask();
         } else {
-            fireAction(isEnabled ? EVENT_LONG_RIGHT_PRESS : EVENT_LONG_LEFT_PRESS);
+            fireAction(!right_long.hasNoAction() ? right_long : left_long);
         }
     }
 }

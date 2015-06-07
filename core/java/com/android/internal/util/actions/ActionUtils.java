@@ -21,13 +21,23 @@
 package com.android.internal.util.actions;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
+import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.ViewGroup;
 
+import java.net.URISyntaxException;
 import java.util.ArrayList;
+
+import com.android.internal.util.actions.ActionConstants.Defaults;
+import com.android.internal.util.actions.Config.ActionConfig;
+import com.android.internal.util.actions.Config.ButtonConfig;
 
 public final class ActionUtils {
     public static final String ANDROIDNS = "http://schemas.android.com/apk/res/android";
@@ -161,5 +171,149 @@ public final class ActionUtils {
             result.addAll(viewArrayList);
         }
         return result;
+    }
+
+    public static void resolveAndUpdateButtonActions(Context ctx, Defaults defaults) {
+        if (ctx == null || defaults == null) {
+            return;
+        }
+        boolean configChanged = false;
+        final PackageManager pm = ctx.getPackageManager();
+        ArrayList<ButtonConfig> configs = Config.getConfig(ctx, defaults);
+        ArrayList<ButtonConfig> buttonsToChange = new ArrayList<ButtonConfig>();
+        buttonsToChange.addAll(configs);
+        for (int h = 0; h < configs.size(); h++) {
+            ButtonConfig button = configs.get(h);
+            for (int i = 0; i < 3; i++) {
+                ActionConfig action = button.getActionConfig(i);
+                final String task = action.getAction();
+                if (task.startsWith(ActionHandler.SYSTEM_PREFIX)) {
+                    continue;
+                }
+                String resolvedName = getFriendlyNameForUri(pm, task);
+                if (resolvedName == null || TextUtils.equals(resolvedName, task)) {
+                    // if resolved name is null or the full raw intent string is
+                    // returned, we were unable to resolve
+                    configChanged = true;
+                    ActionConfig newAction = new ActionConfig(ctx,
+                            ActionHandler.SYSTEMUI_TASK_NO_ACTION, action.getIconUri());
+                    ButtonConfig newButton = buttonsToChange.get(h);
+                    newButton.setActionConfig(newAction, i);
+                    buttonsToChange.remove(h);
+                    buttonsToChange.add(h, newButton);
+                }
+            }
+        }
+        if (configChanged) {
+            Config.setConfig(ctx, defaults, buttonsToChange);
+        }
+    }
+
+    public static Intent getIntent(String uri) {
+        if (uri == null || uri.startsWith(ActionHandler.SYSTEM_PREFIX)) {
+            return null;
+        }
+
+        Intent intent = null;
+        try {
+            intent = Intent.parseUri(uri, 0);
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+        return intent;
+    }
+
+    public static Drawable getDrawableForAction(Context context, String action) {
+        Drawable d = null;
+
+        // this null check is probably no-op but let's be safe anyways
+        if (action == null || context == null) {
+            return d;
+        }
+        if (action.startsWith(ActionHandler.SYSTEM_PREFIX)) {
+            for (int i = 0; i < ActionHandler.systemActions.length; i++) {
+                if (ActionHandler.systemActions[i].mAction.equals(action)) {
+                    d = getDrawableFromResources(context, ActionHandler.systemActions[i].mIconName,
+                            ActionHandler.systemActions[i].mIconPackage);
+                }
+            }
+        } else {
+            d = getDrawableFromComponent(context.getPackageManager(), action);
+        }
+        return d;
+    }
+
+    public static Drawable getDrawableFromResources(Context context, String drawableName, String pkg) {
+        try {
+            Resources res = context.getPackageManager()
+                    .getResourcesForApplication(pkg);
+            Drawable icon = res.getDrawable(res.getIdentifier(drawableName, "drawable",
+                    pkg));
+            return icon;
+        } catch (Exception e) {
+            return context.getResources().getDrawable(
+                    com.android.internal.R.drawable.sym_def_app_icon);
+        }
+    }
+
+    public static Drawable getDrawableFromComponent(PackageManager pm, String activity) {
+        Drawable d = null;
+        try {
+            Intent intent = Intent.parseUri(activity, 0);
+            ActivityInfo info = intent.resolveActivityInfo(pm,
+                    PackageManager.GET_ACTIVITIES);
+            if (info != null) {
+                d = info.loadIcon(pm);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return d;
+    }
+
+    public static String getFriendlyActivityName(PackageManager pm, Intent intent,
+            boolean labelOnly) {
+        ActivityInfo ai = intent.resolveActivityInfo(pm, PackageManager.GET_ACTIVITIES);
+        String friendlyName = null;
+        if (ai != null) {
+            friendlyName = ai.loadLabel(pm).toString();
+            if (friendlyName == null && !labelOnly) {
+                friendlyName = ai.name;
+            }
+        }
+        return friendlyName != null || labelOnly ? friendlyName : intent.toUri(0);
+    }
+
+    public static String getFriendlyShortcutName(PackageManager pm, Intent intent) {
+        String activityName = getFriendlyActivityName(pm, intent, true);
+        String name = intent.getStringExtra(Intent.EXTRA_SHORTCUT_NAME);
+
+        if (activityName != null && name != null) {
+            return activityName + ": " + name;
+        }
+        return name != null ? name : intent.toUri(0);
+    }
+
+    public static String getFriendlyNameForUri(PackageManager pm, String uri) {
+        if (uri == null) {
+            return null;
+        }
+        if (uri.startsWith(ActionHandler.SYSTEM_PREFIX)) {
+            for (int i = 0; i < ActionHandler.systemActions.length; i++) {
+                if (ActionHandler.systemActions[i].mAction.equals(uri)) {
+                    return ActionHandler.systemActions[i].mLabel;
+                }
+            }
+        } else {
+            try {
+                Intent intent = Intent.parseUri(uri, 0);
+                if (Intent.ACTION_MAIN.equals(intent.getAction())) {
+                    return getFriendlyActivityName(pm, intent, false);
+                }
+                return getFriendlyShortcutName(pm, intent);
+            } catch (URISyntaxException e) {
+            }
+        }
+        return uri;
     }
 }

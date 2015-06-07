@@ -24,10 +24,7 @@
 
 package com.android.systemui.statusbar.phone;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.android.internal.util.actions.ActionHandler;
+import com.android.internal.util.actions.ActionConstants;
 import com.android.internal.util.actions.ActionUtils;
 
 import com.android.systemui.statusbar.BaseNavigationBar;
@@ -37,7 +34,6 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.database.ContentObserver;
 import android.net.Uri;
 import android.os.Handler;
@@ -69,10 +65,6 @@ public class NavigationCoordinator {
     private PackageReceiver mPackageReceiver;
 
     private final boolean mHasHardkeys;
-    private List<String> mHardkeyActions;
-    private List<String> mNxActions = new ArrayList<String>();
-    private List<String> mSoftkeyActions = new ArrayList<String>();
-
     private Context mContext;
 
     public NavigationCoordinator(Context context, PhoneStatusBar statusBar,
@@ -84,44 +76,6 @@ public class NavigationCoordinator {
         mHasHardkeys = ActionUtils.isCapKeyDevice(context);
         mNavbarObserver = new NavbarObserver(mHandler);
         mNavbarObserver.observe();
-
-        // map action uri's and resolve intents on package change
-        if (mHasHardkeys) {
-            mHardkeyActions = new ArrayList<String>();
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_BACK_DOUBLETAP);
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_BACK_LONGPRESS);
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_HOME_DOUBLETAP);
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_HOME_LONGPRESS);
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_RECENT_SINGLETAP);
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_RECENT_DOUBLETAP);
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_RECENT_LONGPRESS);
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_MENU_SINGLETAP);
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_MENU_DOUBLETAP);
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_MENU_LONGPRESS);
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_ASSIST_SINGLETAP);
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_ASSIST_DOUBLETAP);
-            mHardkeyActions.add(Settings.System.HARDWARE_BUTTON_ASSIST_LONGPRESS);
-        }
-
-        mSoftkeyActions.add(Settings.System.SOFTKEY_BACK_LONGPRESS);
-        mSoftkeyActions.add(Settings.System.SOFTKEY_HOME_LONGPRESS);
-        mSoftkeyActions.add(Settings.System.SOFTKEY_RECENT_LONGPRESS);
-        mSoftkeyActions.add(Settings.System.SOFTKEY_MENU_LONGPRESS);
-        mSoftkeyActions.add(Settings.System.SOFTKEY_BACK_DOUBLETAP);
-        mSoftkeyActions.add(Settings.System.SOFTKEY_HOME_DOUBLETAP);
-        mSoftkeyActions.add(Settings.System.SOFTKEY_RECENT_DOUBLETAP);
-        mSoftkeyActions.add(Settings.System.SOFTKEY_MENU_DOUBLETAP);
-
-        mNxActions.add(Settings.System.NX_SINGLETAP_RIGHT);
-        mNxActions.add(Settings.System.NX_SINGLETAP_LEFT);
-        mNxActions.add(Settings.System.NX_DOUBLETAP_RIGHT);
-        mNxActions.add(Settings.System.NX_DOUBLETAP_LEFT);
-        mNxActions.add(Settings.System.NX_LONGPRESS_RIGHT);
-        mNxActions.add(Settings.System.NX_LONGPRESS_LEFT);
-        mNxActions.add(Settings.System.NX_SHORT_FLING_LEFT);
-        mNxActions.add(Settings.System.NX_SHORT_FLING_RIGHT);
-        mNxActions.add(Settings.System.NX_LONG_FLING_LEFT);
-        mNxActions.add(Settings.System.NX_LONG_FLING_RIGHT);
 
         mPackageReceiver = new PackageReceiver();
         mPackageReceiver.registerBootReceiver(context);
@@ -232,26 +186,18 @@ public class NavigationCoordinator {
     }
 
     private void handlePackageChanged() {
-        final ContentResolver resolver = mContext.getContentResolver();
-        final PackageManager pm = mContext.getPackageManager();
-        final Thread updateThread = new Thread(new Runnable() {
+        final Context ctx = mContext;
+        final Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 if (mHasHardkeys) {
-                    for (String uri : mHardkeyActions) {
-                        ActionHandler.resolveOrClearIntent(pm, resolver, uri);
-                    }
+                    ActionUtils.resolveAndUpdateButtonActions(ctx, ActionConstants.getDefaults(ActionConstants.HWKEYS));
                 }
-                for (String uri : mSoftkeyActions) {
-                    ActionHandler.resolveOrClearIntent(pm, resolver, uri);
-                }
-
-                for (String uri : mNxActions) {
-                    ActionHandler.resolveOrClearIntent(pm, resolver, uri);
-                }
+                ActionUtils.resolveAndUpdateButtonActions(ctx, ActionConstants.getDefaults(ActionConstants.NAVBAR));
+                ActionUtils.resolveAndUpdateButtonActions(ctx, ActionConstants.getDefaults(ActionConstants.FLING));
             }
         });
-        updateThread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
-        updateThread.run();
+        thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
+        thread.run();
     }
 }

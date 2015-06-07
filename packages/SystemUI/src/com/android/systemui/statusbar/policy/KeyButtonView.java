@@ -18,7 +18,11 @@ package com.android.systemui.statusbar.policy;
 
 import android.animation.Animator;
 
+import com.android.internal.util.actions.ActionConstants;
 import com.android.internal.util.actions.ActionHandler;
+import com.android.internal.util.actions.Config.ActionConfig;
+import com.android.internal.util.actions.Config.ButtonConfig;
+
 import android.animation.ObjectAnimator;
 import android.app.ActivityManager;
 import android.content.Context;
@@ -42,7 +46,6 @@ import java.lang.Math;
 import com.android.internal.statusbar.IStatusBarService;
 import com.android.systemui.R;
 import com.android.systemui.statusbar.phone.SoftkeyActionHandler;
-import com.android.systemui.statusbar.phone.SoftkeyActionHandler.ButtonInfo;
 
 public class KeyButtonView extends ImageView {
     private static final String TAG = "StatusBar.KeyButtonView";
@@ -72,7 +75,7 @@ public class KeyButtonView extends ImageView {
     private final int mSingleTapTimeoutWithDT = mSingleTapTimeout + 175;
     private int mLongPressTimeout;
     private int mDoubleTapTimeout;
-    private ButtonInfo mActions;
+    private ButtonConfig mConfig;
     private SoftkeyActionHandler mActionHandler;
     public boolean mHasBlankSingleAction = false;
     private boolean mDoOverrideSingleTap;
@@ -106,27 +109,19 @@ public class KeyButtonView extends ImageView {
         mActionHandler = handler;
     }
 
-    public void setButtonInfo(ButtonInfo actions) {
-        this.mActions = actions;
+    public void setButtonInfo(ButtonConfig actions) {
+        this.mConfig = actions;
 
-        setTag(mActions.singleAction); // should be OK even if it's null
+        setTag(mConfig.getActionConfig(ActionConfig.PRIMARY)); // should be OK even if it's null
 
-        mHasSingleAction = mActions != null
-                && (mActions.singleAction != null && !mActions.singleAction
-                        .equals(ActionHandler.SYSTEMUI_TASK_NO_ACTION));
-        mHasLongAction = mActions != null && mActions.longPressAction != null
-                && !mActions.longPressAction.equals(ActionHandler.SYSTEMUI_TASK_NO_ACTION);
-        mHasDoubleAction = mActions != null && mActions.doubleTapAction != null
-                && !mActions.doubleTapAction.equals(ActionHandler.SYSTEMUI_TASK_NO_ACTION);
-        mHasBlankSingleAction = mHasSingleAction
-                && mActions.singleAction.equals(ActionHandler.SYSTEMUI_TASK_NO_ACTION);
+        mHasSingleAction = mConfig != null && !mConfig.getActionConfig(ActionConfig.PRIMARY).hasNoAction();
+        mHasLongAction = mConfig != null && !mConfig.getActionConfig(ActionConfig.SECOND).hasNoAction();
+        mHasDoubleAction = mConfig != null && !mConfig.getActionConfig(ActionConfig.THIRD).hasNoAction();
+        mHasBlankSingleAction = mHasSingleAction && mConfig.getActionConfig(ActionConfig.PRIMARY).hasNoAction();
 
-        mIsRecentsSingleAction = (mHasSingleAction && mActions.singleAction
-                .equals(ActionHandler.SYSTEMUI_TASK_RECENTS));
-        mIsRecentsLongAction = (mHasLongAction && mActions.longPressAction
-                .equals(ActionHandler.SYSTEMUI_TASK_RECENTS));
-        mIsRecentsDoubleTapAction = (mHasDoubleAction && mActions.doubleTapAction
-                .equals(ActionHandler.SYSTEMUI_TASK_RECENTS));
+        mIsRecentsSingleAction = (mHasSingleAction && mConfig.getActionConfig(ActionConfig.PRIMARY).isActionRecents());
+        mIsRecentsLongAction = (mHasLongAction && mConfig.getActionConfig(ActionConfig.SECOND).isActionRecents());
+        mIsRecentsDoubleTapAction = (mHasDoubleAction && mConfig.getActionConfig(ActionConfig.THIRD).isActionRecents());
 
         if (mIsRecentsSingleAction || mIsRecentsLongAction || mIsRecentsDoubleTapAction) {
             mIsRecentsAction = true;
@@ -147,7 +142,7 @@ public class KeyButtonView extends ImageView {
             if (mHomeActionListener == null) {
                 mHomeActionListener = homeListener;
             }
-            if (mActions.longPressAction.equals(ActionHandler.SYSTEMUI_TASK_NO_ACTION)) {
+            if (mConfig.getActionConfig(ActionConfig.SECOND).hasNoAction()) {
                 setOnTouchListener(homeListener);
             } else {
                 setOnTouchListener(null);
@@ -284,15 +279,15 @@ public class KeyButtonView extends ImageView {
         if (callOnClick()) {
             // cool
             sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
-        } else if (mIsRecentsSingleAction && mActionHandler.isSecureToFire(mActions.singleAction)) {
+        } else if (mIsRecentsSingleAction && mActionHandler.isSecureToFire(mConfig.getActionConfig(ActionConfig.PRIMARY).getAction())) {
             ActionHandler.toggleRecentApps();
             sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
             return;
         }
 
-        if (mActions != null) {
-            if (mActions.singleAction != null && mActionHandler.isSecureToFire(mActions.singleAction)) {
-                ActionHandler.performTask(mContext, mActions.singleAction);
+        if (mConfig != null) {
+            if (mActionHandler.isSecureToFire(mConfig.getActionConfig(ActionConfig.PRIMARY).getAction())) {
+                ActionHandler.performTask(mContext, mConfig.getActionConfig(ActionConfig.PRIMARY).getAction());
                 sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
             }
         }
@@ -301,11 +296,11 @@ public class KeyButtonView extends ImageView {
     private void doDoubleTap() {
         if (mHasDoubleAction) {
             removeCallbacks(mSingleTap);
-            if (mActionHandler.isSecureToFire(mActions.doubleTapAction)) {
+            if (mActionHandler.isSecureToFire(mConfig.getActionConfig(ActionConfig.THIRD).getAction())) {
                 if (mIsRecentsDoubleTapAction) {
                     ActionHandler.toggleRecentApps();
                 } else {
-                    ActionHandler.performTask(mContext, mActions.doubleTapAction);
+                    ActionHandler.performTask(mContext, mConfig.getActionConfig(ActionConfig.THIRD).getAction());
                 }
             }
         }
@@ -321,13 +316,13 @@ public class KeyButtonView extends ImageView {
         } else {
             if (mHasLongAction) {
                 removeCallbacks(mSingleTap);
-                if (mActionHandler.isSecureToFire(mActions.longPressAction)) {
+                if (mActionHandler.isSecureToFire(mConfig.getActionConfig(ActionConfig.SECOND).getAction())) {
                     if (mIsRecentsLongAction) {
                         ActionHandler.toggleRecentApps();
                         performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
                         sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
                     } else {
-                        ActionHandler.performTask(mContext, mActions.longPressAction);
+                        ActionHandler.performTask(mContext, mConfig.getActionConfig(ActionConfig.SECOND).getAction());
                         performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
                         sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
                     }
