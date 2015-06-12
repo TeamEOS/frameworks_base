@@ -24,14 +24,12 @@ package com.android.systemui.statusbar.phone;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
-import com.android.internal.util.actions.ActionConstants;
-import com.android.internal.util.actions.ActionHandler;
-import com.android.internal.util.actions.ActionUtils;
-import com.android.internal.util.actions.Config;
-import com.android.internal.util.actions.Config.ButtonConfig;
+import com.android.internal.actions.ActionConstants;
+import com.android.internal.actions.ActionHandler;
+import com.android.internal.actions.ActionUtils;
+import com.android.internal.actions.Config;
+import com.android.internal.actions.Config.ButtonConfig;
 
 import com.android.systemui.R;
 import com.android.systemui.statusbar.policy.KeyButtonView;
@@ -43,7 +41,6 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.UserHandle;
 import android.provider.Settings;
-import android.text.TextUtils;
 import android.view.ViewConfiguration;
 
 public class SoftkeyActionHandler {

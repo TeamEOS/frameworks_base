@@ -18,19 +18,15 @@ package com.android.systemui.statusbar.policy;
 
 import android.animation.Animator;
 
-import com.android.internal.util.actions.ActionConstants;
-import com.android.internal.util.actions.ActionHandler;
-import com.android.internal.util.actions.Config.ActionConfig;
-import com.android.internal.util.actions.Config.ButtonConfig;
+import com.android.internal.actions.ActionHandler;
+import com.android.internal.actions.Config.ActionConfig;
+import com.android.internal.actions.Config.ButtonConfig;
 
 import android.animation.ObjectAnimator;
 import android.app.ActivityManager;
 import android.content.Context;
-import android.content.res.TypedArray;
 import android.media.AudioManager;
 import android.os.PowerManager;
-import android.os.RemoteException;
-import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -43,7 +39,6 @@ import android.view.accessibility.AccessibilityEvent;
 import android.widget.ImageView;
 import java.lang.Math;
 
-import com.android.internal.statusbar.IStatusBarService;
 import com.android.systemui.R;
 import com.android.systemui.statusbar.phone.SoftkeyActionHandler;
 

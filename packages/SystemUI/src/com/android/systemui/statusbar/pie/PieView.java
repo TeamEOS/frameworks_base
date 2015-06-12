@@ -36,11 +36,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 
-import com.android.internal.util.actions.ActionHandler;
+import com.android.internal.navigation.NavigationBarOverlay;
+import com.android.internal.actions.ActionHandler;
 import com.android.internal.util.gesture.EdgeGesturePosition;
 
 import com.android.systemui.R;
-import com.android.systemui.statusbar.phone.NavigationBarOverlay;
 
 import java.util.ArrayList;
 import java.util.List;

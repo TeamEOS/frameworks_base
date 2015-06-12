@@ -130,7 +130,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.lang.reflect.Constructor;
 
-import com.android.internal.util.actions.ActionHandler;
+import com.android.internal.actions.ActionHandler;
 
 import static android.view.WindowManager.LayoutParams.*;
 import static android.view.WindowManagerPolicy.WindowManagerFuncs.LID_ABSENT;

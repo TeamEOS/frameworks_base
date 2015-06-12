@@ -22,7 +22,7 @@
 
 package com.android.systemui.nx;
 
-import com.android.internal.util.actions.ActionUtils;
+import com.android.internal.actions.ActionUtils;
 
 import android.content.Context;
 import android.content.res.Configuration;

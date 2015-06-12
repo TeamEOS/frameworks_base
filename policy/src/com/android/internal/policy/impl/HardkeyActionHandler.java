@@ -25,11 +25,11 @@ package com.android.internal.policy.impl;
 
 import java.util.ArrayList;
 
-import com.android.internal.util.actions.ActionConstants;
-import com.android.internal.util.actions.ActionHandler;
-import com.android.internal.util.actions.Config;
-import com.android.internal.util.actions.Config.ActionConfig;
-import com.android.internal.util.actions.Config.ButtonConfig;
+import com.android.internal.actions.ActionConstants;
+import com.android.internal.actions.ActionHandler;
+import com.android.internal.actions.Config;
+import com.android.internal.actions.Config.ActionConfig;
+import com.android.internal.actions.Config.ButtonConfig;
 
 import android.content.ContentResolver;
 import android.content.Context;

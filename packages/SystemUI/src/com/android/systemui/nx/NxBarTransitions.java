@@ -24,9 +24,9 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
 
+import com.android.internal.navigation.BarTransitions;
 import com.android.internal.statusbar.IStatusBarService;
 import com.android.systemui.R;
-import com.android.systemui.statusbar.phone.BarTransitions;
 
 public final class NxBarTransitions extends BarTransitions {
 

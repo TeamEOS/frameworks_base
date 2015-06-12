@@ -24,10 +24,9 @@
 
 package com.android.systemui.statusbar.phone;
 
-import com.android.internal.util.actions.ActionConstants;
-import com.android.internal.util.actions.ActionUtils;
-
-import com.android.systemui.statusbar.BaseNavigationBar;
+import com.android.internal.navigation.BaseNavigationBar;
+import com.android.internal.actions.ActionConstants;
+import com.android.internal.actions.ActionUtils;
 
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;

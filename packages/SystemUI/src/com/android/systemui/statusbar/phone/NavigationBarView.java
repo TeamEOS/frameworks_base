@@ -46,9 +46,12 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+
+import com.android.internal.navigation.BarTransitions;
+import com.android.internal.navigation.BaseNavigationBar;
+import com.android.internal.navigation.NavigationBarViewTaskSwitchHelper;
+import com.android.internal.navigation.StatusbarImpl;
 import com.android.systemui.R;
-import com.android.systemui.statusbar.BaseNavigationBar;
-import com.android.systemui.statusbar.BaseStatusBar;
 import com.android.systemui.statusbar.policy.DeadZone;
 import com.android.systemui.statusbar.policy.KeyButtonView;
 
@@ -182,9 +185,15 @@ public class NavigationBarView extends BaseNavigationBar {
         return mBarTransitions;
     }
 
-    public void setBar(BaseStatusBar phoneStatusBar) {
-        super.setBar(phoneStatusBar);
-        mTaskSwitchHelper.setBar(phoneStatusBar);
+    public void setStatusBarCallbacks(StatusbarImpl statusbar) {
+        super.setStatusBarCallbacks(statusbar);
+        mTaskSwitchHelper.setStatusBarCallbacks(statusbar);
+    }
+
+    @Override
+    protected void onDispose() {
+        mObserver.unobserve();
+        mSoftkeyHandler.onDispose();        
     }
 
     @Override
@@ -272,14 +281,29 @@ public class NavigationBarView extends BaseNavigationBar {
     @Override
     protected void onUpdateResources(Resources res) {
         getIcons(res);
-    }
-
-    @Override
-    protected void onUpdateRotatedView(ViewGroup container, Resources res){
-        ImageView ime = (ImageView) container.findViewById(R.id.ime_switcher);
-        if (ime != null) {
-            ime.setImageDrawable(null);
-            ime.setImageDrawable(res.getDrawable(R.drawable.ic_ime_switcher_default));
+        for (int i = 0; i < mRotatedViews.length; i++) {
+            ViewGroup container = (ViewGroup) mRotatedViews[i];
+            ViewGroup lightsOut = (ViewGroup) container.findViewById(R.id.lights_out);
+            if (lightsOut != null) {
+                final int nChildren = lightsOut.getChildCount();
+                for (int j = 0; j < nChildren; j++) {
+                    final View child = lightsOut.getChildAt(j);
+                    if (child instanceof ImageView) {
+                        final ImageView iv = (ImageView) child;
+                        // clear out the existing drawable, this is required since the
+                        // ImageView keeps track of the resource ID and if it is the same
+                        // it will not update the drawable.
+                        iv.setImageDrawable(null);
+                        iv.setImageDrawable(getAvailableResources().getDrawable(
+                                R.drawable.ic_sysbar_lights_out_dot_large));
+                    }
+                }
+            }
+            ImageView ime = (ImageView) container.findViewById(R.id.ime_switcher);
+            if (ime != null) {
+                ime.setImageDrawable(null);
+                ime.setImageDrawable(res.getDrawable(R.drawable.ic_ime_switcher_default));
+            }
         }
     }
 
@@ -491,9 +515,9 @@ public class NavigationBarView extends BaseNavigationBar {
         }
     }
 
+    @Override
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
         super.dump(fd, pw, args);
-
         dumpButton(pw, "back", getBackButton());
         dumpButton(pw, "home", getHomeButton());
         dumpButton(pw, "rcnt", getRecentsButton());
@@ -502,9 +526,20 @@ public class NavigationBarView extends BaseNavigationBar {
         pw.println("    }");
     }
 
-    @Override
-    protected void onDispose() {
-        mObserver.unobserve();
-        mSoftkeyHandler.onDispose();        
+    private static void dumpButton(PrintWriter pw, String caption, View button) {
+        pw.print("      " + caption + ": ");
+        if (button == null) {
+            pw.print("null");
+        } else {
+            pw.print(viewInfo(button)
+                    + " " + visibilityToString(button.getVisibility())
+                    + " alpha=" + button.getAlpha()
+                    );
+            if (button instanceof KeyButtonView) {
+                pw.print(" drawingAlpha=" + ((KeyButtonView)button).getDrawingAlpha());
+                pw.print(" quiescentAlpha=" + ((KeyButtonView)button).getQuiescentAlpha());
+            }
+        }
+        pw.println();
     }
 }

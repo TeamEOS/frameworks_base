@@ -25,13 +25,13 @@ import static android.app.StatusBarManager.WINDOW_STATE_HIDDEN;
 import static android.app.StatusBarManager.WINDOW_STATE_SHOWING;
 import static android.app.StatusBarManager.windowStateToString;
 import static com.android.systemui.settings.BrightnessController.BRIGHTNESS_ADJ_RESOLUTION;
-import static com.android.systemui.statusbar.phone.BarTransitions.MODE_LIGHTS_OUT;
-import static com.android.systemui.statusbar.phone.BarTransitions.MODE_LIGHTS_OUT_TRANSPARENT;
-import static com.android.systemui.statusbar.phone.BarTransitions.MODE_OPAQUE;
-import static com.android.systemui.statusbar.phone.BarTransitions.MODE_SEMI_TRANSPARENT;
-import static com.android.systemui.statusbar.phone.BarTransitions.MODE_TRANSLUCENT;
-import static com.android.systemui.statusbar.phone.BarTransitions.MODE_TRANSPARENT;
-import static com.android.systemui.statusbar.phone.BarTransitions.MODE_WARNING;
+import static com.android.internal.navigation.BarTransitions.MODE_LIGHTS_OUT;
+import static com.android.internal.navigation.BarTransitions.MODE_LIGHTS_OUT_TRANSPARENT;
+import static com.android.internal.navigation.BarTransitions.MODE_OPAQUE;
+import static com.android.internal.navigation.BarTransitions.MODE_SEMI_TRANSPARENT;
+import static com.android.internal.navigation.BarTransitions.MODE_TRANSLUCENT;
+import static com.android.internal.navigation.BarTransitions.MODE_TRANSPARENT;
+import static com.android.internal.navigation.BarTransitions.MODE_WARNING;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -127,6 +127,9 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.android.internal.navigation.BarTransitions;
+import com.android.internal.navigation.BaseNavigationBar;
+import com.android.internal.navigation.StatusbarImpl;
 import com.android.internal.statusbar.StatusBarIcon;
 import com.android.keyguard.KeyguardHostView.OnDismissAction;
 import com.android.keyguard.ViewMediatorCallback;
@@ -145,7 +148,6 @@ import com.android.systemui.qs.QSPanel;
 import com.android.systemui.recent.ScreenPinningRequest;
 import com.android.systemui.statusbar.ActivatableNotificationView;
 import com.android.systemui.statusbar.BackDropView;
-import com.android.systemui.statusbar.BaseNavigationBar;
 import com.android.systemui.statusbar.BaseStatusBar;
 import com.android.systemui.statusbar.CommandQueue;
 import com.android.systemui.statusbar.DismissView;
@@ -204,7 +206,7 @@ import java.util.List;
 import java.util.Map;
 
 public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
-        DragDownHelper.DragDownCallback, ActivityStarter, OnUnlockMethodChangedListener {
+        DragDownHelper.DragDownCallback, ActivityStarter, OnUnlockMethodChangedListener, StatusbarImpl {
     static final String TAG = "PhoneStatusBar";
     public static final boolean DEBUG = BaseStatusBar.DEBUG;
     public static final boolean SPEW = false;
@@ -586,7 +588,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         mNavigationBarView = mNavigationCoordinator.getNavigationBarView();
 
         mNavigationBarView.setDisabledFlags(mDisabled);
-        mNavigationBarView.setBar(this);
+        mNavigationBarView.setStatusBarCallbacks(this);
         addNavigationBarCallback(mNavigationBarView);
         mNavigationBarView.updateResources(getNavbarThemedResources());
         mNavigationBarView.notifyInflateFromUser(); // let bar know we're not starting from boot
@@ -959,7 +961,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                 mNavigationBarView = mNavigationCoordinator.getNavigationBarView();
                 mNavigationBarView.updateResources(getNavbarThemedResources());
                 mNavigationBarView.setDisabledFlags(mDisabled);
-                mNavigationBarView.setBar(this);
+                mNavigationBarView.setStatusBarCallbacks(this);
                 addNavigationBarCallback(mNavigationBarView);
             }
         } catch (RemoteException ex) {
@@ -4204,7 +4206,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     }
 
     @Override
-    protected boolean shouldDisableNavbarGestures() {
+    public boolean shouldDisableNavbarGestures() {
         return !isDeviceProvisioned()
                 || mExpandedVisible
                 || (mDisabled & StatusBarManager.DISABLE_SEARCH) != 0;

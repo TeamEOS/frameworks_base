@@ -30,12 +30,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.android.internal.util.actions.ActionConstants;
-import com.android.internal.util.actions.ActionConstants.ConfigMap;
-import com.android.internal.util.actions.ActionHandler;
-import com.android.internal.util.actions.Config;
-import com.android.internal.util.actions.Config.ActionConfig;
-import com.android.internal.util.actions.Config.ButtonConfig;
+import com.android.internal.actions.ActionConstants;
+import com.android.internal.actions.ActionConstants.ConfigMap;
+import com.android.internal.actions.ActionHandler;
+import com.android.internal.actions.Config;
+import com.android.internal.actions.Config.ActionConfig;
+import com.android.internal.actions.Config.ButtonConfig;
 
 import com.android.systemui.nx.NxGestureHandler.Swipeable;
 

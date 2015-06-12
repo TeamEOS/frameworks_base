@@ -20,14 +20,14 @@
 
 package com.android.systemui.nx;
 
-import com.android.internal.util.actions.ActionUtils;
+import com.android.internal.navigation.BarTransitions;
+import com.android.internal.navigation.BaseNavigationBar;
+import com.android.internal.actions.ActionUtils;
 
 import com.android.systemui.R;
 import com.android.systemui.nx.eyecandy.NxPulse;
 import com.android.systemui.nx.eyecandy.NxModule;
 import com.android.systemui.nx.eyecandy.NxRipple;
-import com.android.systemui.statusbar.BaseNavigationBar;
-import com.android.systemui.statusbar.phone.BarTransitions;
 import com.android.systemui.nx.BaseGestureDetector;
 
 import android.content.Context;
@@ -46,6 +46,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
 public class NxBarView extends BaseNavigationBar implements NxModule.Callbacks {
     final static String TAG = NxBarView.class.getSimpleName();
@@ -248,15 +249,34 @@ public class NxBarView extends BaseNavigationBar implements NxModule.Callbacks {
     }
 
     @Override
-    protected void onUpdateRotatedView(ViewGroup container, Resources res) {
-        // maybe do something with nx logo
-    }
-
-    @Override
     protected void onUpdateResources(Resources res) {
         mRipple.updateResources(res);
         for (NxLogoView v : ActionUtils.getAllChildren(NxBarView.this, NxLogoView.class)) {
             v.updateResources(res);
+        }
+        for (int i = 0; i < mRotatedViews.length; i++) {
+            ViewGroup container = (ViewGroup) mRotatedViews[i];
+            ViewGroup lightsOut = (ViewGroup) container.findViewById(R.id.lights_out);
+            if (lightsOut != null) {
+                final int nChildren = lightsOut.getChildCount();
+                for (int j = 0; j < nChildren; j++) {
+                    final View child = lightsOut.getChildAt(j);
+                    if (child instanceof ImageView) {
+                        final ImageView iv = (ImageView) child;
+                        // clear out the existing drawable, this is required since the
+                        // ImageView keeps track of the resource ID and if it is the same
+                        // it will not update the drawable.
+                        iv.setImageDrawable(null);
+                        iv.setImageDrawable(getAvailableResources().getDrawable(
+                                R.drawable.ic_sysbar_lights_out_dot_large));
+                    }
+                }
+            }
+            ImageView ime = (ImageView) container.findViewById(R.id.ime_switcher);
+            if (ime != null) {
+                ime.setImageDrawable(null);
+                ime.setImageDrawable(res.getDrawable(R.drawable.ic_ime_switcher_default));
+            }
         }
     }
 

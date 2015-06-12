@@ -23,6 +23,7 @@ import android.content.res.Resources;
 import android.telephony.TelephonyManager;
 import android.view.View;
 
+import com.android.internal.navigation.BarTransitions;
 import com.android.systemui.R;
 
 public final class PhoneStatusBarTransitions extends BarTransitions {

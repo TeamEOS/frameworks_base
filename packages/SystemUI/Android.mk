@@ -10,9 +10,10 @@ LOCAL_STATIC_JAVA_LIBRARIES := Keyguard \
     android-support-v7-palette \
     android-support-v4 \
     android-visualizer \
-    org.cyanogenmod.platform.sdk
+    org.cyanogenmod.platform.sdk \
+    org.teameos.navigation-static
 
-LOCAL_JAVA_LIBRARIES := telephony-common
+LOCAL_JAVA_LIBRARIES := telephony-common org.teameos.navigation
 
 LOCAL_PACKAGE_NAME := SystemUI
 LOCAL_CERTIFICATE := platform
