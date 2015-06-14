@@ -64,13 +64,14 @@ import java.util.Collections;
 import java.util.List;
 
 import com.android.internal.statusbar.IStatusBarService;
+import com.android.internal.util.actions.Config.ActionConfig;
 import com.android.internal.util.cm.QSUtils;
 
-public abstract class ActionHandler {
-    protected static String TAG = ActionHandler.class.getSimpleName();
+public class ActionHandler {
+    public static String TAG = ActionHandler.class.getSimpleName();
 
-    private static final String SYSTEM_PREFIX = "task";
-    private static final String SYSTEMUI = "com.android.systemui";
+    public static final String SYSTEM_PREFIX = "task";
+    public static final String SYSTEMUI = "com.android.systemui";
 
     public static final String SYSTEMUI_TASK_NO_ACTION = "task_no_action";
     public static final String SYSTEMUI_TASK_SETTINGS_PANEL = "task_settings_panel";
@@ -104,8 +105,8 @@ public abstract class ActionHandler {
     public static final String INTENT_TOGGLE_SCREENRECORD = "action_handler_toggle_screenrecord";
     public static final String INTENT_SCREENSHOT = "action_handler_screenshot";
 
-    private static enum SystemAction {
-        NoAction(SYSTEMUI_TASK_NO_ACTION, "No Action", SYSTEMUI, "ic_sysbar_null"),
+    static enum SystemAction {
+        NoAction(SYSTEMUI_TASK_NO_ACTION, "No action", SYSTEMUI, "ic_sysbar_null"),
         SettingsPanel(SYSTEMUI_TASK_SETTINGS_PANEL, "Settings panel", SYSTEMUI, "ic_sysbar_qs"),
         NotificationPanel(SYSTEMUI_TASK_NOTIFICATION_PANEL, "Notification panel", SYSTEMUI, "ic_sysbar_notifications"),
         Screenshot(SYSTEMUI_TASK_SCREENSHOT, "Screenshot", SYSTEMUI, "ic_sysbar_screenshot"),
@@ -129,10 +130,10 @@ public abstract class ActionHandler {
         Back(SYSTEMUI_TASK_BACK, "Back", SYSTEMUI, "ic_sysbar_back"),
         Home(SYSTEMUI_TASK_HOME, "Home", SYSTEMUI, "ic_sysbar_home");
 
-        private String mAction;
-        private String mLabel;
-        private String mIconPackage;
-        private String mIconName;
+        String mAction;
+        String mLabel;
+        String mIconPackage;
+        String mIconName;
 
         private SystemAction(String action, String label, String iconPackage, String iconName) {
             mAction = action;
@@ -141,29 +142,13 @@ public abstract class ActionHandler {
             mIconName = iconName;
         }
 
-        private ActionBundle create(Context ctx) {
-            ActionBundle a = new ActionBundle();
-            a.action = mAction;
-            a.label = mLabel;
-            a.icon = getDrawableFromResources(ctx);
+        private ActionConfig create(Context ctx) {
+            ActionConfig a = new ActionConfig(ctx, mAction, mAction);
             return a;
-        }
-
-        private Drawable getDrawableFromResources(Context context) {
-            try {
-                Resources res = context.getPackageManager()
-                        .getResourcesForApplication(mIconPackage);
-                Drawable icon = res.getDrawable(res.getIdentifier(mIconName, "drawable",
-                        mIconPackage));
-                return icon;
-            } catch (Exception e) {
-                return context.getResources().getDrawable(
-                        com.android.internal.R.drawable.sym_def_app_icon);
-            }
         }
     }
 
-    private static SystemAction[] systemActions = new SystemAction[] {
+    static SystemAction[] systemActions = new SystemAction[] {
             SystemAction.NoAction, SystemAction.SettingsPanel,
             SystemAction.NotificationPanel, SystemAction.Screenshot,
             SystemAction.ScreenOff, SystemAction.KillApp,
@@ -178,11 +163,11 @@ public abstract class ActionHandler {
             SystemAction.Screenrecord
     };
 
-    public static ArrayList<ActionBundle> getSystemActions(Context context) {
-        ArrayList<ActionBundle> bundle = new ArrayList<ActionBundle>();
+    public static ArrayList<ActionConfig> getSystemActions(Context context) {
+        ArrayList<ActionConfig> bundle = new ArrayList<ActionConfig>();
         for (int i = 0; i < systemActions.length; i++) {
-            ActionBundle b = systemActions[i].create(context);
-            String action = b.action;
+            ActionConfig c = systemActions[i].create(context);
+            String action = c.getAction();
             if (TextUtils.equals(action, SYSTEMUI_TASK_WIFIAP)
                     && !QSUtils.deviceSupportsMobileData(context)) {
                 continue;
@@ -206,125 +191,10 @@ public abstract class ActionHandler {
                     continue;
                 }
             }
-            bundle.add(b);
+            bundle.add(c);
         }
         Collections.sort(bundle);
         return bundle;
-    }
-
-    public static class ActionBundle implements Comparable<ActionBundle> {
-        public String action = "";
-        public String label = "";
-        public Drawable icon = null;
-
-        public ActionBundle() {
-        }
-
-        public ActionBundle(Context context, String _action) {
-            action = _action;
-            label = getFriendlyNameForUri(context.getPackageManager(), _action);
-            icon = getDrawableForAction(context, _action);
-        }
-
-        @Override
-        public int compareTo(ActionBundle another) {
-            int result = label.toString().compareToIgnoreCase(another.label.toString());
-            return result;
-        }
-
-        public static Intent getIntent(String uri) {
-            if (uri == null || uri.startsWith(SYSTEM_PREFIX)) {
-                return null;
-            }
-
-            Intent intent = null;
-            try {
-                intent = Intent.parseUri(uri, 0);
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
-            }
-            return intent;
-        }
-
-        private static Drawable getDrawableForAction(Context context, String action) {
-            Drawable d = null;
-
-            // this null check is probably no-op but let's be safe anyways
-            if (action == null || context == null) {
-                return d;
-            }
-            if (action.startsWith(SYSTEM_PREFIX)) {
-                for (int i = 0; i < systemActions.length; i++) {
-                    if (systemActions[i].mAction.equals(action)) {
-                        d = systemActions[i].getDrawableFromResources(context);
-                    }
-                }
-            } else {
-                d = getDrawableFromComponent(context.getPackageManager(), action);
-            }
-            return d;
-        }
-
-        private static Drawable getDrawableFromComponent(PackageManager pm, String activity) {
-            Drawable d = null;
-            try {
-                Intent intent = Intent.parseUri(activity, 0);
-                ActivityInfo info = intent.resolveActivityInfo(pm,
-                        PackageManager.GET_ACTIVITIES);
-                if (info != null) {
-                    d = info.loadIcon(pm);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return d;
-        }
-
-        private static String getFriendlyActivityName(PackageManager pm, Intent intent,
-                boolean labelOnly) {
-            ActivityInfo ai = intent.resolveActivityInfo(pm, PackageManager.GET_ACTIVITIES);
-            String friendlyName = null;
-            if (ai != null) {
-                friendlyName = ai.loadLabel(pm).toString();
-                if (friendlyName == null && !labelOnly) {
-                    friendlyName = ai.name;
-                }
-            }
-            return friendlyName != null || labelOnly ? friendlyName : intent.toUri(0);
-        }
-
-        private static String getFriendlyShortcutName(PackageManager pm, Intent intent) {
-            String activityName = getFriendlyActivityName(pm, intent, true);
-            String name = intent.getStringExtra(Intent.EXTRA_SHORTCUT_NAME);
-
-            if (activityName != null && name != null) {
-                return activityName + ": " + name;
-            }
-            return name != null ? name : intent.toUri(0);
-        }
-
-        private static String getFriendlyNameForUri(PackageManager pm, String uri) {
-            if (uri == null) {
-                return null;
-            }
-            if (uri.startsWith(SYSTEM_PREFIX)) {
-                for (int i = 0; i < systemActions.length; i++) {
-                    if (systemActions[i].mAction.equals(uri)) {
-                        return systemActions[i].mLabel;
-                    }
-                }
-            } else {
-                try {
-                    Intent intent = Intent.parseUri(uri, 0);
-                    if (Intent.ACTION_MAIN.equals(intent.getAction())) {
-                        return getFriendlyActivityName(pm, intent, false);
-                    }
-                    return getFriendlyShortcutName(pm, intent);
-                } catch (URISyntaxException e) {
-                }
-            }
-            return uri;
-        }
     }
 
     private static final class StatusBarHelper {
@@ -418,28 +288,6 @@ public abstract class ActionHandler {
         StatusBarHelper.preloadRecentApps();
     }
 
-    /*
-     * checks that the action set in uri resolves. If not, set uri action to no
-     * action. Only applies to uri that do not have a system action
-     */
-    public static void resolveOrClearIntent(PackageManager pm, ContentResolver resolver, String uri) {
-        String action = Settings.System.getStringForUser(resolver, uri, UserHandle.USER_CURRENT);
-        if (action != null && !action.startsWith(ActionHandler.SYSTEM_PREFIX)) {
-            String resolvedName = ActionBundle.getFriendlyNameForUri(pm, action);
-            // if resolved name is null or the full raw intent string is
-            // returned
-            // we were unable to resolve
-            if (resolvedName == null || resolvedName.equals(action)) {
-                Settings.System.putStringForUser(resolver, uri,
-                        ActionHandler.SYSTEMUI_TASK_NO_ACTION, UserHandle.USER_CURRENT);
-            }
-        }
-    }
-
-    public static void performTask(Context context, ActionBundle bundle) {
-        performTask(context, bundle.action);
-    }
-
     public static void performTask(Context context, String action) {
         // null: throw it out
         if (action == null) {
@@ -447,7 +295,7 @@ public abstract class ActionHandler {
         }
         // not a system action, should be intent
         if (!action.startsWith(SYSTEM_PREFIX)) {
-            Intent intent = ActionBundle.getIntent(action);
+            Intent intent = ActionUtils.getIntent(action);
             if (intent == null) {
                 return;
             }
