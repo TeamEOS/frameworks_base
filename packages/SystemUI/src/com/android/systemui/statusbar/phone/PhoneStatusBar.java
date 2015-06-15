@@ -129,6 +129,7 @@ import android.widget.TextView;
 
 import com.android.internal.navigation.BarTransitions;
 import com.android.internal.navigation.BaseNavigationBar;
+import com.android.internal.navigation.NavigationController;
 import com.android.internal.navigation.StatusbarImpl;
 import com.android.internal.statusbar.StatusBarIcon;
 import com.android.keyguard.KeyguardHostView.OnDismissAction;
@@ -410,7 +411,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     DisplayMetrics mDisplayMetrics = new DisplayMetrics();
 
     // Eos and the things the Eos does
-    NavigationCoordinator mNavigationCoordinator;
+    NavigationController mNavigationCoordinator;
 
     private final Runnable mRemoveNavigationBar = new Runnable() {
         @Override
@@ -915,7 +916,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         mStatusBarView.setBar(this);
 
         if (mNavigationCoordinator == null) {
-            mNavigationCoordinator = new NavigationCoordinator(mContext, this, mAddNavigationBar,
+            mNavigationCoordinator = new NavigationController(mContext, this, mAddNavigationBar,
                     mRemoveNavigationBar);
         }
 
