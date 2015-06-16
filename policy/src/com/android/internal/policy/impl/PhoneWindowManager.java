@@ -76,6 +76,8 @@ import android.service.dreams.IDreamManager;
 import android.speech.RecognizerIntent;
 import android.telecom.TelecomManager;
 import android.service.gesture.EdgeGestureManager;
+
+import com.android.internal.navigation.hwkeys.HardkeyActionHandler;
 import com.android.internal.os.DeviceKeyHandler;
 
 import dalvik.system.DexClassLoader;
