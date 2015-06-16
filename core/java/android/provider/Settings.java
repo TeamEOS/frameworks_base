@@ -3642,6 +3642,13 @@ public final class Settings {
         public static final String NX_LOGO_ANIMATES= "nx_logo_animates";
 
         /**
+         * nx logo animates
+         * 
+         * @hide
+         */
+        public static final String NX_LOGO_COLOR = "nx_logo_color";
+
+        /**
          * nx pulse music visualizer
          * 
          * @hide

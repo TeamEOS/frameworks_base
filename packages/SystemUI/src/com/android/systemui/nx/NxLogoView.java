@@ -24,6 +24,7 @@ import com.android.systemui.R;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
@@ -39,10 +40,12 @@ import android.widget.ImageView;
 public class NxLogoView extends ImageView {
     public static final String TAG = NxLogoView.class.getSimpleName();
     private static final int ALPHA_DURATION = 250;
+    private static final int DEF_LOGO_COLOR = Color.WHITE;
 
     private boolean mIsAnimating;
     private boolean mSpinAnimationEnabled = true;
     private boolean mLogoEnabled = true;
+    private int mLogoColor = DEF_LOGO_COLOR;
 
     public NxLogoView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
@@ -52,6 +55,7 @@ public class NxLogoView extends ImageView {
         super(context, attrs, defStyle);
         setBackground(null);
         updateResources(context.getResources());
+        setDrawableColorFilter(mLogoColor);
     }
 
     @Override
@@ -61,7 +65,24 @@ public class NxLogoView extends ImageView {
     }
 
     public void updateResources(Resources res) {
-        int color = res.getColor(R.color.status_bar_clock_color);
+        //int color = res.getColor(R.color.status_bar_clock_color);
+        //setDrawableColorFilter(color);
+    }
+
+    public void setLogoColor(int color) {
+        if (mLogoColor == color) {
+            return;
+        } else if (color == -1) {
+            mLogoColor = DEF_LOGO_COLOR;
+        } else if (color == -2) {
+            mLogoColor = getContext().getResources().getColor(R.color.status_bar_clock_color);
+        } else {
+            mLogoColor = color;
+        }
+        setDrawableColorFilter(mLogoColor);
+    }
+
+    private void setDrawableColorFilter(int color) {
         Drawable logo = getDrawable();
         logo.setColorFilter(color, Mode.SRC_ATOP);
     }
