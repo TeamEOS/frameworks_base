@@ -18,7 +18,7 @@
 */
 -->
 
-<com.android.systemui.nx.NxBarView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.android.internal.navigation.fling.FlingView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:prvandroid="http://schemas.android.com/apk/prv/res/android"
     xmlns:systemui="http://schemas.android.com/apk/res/com.android.systemui"
     android:layout_width="match_parent"
@@ -46,13 +46,13 @@
                 android:layout_weight="1"
                 android:visibility="invisible" />
 
-            <com.android.systemui.nx.NxLogoView
-                android:id="@+id/nx_console"
+            <com.android.internal.navigation.fling.FlingLogoView
+                android:id="@+id/fling_console"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
                 android:layout_weight="0"
-                android:src="@drawable/ic_eos_nx" />
+                android:src="@drawable/ic_eos_fling" />
 
             <View
                 android:layout_width="match_parent"
@@ -114,13 +114,13 @@
                 android:layout_weight="1"
                 android:visibility="invisible" />
 
-            <com.android.systemui.nx.NxLogoView
-                android:id="@+id/nx_console"
+            <com.android.internal.navigation.fling.FlingLogoView
+                android:id="@+id/fling_console"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_weight="0"
-                android:src="@drawable/ic_eos_nx_land" />
+                android:src="@drawable/ic_eos_fling_land" />
 
             <View
                 android:layout_width="match_parent"
@@ -158,4 +158,4 @@
                 android:visibility="invisible" />
         </LinearLayout>
     </FrameLayout>
-</com.android.systemui.nx.NxBarView>
+</com.android.internal.navigation.fling.FlingView>

@@ -411,7 +411,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     DisplayMetrics mDisplayMetrics = new DisplayMetrics();
 
     // Eos and the things the Eos does
-    NavigationController mNavigationCoordinator;
+    NavigationController mNavigationController;
 
     private final Runnable mRemoveNavigationBar = new Runnable() {
         @Override
@@ -586,7 +586,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             return;
         }
 
-        mNavigationBarView = mNavigationCoordinator.getNavigationBarView();
+        mNavigationBarView = mNavigationController.getNavigationBarView();
 
         mNavigationBarView.setDisabledFlags(mDisabled);
         mNavigationBarView.setStatusBarCallbacks(this);
@@ -915,8 +915,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         }
         mStatusBarView.setBar(this);
 
-        if (mNavigationCoordinator == null) {
-            mNavigationCoordinator = new NavigationController(mContext, this, mAddNavigationBar,
+        if (mNavigationController == null) {
+            mNavigationController = new NavigationController(mContext, this, mAddNavigationBar,
                     mRemoveNavigationBar);
         }
 
@@ -959,7 +959,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             if (DEBUG) Log.v(TAG, "hasNavigationBar=" + showNav);
 
             if (showNav && !mRecreating) {
-                mNavigationBarView = mNavigationCoordinator.getNavigationBarView();
+                mNavigationBarView = mNavigationController.getNavigationBarView();
                 mNavigationBarView.updateResources(getNavbarThemedResources());
                 mNavigationBarView.setDisabledFlags(mDisabled);
                 mNavigationBarView.setStatusBarCallbacks(this);

@@ -42,8 +42,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.android.internal.navigation.NavigationController;
 import com.android.systemui.R;
-import com.android.systemui.statusbar.phone.NavigationCoordinator;
 
 import java.util.ArrayList;
 
@@ -243,9 +243,9 @@ public class ScreenPinningRequest implements View.OnClickListener {
 
             int barMode = Settings.System.getIntForUser(mContext.getContentResolver(),
                     Settings.System.NAVIGATION_BAR_MODE, 0, UserHandle.USER_CURRENT);
-            if (barMode == NavigationCoordinator.NAVIGATION_MODE_AOSP) {  // aosp style
+            if (barMode == NavigationController.NAVIGATION_MODE_AOSP) {  // aosp style
                 return com.android.internal.R.string.lock_to_app_navbar_description;
-            } else if (barMode == NavigationCoordinator.NAVIGATION_MODE_NX) {  // nx style
+            } else if (barMode == NavigationController.NAVIGATION_MODE_FLING) {  // nx style
                 return com.android.internal.R.string.lock_to_app_nx_description;
             }
             // sanity check
