@@ -1616,6 +1616,10 @@ public class PackageManagerService extends IPackageManager.Stub {
             // avoid the resulting log spew.
             alreadyDexOpted.add(frameworkDir.getPath() + "/core-libart.jar");
 
+            // Gross hack for now: we know this file doesn't contain any
+            // code, so don't dexopt it to avoid the resulting log spew
+            alreadyDexOpted.add(frameworkDir.getPath() + "/org.cyanogenmod.platform-res.apk");
+
             /**
              * And there are a number of commands implemented in Java, which
              * we currently need to do the dexopt on so that they can be
@@ -2661,6 +2665,7 @@ public class PackageManagerService extends IPackageManager.Stub {
         if (!compareStrings(pi1.nonLocalizedLabel, pi2.nonLocalizedLabel)) return false;
         // We'll take care of setting this one.
         if (!compareStrings(pi1.packageName, pi2.packageName)) return false;
+        if (pi1.allowViaWhitelist != pi2.allowViaWhitelist) return false;
         // These are not currently stored in settings.
         //if (!compareStrings(pi1.group, pi2.group)) return false;
         //if (!compareStrings(pi1.nonLocalizedDescription, pi2.nonLocalizedDescription)) return false;
@@ -6053,7 +6058,7 @@ public class PackageManagerService extends IPackageManager.Stub {
                 }
             }
 
-            setNativeLibraryPaths(pkg);
+            setNativeLibraryPaths(pkg, parseFlags);
         } else {
             // TODO: We can probably be smarter about this stuff. For installed apps,
             // we can calculate this information at install time once and for all. For
@@ -6062,7 +6067,7 @@ public class PackageManagerService extends IPackageManager.Stub {
 
             // Give ourselves some initial paths; we'll come back for another
             // pass once we've determined ABI below.
-            setNativeLibraryPaths(pkg);
+            setNativeLibraryPaths(pkg, parseFlags);
 
             final boolean isAsec = isForwardLocked(pkg) || isExternal(pkg);
             final String nativeLibraryRootStr = pkg.applicationInfo.nativeLibraryRootDir;
@@ -6200,7 +6205,7 @@ public class PackageManagerService extends IPackageManager.Stub {
 
             // Now that we've calculated the ABIs and determined if it's an internal app,
             // we will go ahead and populate the nativeLibraryPath.
-            setNativeLibraryPaths(pkg);
+            setNativeLibraryPaths(pkg, parseFlags);
 
             if (DEBUG_INSTALL) Slog.i(TAG, "Linking native library dir for " + path);
             final int[] userIds = sUserManager.getUserIds();
@@ -6617,6 +6622,7 @@ public class PackageManagerService extends IPackageManager.Stub {
                                 bp.perm = p;
                                 bp.uid = pkg.applicationInfo.uid;
                                 bp.sourcePackage = p.info.packageName;
+                                bp.allowViaWhitelist = p.info.allowViaWhitelist;
                             } else if (!currentOwnerIsSystem) {
                                 String msg = "New decl " + p.owner + " of permission  "
                                         + p.info.name + " is system; overriding " + bp.sourcePackage;
@@ -6629,6 +6635,7 @@ public class PackageManagerService extends IPackageManager.Stub {
                     if (bp == null) {
                         bp = new BasePermission(p.info.name, p.info.packageName,
                                 BasePermission.TYPE_NORMAL);
+                        bp.allowViaWhitelist = p.info.allowViaWhitelist;
                         permissionMap.put(p.info.name, bp);
                     }
 
@@ -7032,7 +7039,7 @@ public class PackageManagerService extends IPackageManager.Stub {
 
     private void compileResourcesWithAapt(String target, PackageParser.Package pkg)
             throws Exception {
-        String internalPath = APK_PATH_TO_OVERLAY + target;
+        String internalPath = APK_PATH_TO_OVERLAY + target + File.separator;
         String resPath = ThemeUtils.getTargetCacheDir(target, pkg);
         final int sharedGid = UserHandle.getSharedAppGid(pkg.applicationInfo.uid);
         int pkgId;
@@ -7350,7 +7357,7 @@ public class PackageManagerService extends IPackageManager.Stub {
      * Derive and set the location of native libraries for the given package,
      * which varies depending on where and how the package was installed.
      */
-    private void setNativeLibraryPaths(PackageParser.Package pkg) {
+    private void setNativeLibraryPaths(PackageParser.Package pkg, int parseFlags) {
         final ApplicationInfo info = pkg.applicationInfo;
         final String codePath = pkg.codePath;
         final File codeFile = new File(codePath);
@@ -7396,10 +7403,17 @@ public class PackageManagerService extends IPackageManager.Stub {
             info.nativeLibraryRootRequiresIsa = false;
             info.nativeLibraryDir = info.nativeLibraryRootDir;
         } else {
-            // Cluster install
-            info.nativeLibraryRootDir = new File(codeFile, LIB_DIR_NAME).getAbsolutePath();
+            if ((parseFlags & PackageParser.PARSE_IS_PREBUNDLED_DIR) != 0) {
+                // mAppLib32InstallDir is the directory /data/app-lib which is used to store native
+                // libs for apps from the system paritition.  It isn't really specific to 32bit in
+                // any way except for the variable name, the system will use the primary/secondary
+                // ABI computed below.
+                info.nativeLibraryRootDir =
+                        new File(mAppLib32InstallDir, pkg.packageName).getAbsolutePath();
+            } else {
+                info.nativeLibraryRootDir = new File(codeFile, LIB_DIR_NAME).getAbsolutePath();
+            }
             info.nativeLibraryRootRequiresIsa = true;
-
             info.nativeLibraryDir = new File(info.nativeLibraryRootDir,
                     getPrimaryInstructionSet(info)).getAbsolutePath();
 
@@ -8003,8 +8017,7 @@ public class PackageManagerService extends IPackageManager.Stub {
                         == PackageManager.SIGNATURE_MATCH);
         if (!allowed && (bp.protectionLevel
                 & PermissionInfo.PROTECTION_FLAG_SYSTEM) != 0) {
-            boolean allowedSig = isAllowedSignature(pkg, perm);
-            if (isSystemApp(pkg) || allowedSig) {
+            if (isSystemApp(pkg)) {
                 // For updated system applications, a system permission
                 // is granted only if it had been defined by the original application.
                 if (isUpdatedSystemApp(pkg)) {
@@ -8042,7 +8055,7 @@ public class PackageManagerService extends IPackageManager.Stub {
                         }
                     }
                 } else {
-                    allowed = isPrivilegedApp(pkg) || allowedSig;
+                    allowed = isPrivilegedApp(pkg);
                 }
             }
         }
@@ -8051,6 +8064,9 @@ public class PackageManagerService extends IPackageManager.Stub {
             // For development permissions, a development permission
             // is granted only if it was already granted.
             allowed = origPermissions.contains(perm);
+        }
+        if (!allowed && bp.allowViaWhitelist) {
+            allowed = isAllowedSignature(pkg, perm);
         }
         return allowed;
     }
@@ -14221,9 +14237,15 @@ public class PackageManagerService extends IPackageManager.Stub {
 
     @Override
     public int getInstallLocation() {
-        return android.provider.Settings.Global.getInt(mContext.getContentResolver(),
+        int mInstallLocation = android.provider.Settings.Global.getInt(
+                mContext.getContentResolver(),
                 android.provider.Settings.Global.DEFAULT_INSTALL_LOCATION,
                 PackageHelper.APP_INSTALL_AUTO);
+        if (mInstallLocation == PackageHelper.APP_INSTALL_EXTERNAL
+                && !Environment.MEDIA_MOUNTED.equals(Environment.getSecondaryStorageState())) {
+            mInstallLocation = PackageHelper.APP_INSTALL_AUTO;
+        }
+        return mInstallLocation;
     }
 
     /** Called by UserManagerService */

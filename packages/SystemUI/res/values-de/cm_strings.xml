@@ -26,17 +26,21 @@
   <string name="accessibility_quick_settings_data_on">Mobile Daten an.</string>
   <string name="accessibility_quick_settings_roaming_off">Roaming aus.</string>
   <string name="accessibility_quick_settings_roaming_on">Roaming an.</string>
-  <string name="accessibility_quick_settings_location_battery_saving">Standortdienste: Energiesparmodus</string>
-  <string name="accessibility_quick_settings_location_gps_only">Standortdienste: Nur Gerät</string>
-  <string name="accessibility_quick_settings_location_high_accuracy">Standortdienste: Hohe Genauigkeit</string>
-  <string name="accessibility_quick_settings_heads_up_off">Pop-up aus.</string>
-  <string name="accessibility_quick_settings_heads_up_on">Pop-up an.</string>
-  <string name="accessibility_quick_settings_heads_up_changed_off">Pop-up ausgeschaltet.</string>
-  <string name="accessibility_quick_settings_heads_up_changed_on">Pop-up eingeschaltet.</string>
   <string name="accessibility_quick_settings_ambient_display_off">Inaktivitätsdisplay aus.</string>
   <string name="accessibility_quick_settings_ambient_display_on">Inaktivitätsdisplay an.</string>
   <string name="accessibility_quick_settings_ambient_display_changed_off">Inaktivitätsdisplay ausgeschaltet.</string>
   <string name="accessibility_quick_settings_ambient_display_changed_on">Inaktivitätsdisplay eingeschaltet.</string>
+  <string name="accessibility_quick_settings_heads_up_off">Pop-up aus.</string>
+  <string name="accessibility_quick_settings_heads_up_on">Pop-up an.</string>
+  <string name="accessibility_quick_settings_heads_up_changed_off">Pop-up ausgeschaltet.</string>
+  <string name="accessibility_quick_settings_heads_up_changed_on">Pop-up eingeschaltet.</string>
+  <string name="accessibility_quick_settings_location_battery_saving">Standortdienste: Energiesparmodus</string>
+  <string name="accessibility_quick_settings_location_gps_only">Standortdienste: Nur Gerät</string>
+  <string name="accessibility_quick_settings_location_high_accuracy">Standortdienste: Hohe Genauigkeit</string>
+  <string name="accessibility_quick_settings_sync_off">Sync aus.</string>
+  <string name="accessibility_quick_settings_sync_on">Sync an.</string>
+  <string name="accessibility_quick_settings_sync_changed_off">Sync ausgeschaltet.</string>
+  <string name="accessibility_quick_settings_sync_changed_on">Sync eingeschaltet.</string>
   <string name="accessibility_dpad_left">Pfeiltaste links</string>
   <string name="accessibility_dpad_right">Pfeiltaste rechts</string>
   <string name="quick_settings_mobile_data_label">Mobile Daten</string>
@@ -61,6 +65,7 @@
   <string name="quick_settings_usb_tether_label">USB-Tethering</string>
   <string name="quick_settings_heads_up_label">Pop-up</string>
   <string name="quick_settings_ambient_display_label">Inaktivitätsdisplay</string>
+  <string name="quick_settings_sync_label">Sync</string>
   <string name="quick_settings_custom_tile_detail_title">Benutzerdefinierte Kachel</string>
   <string name="status_bar_expanded_header_weather_format"><xliff:g id="temp">%1$s</xliff:g> – <xliff:g id="condition">%2$s</xliff:g></string>
   <string name="left_shortcut_hint">Nach Rechts wischen für %1$s</string>
@@ -75,7 +80,7 @@
   <string name="navbar_menu_always_button">Menü (immer sichtbar)</string>
   <string name="navbar_menu_big_button">Menü</string>
   <string name="navigation_ring_title">Schnellstart-Verknüpfungen</string>
-  <string name="navring_target_reset_message">Alle selbst erstellten Nvaigationsleisten-Verknüpfungen löschen und auf Standardeinstellungen zurücksetzen?</string>
+  <string name="navring_target_reset_message">Alle selbst erstellten Navigationsleisten-Verknüpfungen löschen und auf Standardeinstellungen zurücksetzen?</string>
   <string name="navring_target_reset">Schnellstart-Verknüpfungen auf Standardeinstellungen zurücksetzen</string>
   <string name="navring_action_open_ime_switcher">Eingabemethoden-Auswahl öffnen</string>
   <string name="navring_action_kill_app">App schließen</string>
