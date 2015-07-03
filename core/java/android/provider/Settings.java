@@ -3657,6 +3657,13 @@ public final class Settings {
         public static final String NX_PULSE_ENABLED = "nx_pulse_enabled";
 
         /**
+         * Fling pulse music visualizer color
+         * 
+         * @hide
+         */
+        public static final String FLING_PULSE_COLOR = "nx_pulse_color";
+
+        /**
          * nx ripple effect
          * 
          * @hide
