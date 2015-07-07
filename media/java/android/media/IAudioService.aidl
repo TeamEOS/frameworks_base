@@ -72,6 +72,8 @@ interface IAudioService {
 
     void setStreamMaxVolume(int streamType, int maxVol);
 
+    boolean isVisualizerLocked(String callingPackage);
+
     int getMasterMaxVolume();
 
     int getLastAudibleStreamVolume(int streamType);

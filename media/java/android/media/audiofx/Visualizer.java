@@ -18,9 +18,16 @@ package android.media.audiofx;
 
 import android.util.Log;
 import java.lang.ref.WeakReference;
+
+import android.app.ActivityThread;
+import android.content.Context;
+import android.media.IAudioService;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.RemoteException;
+import android.os.ServiceManager;
 
 /**
  * The Visualizer class enables application to retrieve part of the currently playing audio for
@@ -205,6 +212,25 @@ public class Visualizer {
 
         synchronized (mStateLock) {
             mState = STATE_UNINITIALIZED;
+
+            // if audio service locks us out, stay uninitialized
+            // throw UnsupportedOperationException as caller is required
+            // to catch and handle it
+            boolean isLocked = false;
+            String packageName = "";
+            try {
+                IBinder b = ServiceManager.getService(Context.AUDIO_SERVICE);
+                IAudioService audioService = IAudioService.Stub.asInterface(b);
+                packageName = ActivityThread.currentPackageName();
+                isLocked = audioService.isVisualizerLocked(packageName);
+            } catch (RemoteException e) {
+                Log.e(TAG, "Error checking visualizer lock in AudioManager, disabling visualizer lock");
+            }
+            if (isLocked) {
+                throw (new UnsupportedOperationException(packageName
+                        + " is locked out from Visualizer by Pulse"));
+            }
+
             // native initialization
             int result = native_setup(new WeakReference<Visualizer>(this), audioSession, id);
             if (result != SUCCESS && result != ALREADY_EXISTS) {
