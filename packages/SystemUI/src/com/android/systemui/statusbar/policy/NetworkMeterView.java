@@ -22,6 +22,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -173,8 +174,18 @@ public class NetworkMeterView extends ImageView implements Observer {
                 }
             }
         };
+        updateColorFilter(resources);
+
         // Force setting loading
         updateSettings();
+    }
+
+    private void updateColorFilter(Resources res) {
+        int color = res.getColor(R.color.network_meter_view_color);
+        Drawable d = getDrawable();
+        if (d != null) {
+            d.setColorFilter(color, Mode.SRC_ATOP);
+        }
     }
 
     /**
@@ -197,6 +208,7 @@ public class NetworkMeterView extends ImageView implements Observer {
             mInNetworkLevel = values.inLevel;
             // Update image drawable
             setImageDrawable(mNetworkInDrawables[mInNetworkLevel]);
+            updateColorFilter(getResources());
         }
         // Check if out network level quality changed
         // TODO

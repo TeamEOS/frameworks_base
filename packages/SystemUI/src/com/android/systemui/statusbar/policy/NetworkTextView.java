@@ -11,6 +11,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.database.ContentObserver;
+import android.graphics.PorterDuff.Mode;
+import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -229,7 +231,7 @@ public class NetworkTextView extends TextView implements Observer {
                 mNetworkTrafficColor = defaultColor;
         }
 
-        setTextColor(mNetworkTrafficColor);
+        setTextColor(getResources().getColor(R.color.network_text_view_color));
 
         if (NetworkTrafficSettings.hasMask(mState, NetworkTrafficSettings.UNIT_SWITCH_MASK)) {
             KB = KILOBYTE;
@@ -281,6 +283,20 @@ public class NetworkTextView extends TextView implements Observer {
         }
         // Apply drawable
         setCompoundDrawablesWithIntrinsicBounds(0, 0, intTrafficDrawable, 0);
+
+        if (intTrafficDrawable != 0) {
+            // Drawable d = getResources().getDrawable(intTrafficDrawable);
+            Drawable drawables[] = getCompoundDrawables();
+            int color = getResources().getColor(R.color.network_text_view_color);
+            if (drawables != null) {
+                for (int i = 0; i < drawables.length; i++) {
+                    Drawable d = drawables[i];
+                    if (d != null) {
+                        d.setColorFilter(color, Mode.SRC_ATOP);
+                    }
+                }
+            }
+        }
     }
 
     private boolean shouldHide(long inSpeed, long outSpeed, boolean upTraffic, boolean downTraffic) {
