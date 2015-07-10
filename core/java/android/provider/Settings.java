@@ -3671,6 +3671,13 @@ public final class Settings {
         public static final String NX_RIPPLE_ENABLED = "nx_ripple_enabled";
 
         /**
+         * Fling ripple color
+         *
+         * @hide
+         */
+        public static final String FLING_RIPPLE_COLOR = "fling_ripple_color";
+
+        /**
          * Fling gesture trails on/off
          * 
          * @hide
