@@ -23,13 +23,16 @@ package com.android.systemui.statusbar.phone;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import com.android.internal.actions.ActionConstants;
 import com.android.internal.actions.ActionHandler;
 import com.android.internal.actions.ActionUtils;
 import com.android.internal.actions.Config;
 import com.android.internal.actions.Config.ButtonConfig;
+import com.android.internal.navigation.utils.SmartObserver.SmartObservable;
 
 import com.android.systemui.R;
 import com.android.systemui.statusbar.policy.KeyButtonView;
@@ -43,7 +46,7 @@ import android.os.UserHandle;
 import android.provider.Settings;
 import android.view.ViewConfiguration;
 
-public class SoftkeyActionHandler {
+public class SoftkeyActionHandler implements SmartObservable {
     private static final int DT_TIMEOUT = ViewConfiguration.getDoubleTapTimeout();
     private static final int LP_TIMEOUT = ViewConfiguration.getLongPressTimeout();
 
@@ -56,6 +59,13 @@ public class SoftkeyActionHandler {
         softkeyMap.put(Integer.valueOf(R.id.menu), ActionConstants.Navbar.BUTTON4_TAG);
     }
 
+    private static Set<Uri> sUris = new HashSet<Uri>();
+    static {
+        sUris.add(Settings.System.getUriFor(Settings.System.SOFTKEY_LONGPRESS_TIMEOUT));
+        sUris.add(Settings.System.getUriFor(ActionConstants.getDefaults(ActionConstants.NAVBAR)
+                .getUri()));
+    }
+
     final int LP_TIMEOUT_MAX = LP_TIMEOUT;
     // no less than 25ms longer than single tap timeout
     final int LP_TIMEOUT_MIN = 25;
@@ -63,7 +73,6 @@ public class SoftkeyActionHandler {
     private NavigationBarView mNavigationBarView;
     private Context mContext;
     private ContentResolver mResolver;
-    private SoftkeyActionObserver mObserver;
     private boolean mRecreating;
     private boolean mKeyguardShowing;
 
@@ -71,8 +80,6 @@ public class SoftkeyActionHandler {
         mNavigationBarView = v;
         mContext = v.getContext();
         mResolver = v.getContext().getContentResolver();
-        mObserver = new SoftkeyActionObserver(new Handler());
-        mObserver.observe();
     }
 
     public void setKeyguardShowing(boolean showing) {
@@ -123,37 +130,15 @@ public class SoftkeyActionHandler {
         return lpTimeout;
     }
 
-    public void onDispose() {
-        if (mObserver != null) {
-            mObserver.unobserve();
-        }
+    @Override
+    public Set<Uri> onGetUris() {
+        return sUris;
     }
 
-    private class SoftkeyActionObserver extends ContentObserver {
-        SoftkeyActionObserver(Handler handler) {
-            super(handler);
-        }
-
-        @Override
-        public void onChange(boolean selfChange, Uri uri) {
-            if (mNavigationBarView == null) {
-                return;
-            }
+    @Override
+    public void onChange(Uri uri) {
+        if (mNavigationBarView != null) {
             assignButtonInfo();
-        }
-
-        void observe() {
-            mResolver.registerContentObserver(
-                    Settings.System.getUriFor(Settings.System.SOFTKEY_LONGPRESS_TIMEOUT), false,
-                    SoftkeyActionObserver.this, UserHandle.USER_ALL);
-            mResolver.registerContentObserver(
-                    Settings.System.getUriFor(ActionConstants.getDefaults(ActionConstants.NAVBAR)
-                            .getUri()), false,
-                    SoftkeyActionObserver.this, UserHandle.USER_ALL);
-        }
-
-        void unobserve() {
-            mResolver.unregisterContentObserver(SoftkeyActionObserver.this);
         }
     }
 }

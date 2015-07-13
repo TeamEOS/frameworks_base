@@ -47,10 +47,12 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import com.android.internal.actions.ActionConstants;
 import com.android.internal.navigation.BarTransitions;
 import com.android.internal.navigation.BaseNavigationBar;
 import com.android.internal.navigation.NavigationBarViewTaskSwitchHelper;
 import com.android.internal.navigation.StatusbarImpl;
+import com.android.internal.navigation.utils.SmartObserver.SmartObservable;
 import com.android.systemui.R;
 import com.android.systemui.statusbar.policy.DeadZone;
 import com.android.systemui.statusbar.policy.KeyButtonView;
@@ -58,10 +60,18 @@ import com.android.systemui.statusbar.policy.KeyButtonView;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class NavigationBarView extends BaseNavigationBar {
     final static boolean DEBUG = false;
     final static String TAG = "PhoneStatusBar/NavigationBarView";
+
+    private static Set<Uri> sUris = new HashSet<Uri>();    
+    static {
+        sUris.add(Settings.System.getUriFor(Settings.System.NAVIGATION_BAR_FORCE_SHOW_MENU));
+    }
+
     boolean mShowMenu;
     private boolean mKeyguardShowing;
     int mNavigationIconHints = 0;
@@ -82,33 +92,20 @@ public class NavigationBarView extends BaseNavigationBar {
     private boolean mForceShowMenuFromUser;
     private boolean mDelegateIntercepted;
     private SoftkeyActionHandler mSoftkeyHandler;
-    private NavbarObserver mObserver;
 
-    private class NavbarObserver extends ContentObserver {
-
-        public NavbarObserver(Handler handler) {
-            super(handler);
-            // TODO Auto-generated constructor stub
-        }
-
-        void observe() {
-            mContext.getContentResolver().registerContentObserver(
-                    Settings.System.getUriFor(Settings.System.NAVIGATION_BAR_FORCE_SHOW_MENU), false, this, UserHandle.USER_ALL);
-        }
-
-        void unobserve() {
-            mContext.getContentResolver().unregisterContentObserver(this);
+    private SmartObservable mObserver = new SmartObservable() {
+        @Override
+        public Set<Uri> onGetUris() {
+            return sUris;
         }
 
         @Override
-        public void onChange(boolean selfChange, Uri uri) {
-            Uri showMenuUri = Settings.System.getUriFor(Settings.System.NAVIGATION_BAR_FORCE_SHOW_MENU);
-            if (showMenuUri != null && uri.equals(showMenuUri)) {
-                mForceShowMenuFromUser = Settings.System.getIntForUser(mContext.getContentResolver(),
-                        Settings.System.NAVIGATION_BAR_FORCE_SHOW_MENU, 0, UserHandle.USER_CURRENT) == 1;
-                final boolean hideOverride = shouldForceShowMenu();
-                setMenuVisibility(hideOverride, true);
-            }
+        public void onChange(Uri uri) {
+            mForceShowMenuFromUser = Settings.System.getIntForUser(
+                    mContext.getContentResolver(),
+                    Settings.System.NAVIGATION_BAR_FORCE_SHOW_MENU, 0, UserHandle.USER_CURRENT) == 1;
+            final boolean hideOverride = shouldForceShowMenu();
+            setMenuVisibility(hideOverride, true);
         }
     };
 
@@ -177,8 +174,8 @@ public class NavigationBarView extends BaseNavigationBar {
         mBarTransitions = new NavigationBarTransitions(this);
         mForceShowMenuFromUser = Settings.System.getIntForUser(context.getContentResolver(),
                 Settings.System.NAVIGATION_BAR_FORCE_SHOW_MENU, 0, UserHandle.USER_CURRENT) == 1;
-        mObserver = new NavbarObserver(new Handler());
-        mObserver.observe();
+        mSmartObserver.addListener(mObserver);
+        mSmartObserver.addListener(mSoftkeyHandler);
     }
 
     public BarTransitions getBarTransitions() {
@@ -191,10 +188,7 @@ public class NavigationBarView extends BaseNavigationBar {
     }
 
     @Override
-    protected void onDispose() {
-        mObserver.unobserve();
-        mSoftkeyHandler.onDispose();        
-    }
+    protected void onDispose() { }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
