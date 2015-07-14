@@ -27,6 +27,7 @@ import android.os.IBinder;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
+import android.os.Vibrator;
 import android.service.fingerprint.FingerprintManager;
 import android.service.fingerprint.FingerprintUtils;
 import android.service.fingerprint.IFingerprintService;
@@ -81,6 +82,19 @@ public class FingerprintService extends SystemService {
     private static final int STATE_AUTHENTICATING = 1;
     private static final int STATE_ENROLLING = 2;
     private static final long MS_PER_SEC = 1000;
+
+    /**
+     * The time, in milliseconds, to run the device vibrator after a fingerprint
+     * image has been aquired or enrolled by the fingerprint sensor.
+     */
+    private static final long FINGERPRINT_EVENT_VIBRATE_DURATION = 100;
+
+    /**
+     * A local instance of {@link android.os.Vibrator} as retrieved using
+     * {@link android.content.Context#VIBRATOR_SERVICE}
+     */
+    private Vibrator mVibrator;
+
     private long mHal;
 
     private static final class ClientData {
@@ -118,6 +132,11 @@ public class FingerprintService extends SystemService {
     public FingerprintService(Context context) {
         super(context);
         mContext = context;
+        mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        // If no physical vibrator is present, set vibrator to null.
+        if (mVibrator != null && !mVibrator.hasVibrator()) {
+            mVibrator = null;
+        }
         nativeInit(this);
     }
 
@@ -131,6 +150,7 @@ public class FingerprintService extends SystemService {
     native int nativeCloseHal();
     native void nativeInit(FingerprintService service);
     native Fingerprint[] nativeGetEnrollments();
+    native int nativeGetNumEnrollmentSteps();
 
     // JNI methods for communicating from HAL to clients
     void notify(int msg, int arg1, int arg2) {
@@ -161,6 +181,7 @@ public class FingerprintService extends SystemService {
                     final int acquireInfo = arg1;
                     if (mState == STATE_AUTHENTICATING) {
                         try {
+                            vibrateDeviceIfSupported();
                             if (clientData != null && clientData.receiver != null) {
                                 clientData.receiver.onAcquired(acquireInfo);
                             }
@@ -196,20 +217,20 @@ public class FingerprintService extends SystemService {
                     final int fingerId = arg1;
                     final int remaining = arg2;
                     if (mState == STATE_ENROLLING) {
+                        // Update the database with new finger id.
+                        if (remaining == 0) {
+                            FingerprintUtils.addFingerprintIdForUser(fingerId,
+                                    mContext, clientData.userId);
+                            newState = STATE_IDLE;
+                        }
                         try {
+                            vibrateDeviceIfSupported();
                             if (clientData != null && clientData.receiver != null) {
                                 clientData.receiver.onEnrollResult(fingerId, remaining);
                             }
                         } catch (RemoteException e) {
                             Slog.e(TAG, "can't send message to client. Did it die?", e);
                             it.remove();
-                        }
-                        // Update the database with new finger id.
-                        // TODO: move to client code (Settings)
-                        if (remaining == 0) {
-                            FingerprintUtils.addFingerprintIdForUser(fingerId,
-                                    mContext, clientData.userId);
-                            newState = STATE_IDLE;
                         }
                     } else {
                         if (DEBUG) Slog.w(TAG, "Client not enrolling");
@@ -235,6 +256,12 @@ public class FingerprintService extends SystemService {
             }
         }
         mState = newState;
+    }
+
+    private void vibrateDeviceIfSupported() {
+        if (mVibrator != null) {
+            mVibrator.vibrate(FINGERPRINT_EVENT_VIBRATE_DURATION);
+        }
     }
 
     void startEnroll(IBinder token, long timeout, int userId) {
@@ -413,6 +440,10 @@ public class FingerprintService extends SystemService {
         return true;
     }
 
+    public int getNumEnrollmentSteps() {
+        return nativeGetNumEnrollmentSteps();
+    }
+
     private void enforceCrossUserPermission(int userId, String errorMessage) {
         if (userId != UserHandle.getCallingUserId()
                 && Binder.getCallingUid() != Process.myUid()
@@ -442,6 +473,7 @@ public class FingerprintService extends SystemService {
         private final static String DUMP_CMD_REMOVE_FINGER = "removeFinger";
         private final static String DUMP_CMD_PRINT_ENROLLMENTS = "printEnrollments";
         private final static String DUMP_CMD_SET_FINGER_NAME = "setFingerName";
+        private final static String DUMP_CMD_GET_NUM_ENROLLMENT_STEPS = "getNumEnrollmentSteps";
 
         @Override // Binder call
         public void authenticate(IBinder token, int userId) {
@@ -502,11 +534,25 @@ public class FingerprintService extends SystemService {
             return FingerprintService.this.setFingerprintName(token, fingerprintId, name, userId);
         }
 
+        @Override
+        public int getNumEnrollmentSteps(IBinder token)
+                throws RemoteException {
+            checkPermission();
+            throwIfNoFingerprint();
+            return FingerprintService.this.getNumEnrollmentSteps();
+        }
+
         /**
          * "adb shell dumpsys fingerprint [cmd]
          */
         @Override
         protected void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
+            if (mContext.checkCallingOrSelfPermission(android.Manifest.permission.DUMP)
+                    != PackageManager.PERMISSION_GRANTED) {
+                pw.println("Permission Denial: can't dump telephony.registry from from pid="
+                        + Binder.getCallingPid() + ", uid=" + Binder.getCallingUid());
+                return;
+            }
             if (mHal == 0) {
                 pw.println("Fingerprint sensor not available");
             } else if (args.length != 0 && DUMP_CMD_PRINT_ENROLLMENTS.equals(args[0])) {
@@ -515,6 +561,8 @@ public class FingerprintService extends SystemService {
                 dumpSetFingerprintName(pw, args);
             } else if (args.length > 1 && DUMP_CMD_REMOVE_FINGER.equals(args[0])) {
                 dumpRemoveFinger(pw, args);
+            } else if (args.length >= 1 && DUMP_CMD_GET_NUM_ENROLLMENT_STEPS.equals(args[0])) {
+                dumpGetNumEnrollmentSteps(pw, args);
             } else {
                 dumpCommandList(pw);
             }
@@ -564,11 +612,22 @@ public class FingerprintService extends SystemService {
             }
         }
 
+        private void dumpGetNumEnrollmentSteps(PrintWriter pw, String[] args) {
+            try {
+                int steps = FingerprintService.this.getNumEnrollmentSteps();
+                pw.println("Number of enrollment steps: " + steps);
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         private void dumpCommandList(PrintWriter pw) {
             pw.println("Valid Fingerprint Commands:");
             pw.println(DUMP_CMD_PRINT_ENROLLMENTS + " - Print Fingerprint Enrollments");
             pw.println(DUMP_CMD_REMOVE_FINGER + " <id> - Remove fingerprint");
             pw.println(DUMP_CMD_SET_FINGER_NAME + " <id> <name> - Rename a finger");
+            pw.println(DUMP_CMD_GET_NUM_ENROLLMENT_STEPS + " - Returns num of steps the vendor" +
+                    " requires to enroll a finger.");
         }
     }
 
