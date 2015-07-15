@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-     Copyright (C) 2015 The TeamEos Project
+     Copyright (C) 2014 The TeamEos Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
      limitations under the License.
 -->
 <resources>
-    <color name="network_text_view_color">@color/status_bar_clock_color</color>
-    <color name="network_meter_view_color">@color/status_bar_clock_color</color>
-    <color name="status_bar_temp_text_color">@color/status_bar_clock_color</color>
+
+    <!-- The font size for the temperature text -->
+    <dimen name="status_bar_temp_text_size">14sp</dimen>
+
 </resources>
