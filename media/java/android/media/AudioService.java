@@ -378,12 +378,12 @@ public class AudioService extends IAudioService.Stub {
             "STREAM_TTS"
     };
 
-    // only these packages are allowed to get Visualizer instance
-    // when Pulse is enabled
-    private static final String[] SYSTEM_PULSE_NAMES = new String[] {
+    // only these packages are allowed to override visualizer lock
+    private static final String[] VISUALIZER_WHITELIST = new String[] {
         "android",
         "com.android.systemui",
-        "com.android.keyguard"
+        "com.android.keyguard",
+        "com.google.android.googlequicksearchbox"
     };
 
     private boolean mLinkNotificationWithVolume;
@@ -666,8 +666,6 @@ public class AudioService extends IAudioService.Stub {
         //Update volumes steps before creatingStreamStates!
         initVolumeSteps();
         createStreamStates();
-        // check for Visualizer lock
-        updateVisualizerLocked();
 
         readAndSetLowRamDevice();
 
@@ -766,16 +764,6 @@ public class AudioService extends IAudioService.Stub {
                 SAFE_VOLUME_CONFIGURE_TIMEOUT_MS);
 
         StreamOverride.init(mContext);
-    }
-
-    // only call in constructor or synchronize on mSettingsLock
-    private void updateVisualizerLocked() {
-        mVisualizerLocked = Settings.System.getIntForUser(mContentResolver,
-                Settings.System.NX_PULSE_ENABLED, 0,
-                UserHandle.USER_CURRENT) == 1
-                && Settings.System.getIntForUser(mContentResolver,
-                        Settings.System.NAVIGATION_BAR_MODE, 0,
-                        UserHandle.USER_CURRENT) == 1;
     }
 
     private void initVolumeSteps(){
@@ -2003,15 +1991,23 @@ public class AudioService extends IAudioService.Stub {
         }
     }
 
-    public boolean isVisualizerLocked(String callingPackage) {
+    /** @hide */
+    public synchronized boolean isVisualizerLocked(String callingPackage) {
         boolean isSystem = false;
-        for (int i = 0; i < SYSTEM_PULSE_NAMES.length; i++) {
-            if (TextUtils.equals(callingPackage, SYSTEM_PULSE_NAMES[i])) {
+        for (int i = 0; i < VISUALIZER_WHITELIST.length; i++) {
+            if (TextUtils.equals(callingPackage, VISUALIZER_WHITELIST[i])) {
                 isSystem = true;
                 break;
             }
         }
         return !isSystem && mVisualizerLocked;
+    }
+
+    /** @hide */
+    public synchronized void setVisualizerLocked(boolean doLock) {
+        if (mVisualizerLocked != doLock) {
+            mVisualizerLocked = doLock;
+        }
     }
 
     /** @see AudioManager#getStreamMaxVolume(int) */
@@ -4735,10 +4731,6 @@ public class AudioService extends IAudioService.Stub {
                     Settings.Global.DOCK_AUDIO_MEDIA_ENABLED), false, this);
             mContentResolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.VOLUME_KEYS_CONTROL_RING_STREAM), false, this);
-            mContentResolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.NX_PULSE_ENABLED), false, this);
-            mContentResolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.NAVIGATION_BAR_MODE), false, this);
         }
 
         @Override
@@ -4768,8 +4760,6 @@ public class AudioService extends IAudioService.Stub {
                 mVolumeKeysControlRingStream = Settings.System.getIntForUser(mContentResolver,
                         Settings.System.VOLUME_KEYS_CONTROL_RING_STREAM, 1,
                         UserHandle.USER_CURRENT) == 1;
-                // check for Visualizer lock
-                updateVisualizerLocked();
             }
         }
     }

@@ -22,6 +22,7 @@ import java.lang.ref.WeakReference;
 import android.app.ActivityThread;
 import android.content.Context;
 import android.media.IAudioService;
+import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -222,6 +223,9 @@ public class Visualizer {
                 IBinder b = ServiceManager.getService(Context.AUDIO_SERVICE);
                 IAudioService audioService = IAudioService.Stub.asInterface(b);
                 packageName = ActivityThread.currentPackageName();
+                if (packageName == null && android.os.Process.SYSTEM_UID == Binder.getCallingUid()) {
+                    packageName = "android";
+                }
                 isLocked = audioService.isVisualizerLocked(packageName);
             } catch (RemoteException e) {
                 Log.e(TAG, "Error checking visualizer lock in AudioManager, disabling visualizer lock");
