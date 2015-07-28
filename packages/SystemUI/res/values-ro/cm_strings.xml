@@ -33,6 +33,7 @@
   <string name="accessibility_quick_settings_location_high_accuracy">Raportarea locaţiei: precizie ridicată.</string>
   <string name="accessibility_quick_settings_lte_off">4G oprit.</string>
   <string name="accessibility_quick_settings_lte_on">4G pornit.</string>
+  <string name="accessibility_quick_settings_lte_changed_off">LTE oprit.</string>
   <string name="accessibility_quick_settings_lte_changed_on">LTE pornit.</string>
   <string name="accessibility_quick_settings_nfc_off">NFC oprit.</string>
   <string name="accessibility_quick_settings_nfc_on">NFC pornit.</string>
@@ -41,6 +42,8 @@
   <string name="accessibility_quick_settings_profiles">Profil: <xliff:g id="profile" example="Default">%s</xliff:g>.</string>
   <string name="accessibility_quick_settings_sync_off">Sincronizare oprită.</string>
   <string name="accessibility_quick_settings_sync_on">Sincronizare pornită.</string>
+  <string name="accessibility_quick_settings_sync_changed_off">Sincronizare oprită.</string>
+  <string name="accessibility_quick_settings_sync_changed_on">Sincronizare pornită.</string>
   <string name="accessibility_dpad_left">Cursor stânga</string>
   <string name="accessibility_dpad_right">Cursor dreapta</string>
   <string name="quick_settings_mobile_data_label">Date mobile</string>
@@ -92,5 +95,8 @@
   <string name="navring_choose_action_title">Alege acțiunea</string>
   <string name="select_application">Selectaţi aplicaţia</string>
   <string name="lockscreen_target_empty">Gol</string>
+  <string name="interruption_level_silent">Silențios</string>
+  <string name="zen_silent_with_warning">Fără întreruperi, exceptând alarme.</string>
+  <string name="dynamic_qs_tile_next_alarm_label">Următoarea alarmă</string>
   <string name="dynamic_qs_tile_su_label">Acces root</string>
 </resources>
