@@ -131,6 +131,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.android.internal.actions.ActionUtils;
 import com.android.internal.navigation.BarTransitions;
 import com.android.internal.navigation.BaseNavigationBar;
 import com.android.internal.navigation.NavigationController;
@@ -643,7 +644,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         mNavigationBarView.setDisabledFlags(mDisabled);
         mNavigationBarView.setStatusBarCallbacks(this);
         addNavigationBarCallback(mNavigationBarView);
-        mNavigationBarView.updateResources(getNavbarThemedResources());
+        mNavigationBarView.updateResources(ActionUtils.getNavbarThemedResources(mContext));
         mNavigationBarView.notifyInflateFromUser(); // let bar know we're not starting from boot
         addNavigationBar(true); // dynamically adding nav bar, reset System UI visibility!
     }
@@ -997,7 +998,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
 
             if (showNav && !mRecreating) {
                 mNavigationBarView = mNavigationController.getNavigationBarView();
-                mNavigationBarView.updateResources(getNavbarThemedResources());
+                mNavigationBarView.updateResources(ActionUtils.getNavbarThemedResources(mContext));
                 mNavigationBarView.setDisabledFlags(mDisabled);
                 mNavigationBarView.setStatusBarCallbacks(this);
                 addNavigationBarCallback(mNavigationBarView);
@@ -1664,18 +1665,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         lp.setTitle("NavigationBar");
         lp.windowAnimations = 0;
         return lp;
-    }
-
-    private Resources getNavbarThemedResources() {
-        String pkgName = mCurrentTheme.getOverlayPkgNameForApp(ThemeConfig.SYSTEMUI_NAVBAR_PKG);
-        Resources res = null;
-        try {
-            res = mContext.getPackageManager().getThemedResourcesForApplication(
-                    mContext.getPackageName(), pkgName);
-        } catch (PackageManager.NameNotFoundException e) {
-            res = mContext.getResources();
-        }
-        return res;
     }
 
     private void addHeadsUpView() {
@@ -3949,7 +3938,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         repositionNavigationBar();
         addHeadsUpView();
         if (mNavigationBarView != null) {
-            mNavigationBarView.updateResources(getNavbarThemedResources());
+            mNavigationBarView.updateResources(ActionUtils.getNavbarThemedResources(mContext));
         }
 
         // recreate StatusBarIconViews.
@@ -4049,7 +4038,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         }
 
         if (mNavigationBarView != null)  {
-            mNavigationBarView.updateResources(getNavbarThemedResources());
+            mNavigationBarView.updateResources(ActionUtils.getNavbarThemedResources(mContext));
             updateSearchPanel();
         }
     }
