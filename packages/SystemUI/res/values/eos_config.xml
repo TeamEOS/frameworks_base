@@ -20,6 +20,29 @@
 
          Default value is a 35% increase in allowed "sloppiness".
          Adjust in overlay for device specific precision -->
-    <integer name="config_fling_touchslop_increase_factor">35</integer>
+    <item name="config_fling_touchslop_increase_factor" format="float" type="dimen">1.35</item>
 
+    <!-- Fling default long swipe thresholds as percentage of bar width/height-->
+    <item name="config_FlingLongSwipePortraitLeft" format="float" type="dimen">0.4</item>
+    <item name="config_FlingLongSwipePortraitRight" format="float" type="dimen">0.4</item>
+    <item name="config_FlingLongSwipeLandscapeLeft" format="float" type="dimen">0.35</item>
+    <item name="config_FlingLongSwipeLandscapeRight" format="float" type="dimen">0.35</item>
+    <item name="config_FlingLongSwipeVerticalUp" format="float" type="dimen">0.4</item>
+    <item name="config_FlingLongSwipeVerticalDown" format="float" type="dimen">0.4</item>
+
+    <!-- Pulse visualizer -->
+    <!-- Height of each filled in block -->
+    <dimen name="pulse_path_effect_1">8dp</dimen>
+    <!-- Height of each empty block -->
+    <dimen name="pulse_path_effect_2">1dp</dimen>
+    <!-- Width of each eq bar -->
+    <dimen name="pulse_path_stroke_width">20dp</dimen>
+    <!-- Default bar fill -->
+    <color name="pulse_fill_color">#ffffffff</color>
+    <!-- The amount of divisions to make for eq bars -->
+    <integer name="pulse_divisions">16</integer>
+    <!-- fudge factors to tweak display for various configs
+        ends up being dB = (dB * fuzz_factor + db_fuzz) -->
+    <integer name="pulse_db_fuzz_factor">0</integer>
+    <integer name="pulse_db_fuzz">0</integer>
 </resources>
