@@ -138,6 +138,7 @@ import com.android.internal.actions.ActionUtils;
 import com.android.internal.navigation.BarTransitions;
 import com.android.internal.navigation.BaseNavigationBar;
 import com.android.internal.navigation.NavigationController;
+import com.android.internal.navigation.Navigator;
 import com.android.internal.navigation.StatusbarImpl;
 import com.android.internal.statusbar.StatusBarIcon;
 import com.android.keyguard.KeyguardHostView.OnDismissAction;
@@ -1538,9 +1539,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
 
         if (mNavigationBarView != null) {
             WindowManager.LayoutParams lp =
-                (android.view.WindowManager.LayoutParams) mNavigationBarView.getLayoutParams();
+                (android.view.WindowManager.LayoutParams) mNavigationBarView.getBaseView().getLayoutParams();
             lp.flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
-            mWindowManager.updateViewLayout(mNavigationBarView, lp);
+            mWindowManager.updateViewLayout(mNavigationBarView.getBaseView(), lp);
         }
     }
 
@@ -1549,9 +1550,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         super.hideSearchPanel();
         if (mNavigationBarView != null) {
             WindowManager.LayoutParams lp =
-                (android.view.WindowManager.LayoutParams) mNavigationBarView.getLayoutParams();
+                (android.view.WindowManager.LayoutParams) mNavigationBarView.getBaseView().getLayoutParams();
             lp.flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
-            mWindowManager.updateViewLayout(mNavigationBarView, lp);
+            mWindowManager.updateViewLayout(mNavigationBarView.getBaseView(), lp);
         }
     }
 
@@ -1667,7 +1668,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
 
         prepareNavigationBarView(forceReset);
 
-        mWindowManager.addView(mNavigationBarView, getNavigationBarLayoutParams());
+        mWindowManager.addView(mNavigationBarView.getBaseView(), getNavigationBarLayoutParams());
         mNavigationBarOverlay.setNavigationBar(mNavigationBarView);
     }
 
@@ -1676,16 +1677,16 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         if (mNavigationBarView == null) return;
 
         removeNavigationBarCallback(mNavigationBarView);
-        mWindowManager.removeView(mNavigationBarView);
+        mWindowManager.removeView(mNavigationBarView.getBaseView());
         mNavigationBarView = null;
     }
 
     private void repositionNavigationBar() {
-        if (mNavigationBarView == null || !mNavigationBarView.isAttachedToWindow()) return;
+        if (mNavigationBarView == null || !mNavigationBarView.getBaseView().isAttachedToWindow()) return;
 
         prepareNavigationBarView(false);
 
-        mWindowManager.updateViewLayout(mNavigationBarView, getNavigationBarLayoutParams());
+        mWindowManager.updateViewLayout(mNavigationBarView.getBaseView(), getNavigationBarLayoutParams());
     }
 
     private void notifyNavigationBarScreenOn(boolean screenOn) {
@@ -1919,7 +1920,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     @Override
     protected void refreshLayout(int layoutDirection) {
         if (mNavigationBarView != null) {
-            mNavigationBarView.setLayoutDirection(layoutDirection);
+            mNavigationBarView.getBaseView().setLayoutDirection(layoutDirection);
         }
         refreshAllStatusBarIcons();
     }
@@ -4366,7 +4367,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             mStatusBarWindow = null;
         }
         if (mNavigationBarView != null) {
-            mWindowManager.removeViewImmediate(mNavigationBarView);
+            mWindowManager.removeViewImmediate(mNavigationBarView.getBaseView());
             mNavigationBarView = null;
         }
         if (mHandlerThread != null) {
@@ -4842,7 +4843,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         return mKeyguardMaxNotificationCount;
     }
 
-    public BaseNavigationBar getNavigationBarView() {
+    public Navigator getNavigationBarView() {
         return mNavigationBarView;
     }
 

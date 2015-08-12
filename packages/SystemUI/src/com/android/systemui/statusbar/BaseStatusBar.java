@@ -90,6 +90,7 @@ import android.widget.TextView;
 import com.android.internal.navigation.BaseNavigationBar;
 import com.android.internal.navigation.Hintable;
 import com.android.internal.navigation.NavigationBarOverlay;
+import com.android.internal.navigation.Navigator;
 import com.android.internal.statusbar.IStatusBarService;
 import com.android.internal.statusbar.StatusBarIcon;
 import com.android.internal.statusbar.StatusBarIconList;
@@ -188,8 +189,8 @@ public abstract class BaseStatusBar extends SystemUI implements
     protected int mLayoutDirection = -1; // invalid
     protected AccessibilityManager mAccessibilityManager;
 
-    // on-screen navigation buttons
-    protected BaseNavigationBar mNavigationBarView = null;
+    // on-screen navigation implementation
+    protected Navigator mNavigationBarView = null;
 
     protected Boolean mScreenOn;
 
