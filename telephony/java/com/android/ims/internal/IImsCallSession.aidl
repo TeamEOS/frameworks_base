@@ -57,7 +57,7 @@ interface IImsCallSession {
     /**
      * Gets the remote call profile that this session is associated with
      *
-     * @return the local call profile that this session is associated with
+     * @return the remote call profile that this session is associated with
      */
     ImsCallProfile getRemoteCallProfile();
 
@@ -133,13 +133,6 @@ interface IImsCallSession {
      * @see Listener#callSessionStarted
      */
     void accept(int callType, in ImsStreamMediaProfile profile);
-
-    /**
-     * Deflects an incoming call to given number.
-     *
-     * @param deflectNumber number to deflect the call
-     */
-    void deflect(String deflectNumber);
 
     /**
      * Rejects an incoming call or session update.
@@ -256,13 +249,6 @@ interface IImsCallSession {
      * intermediates between the propriety implementation and Telecomm/InCall.
      */
     IImsVideoCallProvider getVideoCallProvider();
-
-    /**
-     * Gets the call substate for this session.
-     *
-     * @return the call substate for this session.
-     */
-    int getCallSubstate();
 
     /**
      * Determines if the current session is multiparty.

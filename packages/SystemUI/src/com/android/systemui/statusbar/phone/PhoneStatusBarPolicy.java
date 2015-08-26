@@ -316,7 +316,8 @@ public class PhoneStatusBarPolicy {
                     simState = IccCardConstants.State.PUK_REQUIRED;
                 }
                 else {
-                    simState = IccCardConstants.State.PERSO_LOCKED;
+//                    simState = IccCardConstants.State.PERSO_LOCKED;
+                    simState = IccCardConstants.State.UNKNOWN;
                 }
             } else {
                 simState = IccCardConstants.State.UNKNOWN;

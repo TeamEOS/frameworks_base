@@ -361,13 +361,6 @@ public abstract class InCallService extends Service {
             public abstract void onPeerDimensionsChanged(int width, int height);
 
             /**
-             * Handles a change to the video quality.
-             *
-             * @param videoQuality  The updated peer video quality.
-             */
-            public abstract void onVideoQualityChanged(int videoQuality);
-
-            /**
              * Handles an update to the total data used for the current session.
              *
              * @param dataUsage The updated data usage.

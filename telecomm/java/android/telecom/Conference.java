@@ -17,12 +17,10 @@
 package android.telecom;
 
 import android.annotation.SystemApi;
-import android.telecom.Connection.VideoProvider;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -33,9 +31,13 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 @SystemApi
 public abstract class Conference implements IConferenceable {
+
+    /**
+     * Used to indicate that the conference connection time is not specified.  If not specified,
+     * Telecom will set the connect time.
+     */
     public static long CONNECT_TIME_NOT_SPECIFIED = 0;
-/** @hide */
-    public static final long NO_CONNECTTIME = 0;
+
     /** @hide */
     public abstract static class Listener {
         public void onStateChanged(Conference conference, int oldState, int newState) {}
@@ -45,8 +47,6 @@ public abstract class Conference implements IConferenceable {
         public void onConferenceableConnectionsChanged(
                 Conference conference, List<Connection> conferenceableConnections) {}
         public void onDestroyed(Conference conference) {}
-        public void onVideoStateChanged(Conference c, int videoState) { }
-        public void onVideoProviderChanged(Conference c, Connection.VideoProvider videoProvider) {}
         public void onConnectionCapabilitiesChanged(
                 Conference conference, int connectionCapabilities) {}
     }
@@ -65,7 +65,8 @@ public abstract class Conference implements IConferenceable {
     private DisconnectCause mDisconnectCause;
     private int mConnectionCapabilities;
     private String mDisconnectMessage;
-    private long mConnectTimeMillis = NO_CONNECTTIME;
+    private long mConnectTimeMillis = CONNECT_TIME_NOT_SPECIFIED;
+
     private final Connection.Listener mConnectionDeathListener = new Connection.Listener() {
         @Override
         public void onDestroyed(Connection c) {
@@ -179,22 +180,6 @@ public abstract class Conference implements IConferenceable {
     }
 
     /**
-     * Returns VideoProvider of the primary call. This can be null.
-     *  @hide
-     */
-    public VideoProvider getVideoProvider() {
-        return null;
-    }
-
-    /**
-     * Returns video state of the primary call.
-     *  @hide
-     */
-    public int getVideoState() {
-        return VideoProfile.VideoState.AUDIO_ONLY;
-    }
-
-    /**
      * Invoked when the Conference and all it's {@link Connection}s should be disconnected.
      */
     public void onDisconnect() {}
@@ -205,14 +190,6 @@ public abstract class Conference implements IConferenceable {
      * @param connection The connection to separate.
      */
     public void onSeparate(Connection connection) {}
-
-    /**
-     * Invoked when the conference adds a participant to the conference call.
-     *
-     * @param participant The participant to be added with conference call.
-     * @hide
-     */
-    public void onAddParticipant(String participant) {}
 
     /**
      * Invoked when the specified {@link Connection} should merged with the conference call.
@@ -277,14 +254,6 @@ public abstract class Conference implements IConferenceable {
     }
 
     /**
-     * Sets state to be dialing.
-     * @hide
-     */
-    public final void setDialing() {
-        setState(Connection.STATE_DIALING);
-    }
-
-    /**
      * Sets state to be active.
      */
     public final void setActive() {
@@ -340,7 +309,6 @@ public abstract class Conference implements IConferenceable {
      * @return True if the connection was successfully added.
      */
     public final boolean addConnection(Connection connection) {
-        Log.d(this, "Connection=%s, connection=", connection);
         if (connection != null && !mChildConnections.contains(connection)) {
             if (connection.setConference(this)) {
                 mChildConnections.add(connection);
@@ -385,26 +353,6 @@ public abstract class Conference implements IConferenceable {
             }
         }
         fireOnConferenceableConnectionsChanged();
-    }
-
-    /**
-     * @hide
-     */
-    public final void setVideoState(Connection c, int videoState) {
-        Log.d(this, "setVideoState Conference: %s Connection: %s VideoState: %s",
-                this, c, videoState);
-        for (Listener l : mListeners) {
-            l.onVideoStateChanged(this, videoState);
-        }
-    }
-
-    /** @hide */
-    public final void setVideoProvider(Connection c, Connection.VideoProvider videoProvider) {
-        Log.d(this, "setVideoProvider Conference: %s Connection: %s VideoState: %s",
-                this, c, videoProvider);
-        for (Listener l : mListeners) {
-            l.onVideoProviderChanged(this, videoProvider);
-        }
     }
 
     private final void fireOnConferenceableConnectionsChanged() {
@@ -480,10 +428,22 @@ public abstract class Conference implements IConferenceable {
         return mUnmodifiableChildConnections.get(0);
     }
 
-    public void setConnectTimeMillis(long oldConnectTimeMillis) {
-        mConnectTimeMillis = oldConnectTimeMillis;
+    /**
+     * Sets the connect time of the {@code Conference}.
+     *
+     * @param connectTimeMillis The connection time, in milliseconds.
+     */
+    public void setConnectTimeMillis(long connectTimeMillis) {
+        mConnectTimeMillis = connectTimeMillis;
     }
 
+    /**
+     * Retrieves the connect time of the {@code Conference}, if specified.  A value of
+     * {@link #CONNECT_TIME_NOT_SPECIFIED} indicates that Telecom should determine the start time
+     * of the conference.
+     *
+     * @return The time the {@code Conference} has been connected.
+     */
     public long getConnectTimeMillis() {
         return mConnectTimeMillis;
     }
@@ -502,7 +462,6 @@ public abstract class Conference implements IConferenceable {
 
     private void setState(int newState) {
         if (newState != Connection.STATE_ACTIVE &&
-                newState != Connection.STATE_DIALING &&
                 newState != Connection.STATE_HOLDING &&
                 newState != Connection.STATE_DISCONNECTED) {
             Log.w(this, "Unsupported state transition for Conference call.",
@@ -524,16 +483,5 @@ public abstract class Conference implements IConferenceable {
             c.removeConnectionListener(mConnectionDeathListener);
         }
         mConferenceableConnections.clear();
-    }
-
-    @Override
-    public String toString() {
-        return String.format(Locale.US,
-                "[State: %s,Capabilites: %s, VideoState: %s, VideoProvider: %s, ThisObject %s]",
-                Connection.stateToString(mState),
-                PhoneCapabilities.toString(mConnectionCapabilities),
-                getVideoState(),
-                getVideoProvider(),
-                super.toString());
     }
 }

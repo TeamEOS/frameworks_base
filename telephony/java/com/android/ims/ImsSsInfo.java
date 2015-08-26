@@ -34,7 +34,6 @@ public class ImsSsInfo implements Parcelable {
 
     // 0: disabled, 1: enabled
     public int mStatus;
-    public String mIcbNum;
 
     public ImsSsInfo() {
     }
@@ -51,7 +50,6 @@ public class ImsSsInfo implements Parcelable {
     @Override
     public void writeToParcel(Parcel out, int flags) {
         out.writeInt(mStatus);
-        out.writeString(mIcbNum);
     }
 
     @Override
@@ -61,7 +59,6 @@ public class ImsSsInfo implements Parcelable {
 
     private void readFromParcel(Parcel in) {
         mStatus = in.readInt();
-        mIcbNum = in.readString();
     }
 
     public static final Creator<ImsSsInfo> CREATOR =

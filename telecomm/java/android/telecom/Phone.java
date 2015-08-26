@@ -111,8 +111,7 @@ public final class Phone {
 
     /** {@hide} */
     final void internalAddCall(ParcelableCall parcelableCall) {
-        Call call = new Call(this, parcelableCall.getId(), mInCallAdapter,
-                parcelableCall.mIsActiveSub, parcelableCall.getState());
+        Call call = new Call(this, parcelableCall.getId(), mInCallAdapter);
         mCallByTelecomCallId.put(parcelableCall.getId(), call);
         mCalls.add(call);
         checkCallTree(parcelableCall);
@@ -261,17 +260,6 @@ public final class Phone {
      */
     public final void setProximitySensorOff(boolean screenOnImmediately) {
         mInCallAdapter.turnProximitySensorOff(screenOnImmediately);
-    }
-
-    /**
-     * Instructs Telecomm to switch to other active subscripion
-     *
-     * @param subId switch to this subscription
-     * @param retainLch whether LCH on switched sub should be retained.
-     * {@hide}
-     */
-    public void switchToOtherActiveSub(String subId, boolean retainLch) {
-        mInCallAdapter.switchToOtherActiveSub(subId, retainLch);
     }
 
     /**

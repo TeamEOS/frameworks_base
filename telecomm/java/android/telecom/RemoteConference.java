@@ -43,8 +43,6 @@ public final class RemoteConference {
         public void onConnectionCapabilitiesChanged(
                 RemoteConference conference,
                 int connectionCapabilities) {}
-        /** @hide */
-        public void onPropertiesChanged(RemoteConference conference, int properties) {}
         public void onConferenceableConnectionsChanged(
                 RemoteConference conference,
                 List<RemoteConnection> conferenceableConnections) {}
@@ -65,7 +63,6 @@ public final class RemoteConference {
     private int mState = Connection.STATE_NEW;
     private DisconnectCause mDisconnectCause;
     private int mConnectionCapabilities;
-    private int mCallProperties;
 
     /** {@hide} */
     RemoteConference(String id, IConnectionService connectionService) {
@@ -139,16 +136,6 @@ public final class RemoteConference {
         }
     }
 
-    /** {@hide} */
-    void setCallProperties(int properties) {
-        if (mCallProperties != properties) {
-            mCallProperties = properties;
-            for (Callback c : mCallbacks) {
-                c.onPropertiesChanged(this, mCallProperties);
-            }
-        }
-    }
-
     /** @hide */
     void setConferenceableConnections(List<RemoteConnection> conferenceableConnections) {
         mConferenceableConnections.clear();
@@ -184,11 +171,6 @@ public final class RemoteConference {
 
     public final int getConnectionCapabilities() {
         return mConnectionCapabilities;
-    }
-
-    /** @hide */
-    public final int getCallProperties() {
-        return mCallProperties;
     }
 
     public void disconnect() {

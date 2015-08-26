@@ -81,7 +81,7 @@ public class CarrierText extends TextView {
      */
     private static enum StatusMode {
         Normal, // Normal case (sim card present, it's not locked)
-        PersoLocked, // SIM card is 'perso locked'.
+//        PersoLocked, // SIM card is 'perso locked'.
         SimMissing, // SIM card is missing.
         SimMissingLocked, // SIM card is missing, and device isn't provisioned; don't allow access
         SimPukLocked, // SIM card is PUK locked because SIM entered wrong too many times
@@ -211,10 +211,10 @@ public class CarrierText extends TextView {
                 carrierText = ""; // nothing to display yet.
                 break;
 
-            case PersoLocked:
-                carrierText = makeCarrierStringOnEmergencyCapable(
-                        getContext().getText(R.string.keyguard_perso_locked_message), text);
-                break;
+//            case PersoLocked:
+//                carrierText = makeCarrierStringOnEmergencyCapable(
+//                        getContext().getText(R.string.keyguard_perso_locked_message), text);
+//                break;
 
             case SimMissing:
                 carrierText = null;
@@ -254,10 +254,10 @@ public class CarrierText extends TextView {
             if (networkType == TelephonyManager.NETWORK_TYPE_UNKNOWN) {
                 networkType = serviceState.getVoiceNetworkType();
             }
-            if (networkType != TelephonyManager.NETWORK_TYPE_UNKNOWN) {
-                TelephonyManager tm = TelephonyManager.from(mContext);
-                carrierText = carrierText + " " + tm.networkTypeToString(networkType);
-            }
+//            if (networkType != TelephonyManager.NETWORK_TYPE_UNKNOWN) {
+//                TelephonyManager tm = TelephonyManager.from(mContext);
+//                carrierText = carrierText + " " + tm.networkTypeToString(networkType);
+//            }
         }
 
         if (DEBUG) Log.d(TAG, "getCarrierTextForSimState: carrierText=" + carrierText);
@@ -290,12 +290,12 @@ public class CarrierText extends TextView {
                         simState == IccCardConstants.State.PERM_DISABLED);
 
         // Assume we're PERSO_LOCKED if not provisioned
-        simState = missingAndNotProvisioned ? IccCardConstants.State.PERSO_LOCKED : simState;
+//        simState = missingAndNotProvisioned ? IccCardConstants.State.PERSO_LOCKED : simState;
         switch (simState) {
             case ABSENT:
                 return StatusMode.SimMissing;
-            case PERSO_LOCKED:
-                return StatusMode.PersoLocked;
+//            case PERSO_LOCKED:
+//                return StatusMode.PersoLocked;
             case NOT_READY:
                 return StatusMode.SimNotReady;
             case PIN_REQUIRED:
@@ -342,9 +342,9 @@ public class CarrierText extends TextView {
         int carrierHelpTextId = 0;
         StatusMode status = getStatusForIccState(simState);
         switch (status) {
-            case PersoLocked:
-                carrierHelpTextId = R.string.keyguard_instructions_when_pattern_disabled;
-                break;
+//            case PersoLocked:
+//                carrierHelpTextId = R.string.keyguard_instructions_when_pattern_disabled;
+//                break;
 
             case SimMissing:
                 carrierHelpTextId = R.string.keyguard_missing_sim_instructions_long;

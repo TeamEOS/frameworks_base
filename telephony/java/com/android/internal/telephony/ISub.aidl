@@ -77,7 +77,6 @@ interface ISub {
     List<SubscriptionInfo> getActiveSubscriptionInfoList();
 
     /**
-     * Get the count of activated SUB(s)
      * @return the number of active subscriptions
      */
     int getActiveSubInfoCount();
@@ -164,24 +163,6 @@ interface ISub {
 
     void clearDefaultsForInactiveSubIds();
 
-    boolean isSMSPromptEnabled();
-
-    void setSMSPromptEnabled(boolean enabled);
-
-    boolean isVoicePromptEnabled();
-
-    void setVoicePromptEnabled(boolean enabled);
-
-    void activateSubId(int subId);
-
-    void deactivateSubId(int subId);
-
-    int setSubState(int subId, int subStatus);
-
-    int getSubState(int subId);
-
-    int getOnDemandDataSubId();
- 
     int[] getActiveSubIdList();
 
     /**

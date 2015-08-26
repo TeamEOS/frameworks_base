@@ -114,6 +114,10 @@ public class ImsCallProfile implements Parcelable {
     public static final String EXTRA_CALL_MODE_CHANGEABLE = "call_mode_changeable";
     public static final String EXTRA_CONFERENCE_AVAIL = "conference_avail";
 
+    // Extra string for internal use only. OEMs should not use
+    // this for packing extras.
+    public static final String EXTRA_OEM_EXTRAS = "OemCallExtras";
+
     /**
      * Integer extra properties
      *  oir : Rule for originating identity (number) presentation, MO/MT.
@@ -132,7 +136,6 @@ public class ImsCallProfile implements Parcelable {
     public static final String EXTRA_OIR = "oir";
     public static final String EXTRA_CNAP = "cnap";
     public static final String EXTRA_DIALSTRING = "dialstring";
-    public static final String EXTRA_CALL_DOMAIN = "call_domain";
 
     /**
      * Values for EXTRA_OIR / EXTRA_CNAP
@@ -152,7 +155,7 @@ public class ImsCallProfile implements Parcelable {
     public static final int DIALSTRING_USSD = 2;
 
     /**
-     * Values for causes that restricts that restrict call types
+     * Values for causes that restrict call types
      */
     // Default cause not restricted at peer and HD is supported
     public static final int CALL_RESTRICT_CAUSE_NONE = 0;
@@ -169,25 +172,11 @@ public class ImsCallProfile implements Parcelable {
      *  cna : Calling name
      *  ussd : For network-initiated USSD, MT only
      *  remote_uri : Connected user identity (it can be used for the conference)
-     *  parrentCallId: Parent call ID info.
-     *  ChildNum: Child number info.
-     *  Codec: Codec info.
-     *  DisplayText: Display text for the call.
-     *  AdditionalCallInfo: Additional call info.
      */
     public static final String EXTRA_OI = "oi";
     public static final String EXTRA_CNA = "cna";
     public static final String EXTRA_USSD = "ussd";
     public static final String EXTRA_REMOTE_URI = "remote_uri";
-    public static final String EXTRA_PARENT_CALL_ID = "parentCallId";
-    public static final String EXTRA_CHILD_NUMBER = "ChildNum";
-    public static final String EXTRA_CODEC = "Codec";
-    public static final String EXTRA_DISPLAY_TEXT = "DisplayText";
-    public static final String EXTRA_ADDITIONAL_CALL_INFO = "AdditionalCallInfo";
-
-    // Extra string for internal use only. OEMs should not use
-    // this for packing extras.
-    public static final String EXTRA_OEM_EXTRAS = "OemCallExtras";
 
     public int mServiceType;
     public int mCallType;
@@ -280,6 +269,7 @@ public class ImsCallProfile implements Parcelable {
     public String toString() {
         return "{ serviceType=" + mServiceType +
                 ", callType=" + mCallType +
+                ", restrictCause=" + mRestrictCause +
                 ", callExtras=" + mCallExtras.toString() +
                 ", mediaProfile=" + mMediaProfile.toString() + " }";
     }
@@ -323,31 +313,22 @@ public class ImsCallProfile implements Parcelable {
      * @param callType The call type.
      * @return The video state.
      */
-    public static int getVideoStateFromImsCallProfile(ImsCallProfile callProfile) {
-        int videostate = VideoProfile.VideoState.AUDIO_ONLY;
-        switch (callProfile.mCallType) {
+    public static int getVideoStateFromCallType(int callType) {
+        switch (callType) {
+            case CALL_TYPE_VT_NODIR:
+                return VideoProfile.VideoState.PAUSED |
+                        VideoProfile.VideoState.BIDIRECTIONAL;
             case CALL_TYPE_VT_TX:
-                videostate = VideoProfile.VideoState.TX_ENABLED;
-                break;
+                return VideoProfile.VideoState.TX_ENABLED;
             case CALL_TYPE_VT_RX:
-                videostate = VideoProfile.VideoState.RX_ENABLED;
-                break;
+                return VideoProfile.VideoState.RX_ENABLED;
             case CALL_TYPE_VT:
-                videostate = VideoProfile.VideoState.BIDIRECTIONAL;
-                break;
+                return VideoProfile.VideoState.BIDIRECTIONAL;
             case CALL_TYPE_VOICE:
-                videostate = VideoProfile.VideoState.AUDIO_ONLY;
-                break;
+                return VideoProfile.VideoState.AUDIO_ONLY;
             default:
-                videostate = VideoProfile.VideoState.AUDIO_ONLY;
-                break;
+                return VideoProfile.VideoState.AUDIO_ONLY;
         }
-        if (callProfile.isVideoPaused() && videostate != VideoProfile.VideoState.AUDIO_ONLY) {
-            videostate |= VideoProfile.VideoState.PAUSED;
-        } else {
-            videostate &= ~VideoProfile.VideoState.PAUSED;
-        }
-        return videostate;
     }
 
     /**
@@ -403,14 +384,6 @@ public class ImsCallProfile implements Parcelable {
             default:
                 return PhoneConstants.PRESENTATION_UNKNOWN;
         }
-    }
-
-    /**
-     * Checks if video call is paused
-     * @return true if call is video paused
-     */
-    public boolean isVideoPaused() {
-        return mMediaProfile.mVideoDirection == ImsStreamMediaProfile.DIRECTION_INACTIVE;
     }
 
     /**

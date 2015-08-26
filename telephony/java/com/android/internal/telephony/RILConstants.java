@@ -1,8 +1,5 @@
 /*
  * Copyright (C) 2006 The Android Open Source Project
- * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
- *
- * Not a Contribution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,10 +57,9 @@ public interface RILConstants {
     int ILLEGAL_SIM_OR_ME = 15;               /* network selection failure due
                                                  to wrong SIM/ME and no
                                                  retries needed */
-
-    int MISSING_RESOURCE = 16;                 /* no logical channel available */
-    int NO_SUCH_ELEMENT = 17;                  /* application not found on SIM */
-    int DIAL_MODIFIED_TO_USSD = 18;            /* DIAL request modified to USSD */
+    int MISSING_RESOURCE = 16;                /* no logical channel available */
+    int NO_SUCH_ELEMENT = 17;                 /* application not found on SIM */
+    int DIAL_MODIFIED_TO_USSD = 18;           /* DIAL request modified to USSD */
     int DIAL_MODIFIED_TO_SS = 19;             /* DIAL request modified to SS */
     int DIAL_MODIFIED_TO_DIAL = 20;           /* DIAL request modified to DIAL with different data*/
     int USSD_MODIFIED_TO_DIAL = 21;           /* USSD request modified to DIAL */
@@ -73,7 +69,7 @@ public interface RILConstants {
     int SS_MODIFIED_TO_USSD = 25;             /* SS request modified to USSD */
     int SUBSCRIPTION_NOT_SUPPORTED = 26;      /* Subscription not supported */
     int SS_MODIFIED_TO_SS = 27;               /* SS request modified to different SS request */
-    int INVALID_PARAMETER = 29;
+
 
     /* NETWORK_MODE_* See ril.h RIL_REQUEST_SET_PREFERRED_NETWORK_TYPE */
     int NETWORK_MODE_WCDMA_PREF     = 0; /* GSM/WCDMA (WCDMA preferred) */
@@ -92,17 +88,6 @@ public interface RILConstants {
     int NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA = 10; /* LTE, CDMA, EvDo, GSM/WCDMA */
     int NETWORK_MODE_LTE_ONLY       = 11; /* LTE Only mode. */
     int NETWORK_MODE_LTE_WCDMA      = 12; /* LTE/WCDMA */
-    int NETWORK_MODE_TD_SCDMA_ONLY            = 13; /* TD-SCDMA only */
-    int NETWORK_MODE_TD_SCDMA_WCDMA           = 14; /* TD-SCDMA and WCDMA */
-    int NETWORK_MODE_TD_SCDMA_LTE             = 15; /* TD-SCDMA and LTE */
-    int NETWORK_MODE_TD_SCDMA_GSM             = 16; /* TD-SCDMA and GSM */
-    int NETWORK_MODE_TD_SCDMA_GSM_LTE         = 17; /* TD-SCDMA,GSM and LTE */
-    int NETWORK_MODE_TD_SCDMA_GSM_WCDMA       = 18; /* TD-SCDMA, GSM/WCDMA */
-    int NETWORK_MODE_TD_SCDMA_WCDMA_LTE       = 19; /* TD-SCDMA, WCDMA and LTE */
-    int NETWORK_MODE_TD_SCDMA_GSM_WCDMA_LTE   = 20; /* TD-SCDMA, GSM/WCDMA and LTE */
-    int NETWORK_MODE_TD_SCDMA_CDMA_EVDO_GSM_WCDMA  = 21; /*TD-SCDMA,EvDo,CDMA,GSM/WCDMA*/
-    int NETWORK_MODE_TD_SCDMA_LTE_CDMA_EVDO_GSM_WCDMA = 22; /* TD-SCDMA/LTE/GSM/WCDMA, CDMA, and
-                                                               EvDo */
     int PREFERRED_NETWORK_MODE      = SystemProperties.getInt("ro.telephony.default_network",
             NETWORK_MODE_WCDMA_PREF);
 
@@ -198,7 +183,7 @@ cat include/telephony/ril.h | \
     int RIL_REQUEST_ENTER_SIM_PUK2 = 5;
     int RIL_REQUEST_CHANGE_SIM_PIN = 6;
     int RIL_REQUEST_CHANGE_SIM_PIN2 = 7;
-    int RIL_REQUEST_ENTER_DEPERSONALIZATION_CODE = 8;
+    int RIL_REQUEST_ENTER_NETWORK_DEPERSONALIZATION = 8;
     int RIL_REQUEST_GET_CURRENT_CALLS = 9;
     int RIL_REQUEST_DIAL = 10;
     int RIL_REQUEST_GET_IMSI = 11;
@@ -322,8 +307,6 @@ cat include/telephony/ril.h | \
     int RIL_REQUEST_SHUTDOWN = 129;
     int RIL_REQUEST_GET_RADIO_CAPABILITY = 130;
     int RIL_REQUEST_SET_RADIO_CAPABILITY = 131;
-    int RIL_REQUEST_GET_DATA_CALL_PROFILE = 132;
-    int RIL_REQUEST_SIM_GET_ATR = 133;
 
     int RIL_UNSOL_RESPONSE_BASE = 1000;
     int RIL_UNSOL_RESPONSE_RADIO_STATE_CHANGED = 1000;
@@ -371,6 +354,4 @@ cat include/telephony/ril.h | \
     int RIL_UNSOL_RADIO_CAPABILITY = 1042;
     int RIL_UNSOL_ON_SS = 1043;
     int RIL_UNSOL_STK_CC_ALPHA_NOTIFY = 1044;
-
-    int RIL_UNSOL_STK_SEND_SMS_RESULT = 11002; /* Samsung STK */
 }

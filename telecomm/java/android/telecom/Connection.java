@@ -21,7 +21,6 @@ import com.android.internal.telecom.IVideoProvider;
 
 import android.annotation.SystemApi;
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -50,8 +49,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @SystemApi
 public abstract class Connection implements IConferenceable {
 
-    private static final boolean DBG = false;
-
     public static final int STATE_INITIALIZING = 0;
 
     public static final int STATE_NEW = 1;
@@ -65,54 +62,6 @@ public abstract class Connection implements IConferenceable {
     public static final int STATE_HOLDING = 5;
 
     public static final int STATE_DISCONNECTED = 6;
-
-    /**
-     * Call substate bitmask values
-     */
-
-    /* Default case */
-
-    /**
-     * @hide
-     */
-    public static final int CALL_SUBSTATE_NONE = 0;
-
-    /* Indicates that the call is connected but audio attribute is suspended */
-
-    /**
-     * @hide
-     */
-    public static final int CALL_SUBSTATE_AUDIO_CONNECTED_SUSPENDED = 0x1;
-
-    /* Indicates that the call is connected but video attribute is suspended */
-
-    /**
-     * @hide
-     */
-    public static final int CALL_SUBSTATE_VIDEO_CONNECTED_SUSPENDED = 0x2;
-
-    /* Indicates that the call is established but media retry is needed */
-
-    /**
-     * @hide
-     */
-    public static final int CALL_SUBSTATE_AVP_RETRY = 0x4;
-
-    /* Indicates that the call is multitasking */
-
-    /**
-     * @hide
-     */
-    public static final int CALL_SUBSTATE_MEDIA_PAUSED = 0x8;
-
-    /* Mask containing all the call substate bits set */
-
-    /**
-     * @hide
-     */
-    public static final int CALL_SUBSTATE_ALL = CALL_SUBSTATE_AUDIO_CONNECTED_SUSPENDED |
-        CALL_SUBSTATE_VIDEO_CONNECTED_SUSPENDED | CALL_SUBSTATE_AVP_RETRY |
-        CALL_SUBSTATE_MEDIA_PAUSED;
 
     /** Connection can currently be put on hold or unheld. */
     public static final int CAPABILITY_HOLD = 0x00000001;
@@ -199,22 +148,10 @@ public abstract class Connection implements IConferenceable {
     public static final int CAPABILITY_GENERIC_CONFERENCE = 0x00004000;
 
     /**
-     * Add participant in an active or conference call option
-     * @hide
-     */
-    public static final int ADD_PARTICIPANT = 0x00008000;
-
-    /**
-     * Call type can be modified for IMS call
-     * @hide
-     */
-    public static final int CALL_TYPE_MODIFIABLE = 0x00020000;
-
-    /**
      * Speed up audio setup for MT call.
      * @hide
     */
-    public static final int CAPABILITY_SPEED_UP_MT_AUDIO = 0x00040000;
+    public static final int CAPABILITY_SPEED_UP_MT_AUDIO = 0x00008000;
 
     // Flag controlling whether PII is emitted into the logs
     private static final boolean PII_DEBUG = Log.isLoggable(android.util.Log.DEBUG);
@@ -302,12 +239,6 @@ public abstract class Connection implements IConferenceable {
         if (can(capabilities, CAPABILITY_GENERIC_CONFERENCE)) {
             builder.append(" CAPABILITY_GENERIC_CONFERENCE");
         }
-        if (can(capabilities, CALL_TYPE_MODIFIABLE)) {
-            builder.append(" CALL_TYPE_MODIFIABLE");
-        }
-        if (can(capabilities, ADD_PARTICIPANT)) {
-            builder.append(" ADD_PARTICIPANT");
-        }
         if (can(capabilities, CAPABILITY_SPEED_UP_MT_AUDIO)) {
             builder.append(" CAPABILITY_SPEED_UP_IMS_MT_AUDIO");
         }
@@ -319,7 +250,6 @@ public abstract class Connection implements IConferenceable {
     public abstract static class Listener {
         public void onStateChanged(Connection c, int state) {}
         public void onAddressChanged(Connection c, Uri newAddress, int presentation) {}
-        public void onExtrasUpdated(Connection c, Bundle extras) {}
         public void onCallerDisplayNameChanged(
                 Connection c, String callerDisplayName, int presentation) {}
         public void onVideoStateChanged(Connection c, int videoState) {}
@@ -328,7 +258,6 @@ public abstract class Connection implements IConferenceable {
         public void onPostDialChar(Connection c, char nextChar) {}
         public void onRingbackRequested(Connection c, boolean ringback) {}
         public void onDestroyed(Connection c) {}
-        public void onCallPropertiesChanged(Connection c, int callProperties) {}
         public void onConnectionCapabilitiesChanged(Connection c, int capabilities) {}
         public void onVideoProviderChanged(
                 Connection c, VideoProvider videoProvider) {}
@@ -337,11 +266,10 @@ public abstract class Connection implements IConferenceable {
         public void onConferenceablesChanged(
                 Connection c, List<IConferenceable> conferenceables) {}
         public void onConferenceChanged(Connection c, Conference conference) {}
-        public void onPhoneAccountChanged(Connection c, PhoneAccountHandle pHandle) {}
-        public void onCallSubstateChanged(Connection c, int substate) {}
         /** @hide */
         public void onConferenceParticipantsChanged(Connection c,
                 List<ConferenceParticipant> participants) {}
+        public void onConferenceStarted() {}
     }
 
     /** @hide */
@@ -396,11 +324,6 @@ public abstract class Connection implements IConferenceable {
          * Session modify request ignored due to invalid parameters.
          */
         public static final int SESSION_MODIFY_REQUEST_INVALID = 3;
-
-        /**
-         * Session modify request ignored due to invalid parameters.
-         */
-        public static final int SESSION_MODIFY_REQUEST_TIMED_OUT = 4;
 
         private static final int MSG_SET_VIDEO_CALLBACK = 1;
         private static final int MSG_SET_CAMERA = 2;
@@ -487,8 +410,7 @@ public abstract class Connection implements IConferenceable {
             }
 
             public void setDeviceOrientation(int rotation) {
-                mMessageHandler.obtainMessage(
-                        MSG_SET_DEVICE_ORIENTATION, rotation, 0).sendToTarget();
+                mMessageHandler.obtainMessage(MSG_SET_DEVICE_ORIENTATION, rotation).sendToTarget();
             }
 
             public void setZoom(float value) {
@@ -704,20 +626,6 @@ public abstract class Connection implements IConferenceable {
                 }
             }
         }
-
-        /**
-         * Invokes callback method defined in In-Call UI.
-         *
-         * @param videoQuality The updated video quality.
-         */
-        public void changeVideoQuality(int videoQuality) {
-            if (mVideoCallback != null) {
-                try {
-                    mVideoCallback.changeVideoQuality(videoQuality);
-                } catch (RemoteException ignored) {
-                }
-            }
-        }
     }
 
     private final Listener mConnectionDeathListener = new Listener() {
@@ -756,7 +664,6 @@ public abstract class Connection implements IConferenceable {
     private String mCallerDisplayName;
     private int mCallerDisplayNamePresentation;
     private boolean mRingbackRequested = false;
-    private int mCallProperties;
     private int mConnectionCapabilities;
     private VideoProvider mVideoProvider;
     private boolean mAudioModeIsVoip;
@@ -765,8 +672,6 @@ public abstract class Connection implements IConferenceable {
     private DisconnectCause mDisconnectCause;
     private Conference mConference;
     private ConnectionService mConnectionService;
-    private PhoneAccountHandle mPhoneAccountHandle = null;
-    private int mCallSubstate;
 
     /**
      * Create a new Connection.
@@ -822,21 +727,6 @@ public abstract class Connection implements IConferenceable {
      */
     public final int getVideoState() {
         return mVideoState;
-    }
-
-    /**
-     * Returns the call substate of the call.
-     * Valid values: {@link Connection#CALL_SUBSTATE_NONE},
-     * {@link Connection#CALL_SUBSTATE_AUDIO_CONNECTED_SUSPENDED},
-     * {@link Connection#CALL_SUBSTATE_VIDEO_CONNECTED_SUSPENDED},
-     * {@link Connection#CALL_SUBSTATE_AVP_RETRY},
-     * {@link Connection#CALL_SUBSTATE_MEDIA_PAUSED}.
-     *
-     * @param callSubstate The new call substate.
-     * @hide
-     */
-    public final int getCallSubstate() {
-        return mCallSubstate;
     }
 
     /**
@@ -965,14 +855,6 @@ public abstract class Connection implements IConferenceable {
     }
 
     /**
-     * Returns the connection's {@link CallProperties}
-     * @hide
-     */
-    public final int getCallProperties() {
-        return mCallProperties;
-    }
-
-    /**
      * Sets the value of the {@link #getAddress()} property.
      *
      * @param address The new address.
@@ -1026,25 +908,6 @@ public abstract class Connection implements IConferenceable {
     }
 
     /**
-     * Set the call substate for the connection.
-     * Valid values: {@link Connection#CALL_SUBSTATE_NONE},
-     * {@link Connection#CALL_SUBSTATE_AUDIO_CONNECTED_SUSPENDED},
-     * {@link Connection#CALL_SUBSTATE_VIDEO_CONNECTED_SUSPENDED},
-     * {@link Connection#CALL_SUBSTATE_AVP_RETRY},
-     * {@link Connection#CALL_SUBSTATE_MEDIA_PAUSED}.
-     *
-     * @param callSubstate The new call substate.
-     * @hide
-     */
-    public final void setCallSubstate(int callSubstate) {
-        Log.d(this, "setCallSubstate %d", callSubstate);
-        mCallSubstate = callSubstate;
-        for (Listener l : mListeners) {
-            l.onCallSubstateChanged(this, mCallSubstate);
-        }
-    }
-
-    /**
      * Sets state to active (e.g., an ongoing connection where two or more parties can actively
      * communicate).
      */
@@ -1052,20 +915,6 @@ public abstract class Connection implements IConferenceable {
         checkImmutable();
         setRingbackRequested(false);
         setState(STATE_ACTIVE);
-    }
-
-    /**
-     * Updates the call extras for the connection.
-     * @hide
-     */
-    public final void setExtras(Bundle extras) {
-        if (DBG) {
-            Log.d(this, "setExtras extras size= " + extras.size());
-        }
-
-        for (Listener l : mListeners) {
-            l.onExtrasUpdated(this, extras);
-        }
     }
 
     /**
@@ -1213,21 +1062,6 @@ public abstract class Connection implements IConferenceable {
     }
 
     /**
-     * Sets the connection's {@link CallProperties}.
-     *
-     * @param callProperties The new call properties.
-     * @hide
-     */
-    public final void setCallProperties(int callProperties) {
-        if (mCallProperties != callProperties) {
-            mCallProperties = callProperties;
-            for (Listener l : mListeners) {
-                l.onCallPropertiesChanged(this, mCallProperties);
-            }
-        }
-    }
-
-    /**
      * Tears down the Connection object.
      */
     public final void destroy() {
@@ -1313,23 +1147,6 @@ public abstract class Connection implements IConferenceable {
         return mUnmodifiableConferenceables;
     }
 
-    /**
-     * @hide.
-     */
-    public final void setPhoneAccountHandle(PhoneAccountHandle pHandle) {
-        mPhoneAccountHandle = pHandle;
-        for (Listener l : mListeners) {
-            l.onPhoneAccountChanged(this, pHandle);
-        }
-    }
-
-    /**
-     * @hide.
-     */
-    public final PhoneAccountHandle getPhoneAccountHandle() {
-        return mPhoneAccountHandle;
-    }
-
     /*
      * @hide
      */
@@ -1377,7 +1194,6 @@ public abstract class Connection implements IConferenceable {
             mConference = conference;
             if (mConnectionService != null && mConnectionService.containsConference(conference)) {
                 fireConferenceChanged();
-                onConferenceChanged();
             }
             return true;
         }
@@ -1422,18 +1238,6 @@ public abstract class Connection implements IConferenceable {
      * Notifies this Connection of a request to stop any currently playing DTMF tones.
      */
     public void onStopDtmfTone() {}
-
-    /**
-     * Notifies this to set local call hold.
-     * {@hide}
-     */
-    public void setLocalCallHold(int lchState) {}
-
-    /**
-     * Notifies this to set active subscription.
-     * {@hide}
-     */
-    public void setActiveSubscription() {}
 
     /**
      * Notifies this Connection of a request to disconnect.
@@ -1488,13 +1292,6 @@ public abstract class Connection implements IConferenceable {
 
     /**
      * Notifies this Connection, which is in {@link #STATE_RINGING}, of
-     * a request to deflect.
-     */
-    /** @hide */
-    public void onDeflect(String number) {}
-
-    /**
-     * Notifies this Connection, which is in {@link State#RINGING}, of
      * a request to reject.
      */
     public void onReject() {}
@@ -1503,23 +1300,6 @@ public abstract class Connection implements IConferenceable {
      * Notifies this Connection whether the user wishes to proceed with the post-dial DTMF codes.
      */
     public void onPostDialContinue(boolean proceed) {}
-
-    /**
-     * Merge this connection and the specified connection into a conference call.  Once the
-     * connections are merged, the calls should be added to the an existing or new
-     * {@code Conference} instance. For new {@code Conference} instances, use
-     * {@code ConnectionService#addConference}.
-     *
-     * @param otherConnection The connection with which this connection should be conferenced.
-     * @hide
-     */
-    public void onConferenceWith(Connection otherConnection) {}
-
-    /**
-     * Notifies this Connection that the conference which is set on it has changed.
-     * @hide
-     */
-    public void onConferenceChanged() {}
 
     static String toLogSafePhoneNumber(String number) {
         // For unknown number, log empty string.
@@ -1650,6 +1430,15 @@ public abstract class Connection implements IConferenceable {
             List<ConferenceParticipant> conferenceParticipants) {
         for (Listener l : mListeners) {
             l.onConferenceParticipantsChanged(this, conferenceParticipants);
+        }
+    }
+
+    /**
+     * Notifies listeners that a conference call has been started.
+     */
+    protected void notifyConferenceStarted() {
+        for (Listener l : mListeners) {
+            l.onConferenceStarted();
         }
     }
 }

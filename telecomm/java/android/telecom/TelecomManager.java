@@ -22,7 +22,6 @@ import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.telephony.TelephonyManager;
-import android.telephony.SubscriptionManager;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -152,14 +151,6 @@ public class TelecomManager {
      */
     public static final String EXTRA_UNKNOWN_CALL_HANDLE =
             "android.telecom.extra.UNKNOWN_CALL_HANDLE";
-
-    /**
-     * Similar to {@link #ACTION_INCOMING_CALL}, but is used only by Telephony to add a new
-     * sim-initiated MO call for carrier testing and for conference scenarios
-     * @hide
-     */
-    public static final String EXTRA_UNKNOWN_CALL_STATE =
-            "codeaurora.telecom.extra.UNKNOWN_CALL_STATE";
 
     /**
      * Optional extra for {@link android.telephony.TelephonyManager#ACTION_PHONE_STATE_CHANGED}
@@ -491,8 +482,6 @@ public class TelecomManager {
      *
      * @param uriScheme The URI scheme.
      * @return A list of {@code PhoneAccountHandle} objects supporting the URI scheme.
-     */
-    /**
      * @hide
      */
     @SystemApi
@@ -646,6 +635,7 @@ public class TelecomManager {
      * {@link PhoneAccountHandle#getComponentName()} does not match the package name of the app.
      *
      * @param account The complete {@link PhoneAccount}.
+     *
      * @hide
      */
     @SystemApi
@@ -762,26 +752,6 @@ public class TelecomManager {
     }
 
     /**
-     * Return the voicemail number for a given phone account.
-     *
-     * @param accountHandle The handle for the account to retrieve the voicemail number for.
-     * @return A string representation if the voicemail number.
-     *
-     * @hide
-     */
-    @SystemApi
-    public String getVoiceMailNumber(PhoneAccountHandle accountHandle) {
-        try {
-            if (isServiceConnected()) {
-                return getTelecomService().getVoiceMailNumber(accountHandle);
-            }
-        } catch (RemoteException e) {
-            Log.e(TAG, "RemoteException calling ITelecomService#getVoiceMailNumber.", e);
-        }
-        return null;
-    }
-
-    /**
      * Return the line 1 phone number for given phone account.
      *
      * @param accountHandle The handle for the account retrieve a number for.
@@ -825,6 +795,11 @@ public class TelecomManager {
      * {@link TelephonyManager#CALL_STATE_RINGING}
      * {@link TelephonyManager#CALL_STATE_OFFHOOK}
      * {@link TelephonyManager#CALL_STATE_IDLE}
+     *
+     * Note that this API does not require the
+     * {@link android.Manifest.permission#READ_PHONE_STATE} permission. This is intentional, to
+     * preserve the behavior of {@link TelephonyManager#getCallState()}, which also did not require
+     * the permission.
      * @hide
      */
     @SystemApi
@@ -947,35 +922,6 @@ public class TelecomManager {
     }
 
     /**
-     * Returns current active subscription.
-     * @hide
-     */
-    public int getActiveSubscription() {
-        try {
-            if (isServiceConnected()) {
-                return (int)getTelecomService().getActiveSubscription();
-            }
-        } catch (RemoteException e) {
-            Log.e(TAG, "RemoteException attempting to get the active subsription.", e);
-        }
-        return SubscriptionManager.INVALID_SUBSCRIPTION_ID;
-    }
-
-    /**
-     * switches to other active subscription.
-     * @hide
-     */
-    public void switchToOtherActiveSub(int subId) {
-        try {
-            if (isServiceConnected()) {
-                getTelecomService().switchToOtherActiveSub(subId);
-            }
-        } catch (RemoteException e) {
-            Log.e(TAG, "RemoteException attempting to switchToOtherActiveSub.", e);
-        }
-    }
-
-    /**
      * Registers a new incoming call. A {@link ConnectionService} should invoke this method when it
      * has an incoming call. The specified {@link PhoneAccountHandle} must have been registered
      * with {@link #registerPhoneAccount}. Once invoked, this method will cause the system to bind
@@ -1062,7 +1008,7 @@ public class TelecomManager {
      * @hide
      */
     @SystemApi
-     public boolean handleMmi(PhoneAccountHandle accountHandle, String dialString) {
+    public boolean handleMmi(PhoneAccountHandle accountHandle, String dialString) {
         ITelecomService service = getTelecomService();
         if (service != null) {
             try {
@@ -1072,7 +1018,7 @@ public class TelecomManager {
             }
         }
         return false;
-     }
+    }
 
     /**
      * @param accountHandle The handle for the account to derive an adn query URI for or

@@ -90,16 +90,6 @@ public final class RemoteConnection {
                 int connectionCapabilities) {}
 
         /**
-         * Indicates that the call properties of this {@code RemoteConnection} have changed.
-         * See {@link #getCallProperties()}.
-         *
-         * @param connection The {@code RemoteConnection} invoking this method.
-         * @param callProperties The new call properties of the {@code RemoteConnection}.
-         * @hide
-         */
-        public void onCallPropertiesChanged(RemoteConnection connection, int callProperties) {}
-
-        /**
          * Invoked when the post-dial sequence in the outgoing {@code Connection} has reached a
          * pause character. This causes the post-dial signals to stop pending user confirmation. An
          * implementation should present this choice to the user and invoke
@@ -171,16 +161,6 @@ public final class RemoteConnection {
         public void onVideoStateChanged(RemoteConnection connection, int videoState) {}
 
         /**
-         * Indicates that the call substate of this {@code RemoteConnection} has changed.
-         * See {@link #getCallSubstate()}.
-         *
-         * @param connection The {@code RemoteConnection} invoking this method.
-         * @param callSubstate The new call substate of the {@code RemoteConnection}.
-         * @hide
-         */
-        public void onCallSubstateChanged(RemoteConnection connection, int callSubstate) {}
-
-        /**
          * Indicates that this {@code RemoteConnection} has been destroyed. No further requests
          * should be made to the {@code RemoteConnection}, and references to it should be cleared.
          *
@@ -223,11 +203,6 @@ public final class RemoteConnection {
         public void onConferenceChanged(
                 RemoteConnection connection,
                 RemoteConference conference) {}
-
-        /** @hide */
-        public void setPhoneAccountHandle(
-                RemoteConnection connection,
-                PhoneAccountHandle pHandle) {}
     }
 
     /** {@hide} */
@@ -253,8 +228,6 @@ public final class RemoteConnection {
             public void onCameraCapabilitiesChanged(
                     VideoProvider videoProvider,
                     CameraCapabilities cameraCapabilities) {}
-
-            public void onVideoQualityChanged(VideoProvider videoProvider, int videoQuality) {}
         }
 
         private final IVideoCallback mVideoCallbackDelegate = new IVideoCallback() {
@@ -302,13 +275,6 @@ public final class RemoteConnection {
             public void changeCameraCapabilities(CameraCapabilities cameraCapabilities) {
                 for (Listener l : mListeners) {
                     l.onCameraCapabilitiesChanged(VideoProvider.this, cameraCapabilities);
-                }
-            }
-
-            @Override
-            public void changeVideoQuality(int videoQuality) {
-                for (Listener l : mListeners) {
-                    l.onVideoQualityChanged(VideoProvider.this, videoQuality);
                 }
             }
 
@@ -436,9 +402,7 @@ public final class RemoteConnection {
     private boolean mRingbackRequested;
     private boolean mConnected;
     private int mConnectionCapabilities;
-    private int mCallProperties;
     private int mVideoState;
-    private int mCallSubstate;
     private VideoProvider mVideoProvider;
     private boolean mIsVoipAudioMode;
     private StatusHints mStatusHints;
@@ -550,15 +514,6 @@ public final class RemoteConnection {
     }
 
     /**
-     * @return A bitmask of the properties of the {@code RemoteConnection}, as defined in
-     *         {@link CallProperties}.
-     * @hide
-     */
-    public int getCallProperties() {
-        return mCallProperties;
-    }
-
-    /**
      * Determines if the audio mode of this {@code RemoteConnection} is VOIP.
      *
      * @return {@code true} if the {@code RemoteConnection}'s current audio mode is VOIP.
@@ -625,14 +580,6 @@ public final class RemoteConnection {
      */
     public int getVideoState() {
         return mVideoState;
-    }
-
-    /**
-     * @return The call substate of the {@code RemoteConnection}. See
-     * @hide
-     */
-    public int getCallSubstate() {
-        return mCallSubstate;
     }
 
     /**
@@ -898,15 +845,6 @@ public final class RemoteConnection {
             c.onCallCapabilitiesChanged(this, connectionCapabilities);
         }
     }
-    /**
-     * @hide
-     */
-    void setCallProperties(int callProperties) {
-        mCallProperties = callProperties;
-        for (Callback c : mCallbacks) {
-            c.onCallPropertiesChanged(this, callProperties);
-        }
-    }
 
     /**
      * @hide
@@ -953,16 +891,6 @@ public final class RemoteConnection {
         mVideoState = videoState;
         for (Callback c : mCallbacks) {
             c.onVideoStateChanged(this, videoState);
-        }
-    }
-
-    /**
-     * @hide
-     */
-    void setCallSubstate(int callSubstate) {
-        mCallSubstate = callSubstate;
-        for (Callback c : mCallbacks) {
-            c.onCallSubstateChanged(this, callSubstate);
         }
     }
 
@@ -1026,13 +954,6 @@ public final class RemoteConnection {
             for (Callback c : mCallbacks) {
                 c.onConferenceChanged(this, conference);
             }
-        }
-    }
-
-    /** @hide */
-    void setPhoneAccountHandle(PhoneAccountHandle pHandle) {
-        for (Callback c : mCallbacks) {
-            c.setPhoneAccountHandle(this, pHandle);
         }
     }
 

@@ -42,6 +42,4 @@ oneway interface IVideoCallback {
     void changeCallDataUsage(int dataUsage);
 
     void changeCameraCapabilities(in CameraCapabilities cameraCapabilities);
-
-    void changeVideoQuality(int videoQuality);
 }

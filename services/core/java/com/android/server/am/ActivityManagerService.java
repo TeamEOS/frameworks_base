@@ -11520,8 +11520,8 @@ public final class ActivityManagerService extends ActivityManagerNative
         Slog.i(TAG, "System now ready");
         EventLog.writeEvent(EventLogTags.BOOT_PROGRESS_AMS_READY,
             SystemClock.uptimeMillis());
-        IntentFilter bootFilter = new IntentFilter(AppInterface.CHECK_SCREEN_IDLE_ACTION);
-        mContext.registerReceiver(new ScreenStatusReceiver(), bootFilter);
+//        IntentFilter bootFilter = new IntentFilter(AppInterface.CHECK_SCREEN_IDLE_ACTION);
+//        mContext.registerReceiver(new ScreenStatusReceiver(), bootFilter);
 
         synchronized(this) {
             // Make sure we have no pre-ready processes sitting around.
@@ -11654,7 +11654,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             performGcsForAllLocked();
         }
     }
-
+/*
     class ScreenStatusReceiver extends BroadcastReceiver {
 
         @Override
@@ -11674,7 +11674,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             }
         }
     }
-
+*/
     private boolean makeAppCrashingLocked(ProcessRecord app,
             String shortMsg, String longMsg, String stackTrace) {
         app.crashing = true;

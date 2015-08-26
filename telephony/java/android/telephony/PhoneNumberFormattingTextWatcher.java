@@ -1,7 +1,4 @@
 /*
- * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
- * Not a Contribution.
- *
  * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +19,6 @@ package android.telephony;
 import com.android.i18n.phonenumbers.AsYouTypeFormatter;
 import com.android.i18n.phonenumbers.PhoneNumberUtil;
 
-import android.os.SystemProperties;
 import android.telephony.PhoneNumberUtils;
 import android.text.Editable;
 import android.text.Selection;
@@ -157,13 +153,8 @@ public class PhoneNumberFormattingTextWatcher implements TextWatcher {
     }
 
     private String getFormattedNumber(char lastNonSeparator, boolean hasCursor) {
-        String formattedNum = hasCursor ? mFormatter
-                .inputDigitAndRememberPosition(lastNonSeparator)
+        return hasCursor ? mFormatter.inputDigitAndRememberPosition(lastNonSeparator)
                 : mFormatter.inputDigit(lastNonSeparator);
-        if (!SystemProperties.getBoolean("persist.env.sys.hypenenable", true)) {
-            return formattedNum.replace("-", "");
-        }
-        return formattedNum;
     }
 
     private void stopFormatting() {
