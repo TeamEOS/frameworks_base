@@ -185,6 +185,7 @@
     <java-symbol type="bool" name="config_hasRemovableLid" />
 
     <!-- Notification and battery light -->
+    <java-symbol type="bool" name="config_adjustableNotificationLedBrightness" />
     <java-symbol type="bool" name="config_intrusiveNotificationLed" />
     <java-symbol type="bool" name="config_multiColorNotificationLed" />
     <java-symbol type="bool" name="config_intrusiveBatteryLed" />
@@ -358,4 +359,7 @@
 
     <!-- Non-themeable packages -->
     <java-symbol type="array" name="non_themeable_packages" />
+
+    <!-- Config to disable showing ringtones from removable storage -->
+    <java-symbol type="bool" name="config_excludeRingtonesFromRemovableStorage" />
 </resources>
