@@ -32,7 +32,7 @@ import android.provider.Settings;
 import android.view.View;
 import android.widget.ImageView;
 
-import com.android.internal.actions.ImageHelper;
+import com.android.internal.utils.eos.ImageHelper;
 import com.android.internal.util.gesture.EdgeGesturePosition;
 
 import com.android.systemui.R;
