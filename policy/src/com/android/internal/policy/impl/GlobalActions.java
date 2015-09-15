@@ -17,7 +17,7 @@
 
 package com.android.internal.policy.impl;
 
-import com.android.internal.actions.ActionHandler;
+import com.android.internal.utils.eos.ActionHandler;
 import com.android.internal.app.AlertController;
 import com.android.internal.app.AlertController.AlertParams;
 import com.android.internal.telephony.TelephonyIntents;

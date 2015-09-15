@@ -18,9 +18,9 @@ package com.android.systemui.statusbar.policy;
 
 import android.animation.Animator;
 
-import com.android.internal.actions.ActionHandler;
-import com.android.internal.actions.Config.ActionConfig;
-import com.android.internal.actions.Config.ButtonConfig;
+import com.android.internal.utils.eos.ActionHandler;
+import com.android.internal.utils.eos.Config.ActionConfig;
+import com.android.internal.utils.eos.Config.ButtonConfig;
 
 import android.animation.ObjectAnimator;
 import android.app.ActivityManager;

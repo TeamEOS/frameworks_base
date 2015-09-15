@@ -27,11 +27,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.android.internal.actions.ActionConstants;
-import com.android.internal.actions.ActionHandler;
-import com.android.internal.actions.ActionUtils;
-import com.android.internal.actions.Config;
-import com.android.internal.actions.Config.ButtonConfig;
+import com.android.internal.utils.eos.ActionConstants;
+import com.android.internal.utils.eos.ActionHandler;
+import com.android.internal.utils.eos.ActionUtils;
+import com.android.internal.utils.eos.Config;
+import com.android.internal.utils.eos.Config.ButtonConfig;
 import com.android.internal.navigation.utils.SmartObserver.SmartObservable;
 
 import com.android.systemui.R;

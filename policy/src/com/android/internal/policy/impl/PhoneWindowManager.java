@@ -77,7 +77,6 @@ import android.speech.RecognizerIntent;
 import android.telecom.TelecomManager;
 import android.service.gesture.EdgeGestureManager;
 
-import com.android.internal.navigation.hwkeys.HardkeyActionHandler;
 import com.android.internal.os.DeviceKeyHandler;
 
 import dalvik.system.DexClassLoader;
@@ -121,6 +120,7 @@ import com.android.internal.policy.impl.keyguard.KeyguardServiceDelegate.ShowLis
 import com.android.internal.statusbar.IStatusBarService;
 import com.android.internal.util.gesture.EdgeGesturePosition;
 import com.android.internal.util.gesture.EdgeServiceConstants;
+import com.android.internal.utils.eos.ActionHandler;
 import com.android.internal.view.RotationPolicy;
 import com.android.internal.widget.PointerLocationView;
 import com.android.server.LocalServices;
@@ -132,8 +132,6 @@ import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.List;
 import java.lang.reflect.Constructor;
-
-import com.android.internal.actions.ActionHandler;
 
 import static android.view.WindowManager.LayoutParams.*;
 import static android.view.WindowManagerPolicy.WindowManagerFuncs.LID_ABSENT;

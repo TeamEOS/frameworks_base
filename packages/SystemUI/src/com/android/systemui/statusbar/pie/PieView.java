@@ -37,7 +37,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 
 import com.android.internal.navigation.NavigationBarOverlay;
-import com.android.internal.actions.ActionHandler;
+import com.android.internal.utils.eos.ActionHandler;
 import com.android.internal.util.gesture.EdgeGesturePosition;
 
 import com.android.systemui.R;
