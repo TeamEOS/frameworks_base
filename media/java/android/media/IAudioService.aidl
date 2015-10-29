@@ -232,4 +232,10 @@ interface IAudioService {
 
     String getCurrentHotwordInputPackageName();
 
+    /**
+     * Internal TeamEos api to protect Pulse
+     */
+    void setVisualizerLocked(boolean doLock);
+
+    boolean isVisualizerLocked(String callingPackage);
 }
