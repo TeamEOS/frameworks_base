@@ -9,9 +9,10 @@ LOCAL_SRC_FILES := $(call all-java-files-under, src) \
 LOCAL_STATIC_JAVA_LIBRARIES := Keyguard \
     org.cyanogenmod.platform.sdk \
     android-support-v7-palette \
-    android-support-v4
+    android-support-v4 \
+    org.teameos.navigation-static
 
-LOCAL_JAVA_LIBRARIES := telephony-common
+LOCAL_JAVA_LIBRARIES := telephony-common org.teameos.utils
 LOCAL_FULL_LIBS_MANIFEST_FILES := $(LOCAL_PATH)/AndroidManifest_cm.xml
 
 LOCAL_PACKAGE_NAME := SystemUI
