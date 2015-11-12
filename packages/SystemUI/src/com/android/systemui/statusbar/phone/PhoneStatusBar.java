@@ -512,7 +512,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             mBrightnessControl = Settings.System.getIntForUser(
                     resolver, Settings.System.STATUS_BAR_BRIGHTNESS_CONTROL, 0,
                     UserHandle.USER_CURRENT) == 1;
-
             // This method reads CMSettings.Secure.RECENTS_LONG_PRESS_ACTIVITY
             updateCustomRecentsLongPressHandler(false);
         }
@@ -4538,7 +4537,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
 
     private void vibrateForCameraGesture() {
         // Make sure to pass -1 for repeat so VibratorService doesn't stop us when going to sleep.
-        mVibrator.vibrate(new long[] { 0, 750L }, -1 /* repeat */);
+        mVibrator.vibrate(new long[] { 0, 250L }, -1 /* repeat */);
     }
 
     public void onScreenTurnedOn() {
