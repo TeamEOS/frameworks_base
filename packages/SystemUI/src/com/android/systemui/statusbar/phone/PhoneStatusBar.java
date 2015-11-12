@@ -84,6 +84,7 @@ import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.NotificationListenerService.RankingMap;
 import android.service.notification.StatusBarNotification;
+import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.DisplayMetrics;
 import android.util.EventLog;
@@ -123,8 +124,10 @@ import com.android.internal.navigation.StatusbarImpl;
 import com.android.internal.statusbar.NotificationVisibility;
 import com.android.internal.statusbar.StatusBarIcon;
 import com.android.internal.util.cm.ActionUtils;
+import com.android.internal.utils.eos.ActionHandler;
 import com.android.internal.utils.eos.EosActionUtils;
 import com.android.internal.utils.eos.EosPackageMonitor;
+import com.android.internal.utils.eos.EosSystemReceiver;
 import com.android.keyguard.KeyguardHostView.OnDismissAction;
 import com.android.keyguard.KeyguardUpdateMonitor;
 import com.android.keyguard.KeyguardUpdateMonitorCallback;
@@ -471,6 +474,18 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                 mAssistManager.onConfigurationChanged();
             }
             mNotificationPanel.setQsScrimEnabled(!isVertical);
+        }
+    };
+
+    private EosSystemReceiver mEosReceiver = new EosSystemReceiver() {
+        @Override
+        protected void onSecureReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (TextUtils.equals(ActionHandler.INTENT_TOGGLE_FLASHLIGHT, action)) {
+                if (mFlashlightController.isAvailable()) {
+                    mFlashlightController.setFlashlight(!mFlashlightController.isEnabled());
+                }
+            }
         }
     };
 
@@ -1151,6 +1166,11 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         packageFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
         packageFilter.addDataScheme("package");
         context.registerReceiver(mPackageBroadcastReceiver, packageFilter);
+
+        // flashlight action target for toggle
+        IntentFilter flashlightFilter = new IntentFilter();
+        flashlightFilter.addAction(ActionHandler.INTENT_TOGGLE_FLASHLIGHT);
+        context.registerReceiver(mEosReceiver, flashlightFilter);
 
         // listen for USER_SETUP_COMPLETE setting (per-user)
         resetUserSetupObserver();
@@ -3840,6 +3860,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         }
         mContext.unregisterReceiver(mBroadcastReceiver);
         mContext.unregisterReceiver(mDemoReceiver);
+        mContext.unregisterReceiver(mEosReceiver);
         mPackageMonitor.unregister();
         mAssistManager.destroy();
 
